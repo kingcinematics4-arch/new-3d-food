@@ -4,10 +4,6 @@
 module.exports = {
   reactStrictMode: true,
   swcMinify: true,
-  // Enable the App Router (app directory)
-  experimental: {
-    appDir: true,
-  },
   // Allow images from Supabase storage domains
   images: {
     remotePatterns: [
