@@ -40,18 +40,21 @@ export default function SettingsPage() {
           .single();
 
         if (data?.hotel) {
-          const h = data.hotel;
-          setFormData((prev) => ({
-            ...prev,
-            hotel_id: h.id,
-            name: h.name || prev.name,
-            owner_name: h.owner_name || prev.owner_name,
-            email: h.email || prev.email,
-            phone: h.phone || prev.phone,
-            city: h.city || prev.city,
-            address: h.address || prev.address,
-            custom_domain: h.custom_domain || '',
-          }));
+          const rawHotel = data.hotel as unknown;
+          const h = (Array.isArray(rawHotel) ? rawHotel[0] : rawHotel) as Record<string, any> | undefined;
+          if (h) {
+            setFormData((prev) => ({
+              ...prev,
+              hotel_id: h.id || prev.hotel_id,
+              name: h.name || prev.name,
+              owner_name: h.owner_name || prev.owner_name,
+              email: h.email || prev.email,
+              phone: h.phone || prev.phone,
+              city: h.city || prev.city,
+              address: h.address || prev.address,
+              custom_domain: h.custom_domain || '',
+            }));
+          }
         }
       }
     } catch (e) {

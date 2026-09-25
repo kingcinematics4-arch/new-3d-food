@@ -87,17 +87,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        if (sessionError) {
+          console.error('Session check error:', sessionError);
+          return;
+        }
+
         if (session?.user) {
           setUserEmail(session.user.email || '');
-          const { data: userLink } = await supabaseClient
+          const { data: userLink, error: linkError } = await supabaseClient
             .from('hotel_users')
             .select('hotel_id, hotel:hotels(name)')
             .eq('user_id', session.user.id)
             .single();
 
-          if (userLink?.hotel?.name) {
-            setRestaurantName(userLink.hotel.name);
+          if (linkError) {
+            console.warn('Hotel link query notice:', linkError.message);
+          }
+
+          let fetchedHotelName: string | undefined;
+          const rawHotel = userLink?.hotel as unknown;
+          if (Array.isArray(rawHotel) && rawHotel.length > 0) {
+            fetchedHotelName = (rawHotel[0] as { name?: string })?.name;
+          } else if (rawHotel && typeof rawHotel === 'object' && 'name' in rawHotel) {
+            fetchedHotelName = (rawHotel as { name?: string }).name;
+          }
+
+          if (fetchedHotelName) {
+            setRestaurantName(fetchedHotelName);
           } else if (session.user.user_metadata?.hotel_name) {
             setRestaurantName(session.user.user_metadata.hotel_name);
           }
