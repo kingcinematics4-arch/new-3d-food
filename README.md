@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🍔 3D Digital Food Menu & Restaurant Ordering SaaS
 
 A multi-tenant **3D Food Menu & QR Tabletop Ordering SaaS** platform built with **Next.js 14 (App Router), React, TypeScript, Tailwind CSS, Three.js (@react-three/fiber), and Supabase**.
@@ -20,3 +21,6 @@ A multi-tenant **3D Food Menu & QR Tabletop Ordering SaaS** platform built with 
 ## 🚀 Getting Started
 
 See [`DEPLOYMENT.md`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/DEPLOYMENT.md) for full database setup, environment variable configuration, and Vercel deployment instructions.
+=======
+# 3d-food-2.00
+>>>>>>> fff8db98195992cca8b1ae3bb2e4e45f22a78c4a
