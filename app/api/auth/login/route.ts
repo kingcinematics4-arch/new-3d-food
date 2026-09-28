@@ -2,10 +2,30 @@
 import { NextResponse } from 'next/server';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { isEmailRateLimitError, isEmailUnconfirmedError } from '@/lib/authThrottle';
+import { isSupabaseConfigured } from '@/lib/supabaseEnv';
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication is not configured on this deployment.' },
+        { status: 503 }
+      );
+    }
+
+    let email: string;
+    let password: string;
+
+    try {
+      const body = await request.json();
+      email = body?.email;
+      password = body?.password;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
 
     if (!email || !password) {
       return NextResponse.json(
@@ -22,8 +42,6 @@ export async function POST(request: Request) {
     if (error) {
       const message = error.message || 'Invalid credentials';
 
-      // Rate limiting is reported as-is; this route never sends email so it
-      // cannot contribute to the confirmation-email quota.
       if (isEmailRateLimitError(message)) {
         return NextResponse.json(
           {
@@ -34,10 +52,6 @@ export async function POST(request: Request) {
         );
       }
 
-      // An unconfirmed account is reported to the client, but NO confirmation
-      // email is sent from here. Sending it silently on every failed login is
-      // what exhausted the Supabase email rate limit. The user must explicitly
-      // request a resend from the login screen.
       if (isEmailUnconfirmedError(message)) {
         return NextResponse.json(
           {
@@ -55,31 +69,37 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!data.session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication succeeded but no session was created' },
+        { status: 500 }
+      );
+    }
+
     const response = NextResponse.json({
       success: true,
       user: data.user,
       session: data.session,
     });
 
-    if (data.session) {
-      response.cookies.set('sb-access-token', data.session.access_token, {
+    response.cookies.set('sb-access-token', data.session.access_token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: data.session.expires_in || 3600 * 24 * 7,
+    });
+    if (data.session.refresh_token) {
+      response.cookies.set('sb-refresh-token', data.session.refresh_token, {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
-        maxAge: data.session.expires_in || 3600 * 24 * 7,
+        maxAge: 3600 * 24 * 30,
       });
-      if (data.session.refresh_token) {
-        response.cookies.set('sb-refresh-token', data.session.refresh_token, {
-          path: '/',
-          httpOnly: true,
-          sameSite: 'lax',
-          maxAge: 3600 * 24 * 30,
-        });
-      }
     }
 
     return response;
   } catch (error: any) {
+    console.error('Login API error:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Login failed' },
       { status: 500 }
