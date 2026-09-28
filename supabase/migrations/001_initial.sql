@@ -3,8 +3,11 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- hotels table – each restaurant
+-- NOTE: passwords are never stored here. Supabase Auth (auth.users) owns
+-- credentials; hotels.user_id is the canonical link to the signed-in owner.
 CREATE TABLE public.hotels (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   name text NOT NULL,
   slug text UNIQUE NOT NULL,
   owner_name text,
@@ -14,6 +17,11 @@ CREATE TABLE public.hotels (
   address text,
   logo_url text,
   primary_color text DEFAULT '#f59e0b',
+  secondary_color text DEFAULT '#10b981',
+  menu_style text DEFAULT 'cards',
+  card_style text DEFAULT 'glassmorphic',
+  dark_mode boolean DEFAULT true,
+  typography text DEFAULT 'Inter',
   welcome_text text DEFAULT 'Experience our menu in 3D!',
   custom_domain text,
   currency text DEFAULT 'USD ($)',
@@ -62,6 +70,11 @@ CREATE TABLE public.menu_items (
   model_url_usdz text,
   is_available boolean DEFAULT true,
   is_featured boolean DEFAULT false,
+  is_popular boolean DEFAULT false,
+  is_veg boolean DEFAULT true,
+  allergens text[] DEFAULT '{}',
+  rating numeric(3,2) DEFAULT 0,
+  order_count integer DEFAULT 0,
   dietary_tags text[] DEFAULT '{}',
   calories integer,
   preparation_time_mins integer,
@@ -111,6 +124,9 @@ CREATE TABLE public.order_status_history (
 CREATE TABLE public.reviews (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_item_id uuid REFERENCES public.order_items(id) ON DELETE CASCADE,
+  hotel_id uuid REFERENCES public.hotels(id) ON DELETE CASCADE,
+  menu_item_name text,
+  table_number text,
   rating integer CHECK (rating >= 1 AND rating <= 5),
   comment text,
   customer_name text DEFAULT 'Guest Diner',
