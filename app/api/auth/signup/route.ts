@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedData = signUpSchema.parse(body);
 
-    const callbackUrl = getAuthCallbackUrl(request, '/dashboard');
+    const callbackUrl = getAuthCallbackUrl(request);
     const result = await signUpAndOnboardHotel(validatedData, callbackUrl);
 
     const response = NextResponse.json(

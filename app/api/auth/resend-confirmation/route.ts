@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const emailRedirectTo = getAuthCallbackUrl(request, '/dashboard');
+    const emailRedirectTo = getAuthCallbackUrl(request);
 
     const { error } = await supabaseClient.auth.resend({
       type: 'signup',
