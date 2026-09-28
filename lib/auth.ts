@@ -83,7 +83,9 @@ async function performHotelOnboarding(
   // Throws clear error identifying missing env var names instead of failing with generic "fetch failed".
   assertSupabaseAdminConfigured();
 
-  const redirectUrl = callbackUrl || getAuthCallbackUrl(undefined, '/dashboard');
+  // The exact URL embedded in the Supabase confirmation email. It must match an
+  // entry in Supabase's redirect allow-list verbatim (no query string).
+  const redirectUrl = callbackUrl || getAuthCallbackUrl();
 
   // 1. Create Supabase Auth user
   let userId: string | undefined;

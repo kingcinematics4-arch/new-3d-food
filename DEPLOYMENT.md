@@ -50,7 +50,13 @@ Visit `http://localhost:3000` to view the SaaS landing page, register a test res
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project-id.supabase.co` | Production, Preview, Development |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` *(or `NEXT_PUBLIC_SUPABASE_ANON_KEY`)* | `your-anon-key` | Production, Preview, Development |
 | `SUPABASE_SERVICE_ROLE_KEY` | `your-service-role-key` | Production (Secret) |
-| `NEXT_PUBLIC_SITE_URL` *(Optional)* | `https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app` | Production |
+| `NEXT_PUBLIC_SITE_URL` | `https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app` | Production |
+
+> `NEXT_PUBLIC_SITE_URL` pins the base URL used inside Supabase confirmation
+> emails. If it is not set, the app falls back to the Vercel deployment URL
+> variables and finally to the hardcoded production URL - it never emits
+> `localhost` on Vercel. Leave it unset locally so `http://localhost:3000`
+> keeps working during development.
 
 4. Click **Deploy**. Vercel will build and deploy your single full-stack application.
 
@@ -64,15 +70,31 @@ In your [Supabase Project Dashboard](https://supabase.com/dashboard):
    ```text
    https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app
    ```
-3. Under **Redirect URLs**, add:
+   > The Site URL is the fallback Supabase uses whenever a supplied
+   > `emailRedirectTo` is not allow-listed. If this still says
+   > `http://localhost:3000`, every confirmation link will point at localhost.
+3. Under **Redirect URLs**, add exactly these:
    ```text
-   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/**
    https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/auth/callback
-   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/dashboard
+   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/**
    https://*-kingcinematics4-7720s-projects.vercel.app/**
    http://localhost:3000/**
    ```
-4. Click **Save**. This ensures Supabase email confirmation links redirect to the deployed website rather than `localhost:3000`.
+   > The first entry is mandatory and must match `emailRedirectTo` character for
+   > character - it carries no query string, which is why the wildcard entry
+   > alone is not enough. `http://localhost:3000/**` is only for local `next dev`
+   > testing and is ignored in production.
+4. Click **Save**.
+
+### Resulting email confirmation flow
+
+```text
+User clicks "Confirm Email"
+  -> Supabase confirms the address
+  -> redirects to  https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/auth/callback?token_hash=...&type=signup
+  -> /auth/callback exchanges the token for a session and sets the session cookies
+  -> redirects to  https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/dashboard
+```
 
 ---
 
