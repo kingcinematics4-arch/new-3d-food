@@ -1,5 +1,5 @@
 // lib/auth.ts
-import { supabaseAdmin } from './supabaseClient';
+import { supabaseAdmin, assertSupabaseAdminConfigured } from './supabaseClient';
 import { z } from 'zod';
 
 /**
@@ -10,9 +10,9 @@ export const signUpSchema = z.object({
   owner_name: z.string().min(2, 'Owner name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  city: z.string().min(2, 'City must be provided'),
-  address: z.string().min(5, 'Address must be provided'),
-  phone: z.string().min(5, 'Phone number must be provided'),
+  city: z.string().optional().default(''),
+  address: z.string().optional().default(''),
+  phone: z.string().optional().default(''),
 });
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
@@ -35,23 +35,55 @@ export function generateSlug(name: string): string {
  * Multi-tenant Onboarding: Creates Auth User -> Inserts Hotel -> Links User to Hotel
  */
 export async function signUpAndOnboardHotel(data: SignUpInput) {
+  // Guard: Ensure Supabase environment is properly configured.
+  // Throws clear error identifying missing env var names instead of failing with generic "fetch failed".
+  assertSupabaseAdminConfigured();
+
   // 1. Create Supabase Auth user
-  const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
+  let userId: string | undefined;
+  let authUser: any = null;
+
+  // Primary: Use Admin API with service-role key (auto-confirms email so owner can immediately log in)
+  const { data: adminData, error: adminError } = await supabaseAdmin.auth.admin.createUser({
     email: data.email,
     password: data.password,
-    options: {
-      data: {
-        owner_name: data.owner_name,
-        hotel_name: data.hotel_name,
-      },
+    email_confirm: true,
+    user_metadata: {
+      owner_name: data.owner_name,
+      hotel_name: data.hotel_name,
     },
   });
 
-  if (authError) {
-    throw new Error(`Auth Signup Error: ${authError.message}`);
+  if (!adminError && adminData?.user?.id) {
+    userId = adminData.user.id;
+    authUser = adminData.user;
+  } else {
+    // If the email is already in use, provide a user-friendly message
+    const adminMsg = adminError?.message || '';
+    if (adminMsg.toLowerCase().includes('already') || adminMsg.toLowerCase().includes('exists')) {
+      throw new Error(`Auth Signup Error: An account with email ${data.email} already exists. Please sign in instead.`);
+    }
+
+    // Secondary fallback: standard auth.signUp
+    const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          owner_name: data.owner_name,
+          hotel_name: data.hotel_name,
+        },
+      },
+    });
+
+    if (authError) {
+      throw new Error(`Auth Signup Error: ${authError.message}`);
+    }
+
+    userId = authData.user?.id;
+    authUser = authData.user;
   }
 
-  const userId = authData.user?.id;
   if (!userId) {
     throw new Error('Supabase Auth user created but failed to return user ID.');
   }
@@ -61,13 +93,14 @@ export async function signUpAndOnboardHotel(data: SignUpInput) {
   const { data: hotelData, error: hotelError } = await supabaseAdmin
     .from('hotels')
     .insert({
+      user_id: userId,
       name: data.hotel_name,
       slug: slug,
       owner_name: data.owner_name,
       email: data.email,
-      phone: data.phone,
-      city: data.city,
-      address: data.address,
+      phone: data.phone || null,
+      city: data.city || null,
+      address: data.address || null,
       is_active: true,
       subscription_plan: 'starter',
     })
@@ -94,12 +127,13 @@ export async function signUpAndOnboardHotel(data: SignUpInput) {
   return {
     userId,
     hotel: hotelData,
-    user: authData.user,
+    user: authUser,
   };
 }
 
 /**
- * Fetch the hotel and user link details for an authenticated user
+ * Fetch the hotel and user link details for an authenticated user.
+ * Returns the hotel_users row joined with the hotel record, or null if none exists.
  */
 export async function getUserHotel(userId: string) {
   const { data, error } = await supabaseAdmin
@@ -110,4 +144,27 @@ export async function getUserHotel(userId: string) {
 
   if (error) return null;
   return data;
+}
+
+/**
+ * Fetch the hotel record for an authenticated user by user_id.
+ * Uses the public.hotels table joined via hotel_users.
+ */
+export async function getHotelByUserId(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('hotel_users')
+    .select('hotel_id, hotel:hotels(*)')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) return null;
+
+  const rawHotel = data.hotel as unknown;
+  if (Array.isArray(rawHotel) && rawHotel.length > 0) {
+    return rawHotel[0];
+  }
+  if (rawHotel && typeof rawHotel === 'object') {
+    return rawHotel;
+  }
+  return null;
 }

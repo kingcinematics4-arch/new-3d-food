@@ -1,4 +1,4 @@
-// lib/demoData.ts
+﻿// lib/demoData.ts
 import { PRESET_3D_MODELS } from './menu';
 
 export interface DemoMenuItem {
@@ -203,7 +203,7 @@ export const INITIAL_DEMO_CUSTOMIZATION: DemoCustomization = {
   card_style: 'glassmorphic',
   dark_mode: true,
   typography: 'Inter',
-  welcome_banner: 'Experience our gourmet dishes in 360° 3D & Augmented Reality!',
+  welcome_banner: 'Experience our gourmet dishes in 360┬░ 3D & Augmented Reality!',
 };
 
 /**

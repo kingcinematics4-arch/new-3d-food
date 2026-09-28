@@ -47,8 +47,8 @@ Visit `http://localhost:3000` to view the SaaS landing page, register a test res
 
 | Key | Value | Context |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project-id.supabase.co` | Production |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `your-anon-key` | Production |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project-id.supabase.co` | Production, Preview, Development |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` *(or `NEXT_PUBLIC_SUPABASE_ANON_KEY`)* | `your-anon-key` | Production, Preview, Development |
 | `SUPABASE_SERVICE_ROLE_KEY` | `your-service-role-key` | Production (Secret) |
 
 4. Click **Deploy**. Vercel will build and deploy your single full-stack application.
