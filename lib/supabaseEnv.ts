@@ -126,3 +126,5 @@ export function getMissingSupabaseConfigMessage(): string {
   );
 }
 
+export { getSiteUrl, getAuthCallbackUrl } from './siteUrl';
+

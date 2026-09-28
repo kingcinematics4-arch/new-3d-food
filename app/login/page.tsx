@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -10,12 +10,48 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
   const [showPw, setShowPw] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get('error_description') || params.get('error');
+      if (urlError) {
+        setError(urlError);
+      }
+    }
+  }, []);
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      setError('Please enter your email address in the field below first.');
+      return;
+    }
+    setResending(true);
+    setResendStatus(null);
+    try {
+      const res = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to resend confirmation email.');
+      setResendStatus(data.message || 'Confirmation email sent! Please check your inbox.');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setResendStatus(null);
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -32,6 +68,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
 
   return (
     <div
@@ -162,7 +199,46 @@ export default function LoginPage() {
                 fontSize: '0.875rem',
               }}
             >
-              {error}
+              <p>{error}</p>
+              {error.toLowerCase().includes('email not confirmed') && (
+                <button
+                  type="button"
+                  onClick={handleResendConfirmation}
+                  disabled={resending}
+                  style={{
+                    marginTop: '0.625rem',
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    color: 'var(--gold)',
+                    fontSize: '0.8125rem',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: 3,
+                    cursor: resending ? 'not-allowed' : 'pointer',
+                    display: 'block',
+                  }}
+                >
+                  {resending ? 'Sending fresh confirmation link...' : 'Resend confirmation email to this address →'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Resend Success Status */}
+          {resendStatus && (
+            <div
+              className="mb-6 px-4 py-3 rounded-lg flex items-center gap-2"
+              style={{
+                background: 'rgba(100,210,150,0.06)',
+                border: '1px solid rgba(100,210,150,0.2)',
+                color: '#86EFAC',
+                fontSize: '0.875rem',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{resendStatus}</span>
             </div>
           )}
 

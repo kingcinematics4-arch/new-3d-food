@@ -2,13 +2,15 @@
 import { NextResponse } from 'next/server';
 import { signUpAndOnboardHotel, signUpSchema } from '@/lib/auth';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { getAuthCallbackUrl } from '@/lib/siteUrl';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const validatedData = signUpSchema.parse(body);
 
-    const result = await signUpAndOnboardHotel(validatedData);
+    const callbackUrl = getAuthCallbackUrl(request, '/dashboard');
+    const result = await signUpAndOnboardHotel(validatedData, callbackUrl);
 
     const response = NextResponse.json(
       {

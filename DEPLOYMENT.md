@@ -50,12 +50,33 @@ Visit `http://localhost:3000` to view the SaaS landing page, register a test res
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project-id.supabase.co` | Production, Preview, Development |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` *(or `NEXT_PUBLIC_SUPABASE_ANON_KEY`)* | `your-anon-key` | Production, Preview, Development |
 | `SUPABASE_SERVICE_ROLE_KEY` | `your-service-role-key` | Production (Secret) |
+| `NEXT_PUBLIC_SITE_URL` *(Optional)* | `https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app` | Production |
 
 4. Click **Deploy**. Vercel will build and deploy your single full-stack application.
 
 ---
 
-## 🏷️ Step 4: Connecting a Custom Domain (Optional Later)
+## 🔐 Step 4: Configure Supabase Authentication Redirect URLs
+
+In your [Supabase Project Dashboard](https://supabase.com/dashboard):
+1. Navigate to **Authentication** ➔ **URL Configuration**.
+2. Set **Site URL** to:
+   ```text
+   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app
+   ```
+3. Under **Redirect URLs**, add:
+   ```text
+   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/**
+   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/auth/callback
+   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/dashboard
+   https://*-kingcinematics4-7720s-projects.vercel.app/**
+   http://localhost:3000/**
+   ```
+4. Click **Save**. This ensures Supabase email confirmation links redirect to the deployed website rather than `localhost:3000`.
+
+---
+
+## 🏷️ Step 5: Connecting a Custom Domain (Optional Later)
 
 When you purchase a custom domain later:
 

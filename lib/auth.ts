@@ -1,6 +1,7 @@
 // lib/auth.ts
 import { supabaseAdmin, assertSupabaseAdminConfigured } from './supabaseClient';
 import { z } from 'zod';
+import { getAuthCallbackUrl } from './siteUrl';
 
 /**
  * Validation schema for hotel sign‑up & onboarding.
@@ -34,10 +35,12 @@ export function generateSlug(name: string): string {
 /**
  * Multi-tenant Onboarding: Creates Auth User -> Inserts Hotel -> Links User to Hotel
  */
-export async function signUpAndOnboardHotel(data: SignUpInput) {
+export async function signUpAndOnboardHotel(data: SignUpInput, callbackUrl?: string) {
   // Guard: Ensure Supabase environment is properly configured.
   // Throws clear error identifying missing env var names instead of failing with generic "fetch failed".
   assertSupabaseAdminConfigured();
+
+  const redirectUrl = callbackUrl || getAuthCallbackUrl(undefined, '/dashboard');
 
   // 1. Create Supabase Auth user
   let userId: string | undefined;
@@ -64,11 +67,12 @@ export async function signUpAndOnboardHotel(data: SignUpInput) {
       throw new Error(`Auth Signup Error: An account with email ${data.email} already exists. Please sign in instead.`);
     }
 
-    // Secondary fallback: standard auth.signUp
+    // Secondary fallback: standard auth.signUp with explicit production emailRedirectTo
     const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
+        emailRedirectTo: redirectUrl,
         data: {
           owner_name: data.owner_name,
           hotel_name: data.hotel_name,
@@ -83,6 +87,7 @@ export async function signUpAndOnboardHotel(data: SignUpInput) {
     userId = authData.user?.id;
     authUser = authData.user;
   }
+
 
   if (!userId) {
     throw new Error('Supabase Auth user created but failed to return user ID.');
