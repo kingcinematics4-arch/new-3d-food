@@ -92,17 +92,30 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('Invalid response from server');
+      }
 
       if (!res.ok) {
         if (data?.emailUnconfirmed) {
           setEmailUnconfirmed(true);
         }
-        throw new Error(data.error || 'Invalid credentials');
+        const errorMessage = data?.error || `Login failed (${res.status})`;
+        throw new Error(errorMessage);
       }
+
+      if (!data?.session) {
+        throw new Error('Login succeeded but no session returned');
+      }
+
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message);
+      const message = err?.message || String(err) || 'An unknown error occurred';
+      setError(message);
     } finally {
       submitInFlight.current = false;
       setLoading(false);
