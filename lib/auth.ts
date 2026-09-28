@@ -1,7 +1,23 @@
 // lib/auth.ts
-import { supabaseAdmin, assertSupabaseAdminConfigured } from './supabaseClient';
+import { supabaseAdmin, assertSupabaseAdminConfigured } from './supabaseAdmin';
 import { z } from 'zod';
 import { getAuthCallbackUrl } from './siteUrl';
+import { isEmailRateLimitError } from './authThrottle';
+
+/**
+ * In-flight signups keyed by email.
+ * A double-clicked submit (or a client retry) must never start a second
+ * signup for the same address, which would produce a second email request.
+ */
+const inFlightSignups = new Map<string, Promise<OnboardingResult>>();
+
+export interface OnboardingResult {
+  userId: string;
+  hotel: any;
+  user: any;
+  /** True when Supabase still has to email a confirmation link before sign-in. */
+  requiresEmailConfirmation: boolean;
+}
 
 /**
  * Validation schema for hotel sign‑up & onboarding.
@@ -34,8 +50,35 @@ export function generateSlug(name: string): string {
 
 /**
  * Multi-tenant Onboarding: Creates Auth User -> Inserts Hotel -> Links User to Hotel
+ *
+ * Exactly one Auth user creation call is made per invocation. Concurrent
+ * invocations for the same email (double-clicked submit, client retry) share a
+ * single in-flight promise so a second signup - and therefore a second
+ * confirmation email - is never issued.
  */
-export async function signUpAndOnboardHotel(data: SignUpInput, callbackUrl?: string) {
+export async function signUpAndOnboardHotel(
+  data: SignUpInput,
+  callbackUrl?: string
+): Promise<OnboardingResult> {
+  const email = data.email.trim().toLowerCase();
+
+  const existing = inFlightSignups.get(email);
+  if (existing) {
+    return existing;
+  }
+
+  const run = performHotelOnboarding(data, callbackUrl).finally(() => {
+    inFlightSignups.delete(email);
+  });
+
+  inFlightSignups.set(email, run);
+  return run;
+}
+
+async function performHotelOnboarding(
+  data: SignUpInput,
+  callbackUrl?: string
+): Promise<OnboardingResult> {
   // Guard: Ensure Supabase environment is properly configured.
   // Throws clear error identifying missing env var names instead of failing with generic "fetch failed".
   assertSupabaseAdminConfigured();
@@ -45,8 +88,10 @@ export async function signUpAndOnboardHotel(data: SignUpInput, callbackUrl?: str
   // 1. Create Supabase Auth user
   let userId: string | undefined;
   let authUser: any = null;
+  let requiresEmailConfirmation = false;
 
-  // Primary: Use Admin API with service-role key (auto-confirms email so owner can immediately log in)
+  // Primary: Use Admin API with service-role key (auto-confirms email so owner can immediately log in).
+  // This path sends no confirmation email.
   const { data: adminData, error: adminError } = await supabaseAdmin.auth.admin.createUser({
     email: data.email,
     password: data.password,
@@ -63,11 +108,20 @@ export async function signUpAndOnboardHotel(data: SignUpInput, callbackUrl?: str
   } else {
     // If the email is already in use, provide a user-friendly message
     const adminMsg = adminError?.message || '';
+
+    if (isEmailRateLimitError(adminMsg)) {
+      throw new Error(
+        'Auth Signup Error: Too many confirmation emails were requested for this address. Please wait a few minutes and try again.'
+      );
+    }
+
     if (adminMsg.toLowerCase().includes('already') || adminMsg.toLowerCase().includes('exists')) {
       throw new Error(`Auth Signup Error: An account with email ${data.email} already exists. Please sign in instead.`);
     }
 
-    // Secondary fallback: standard auth.signUp with explicit production emailRedirectTo
+    // Secondary fallback: standard auth.signUp with explicit production emailRedirectTo.
+    // This is the only path that can trigger a confirmation email, and it runs
+    // at most once per signup action.
     const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
       email: data.email,
       password: data.password,
@@ -81,13 +135,18 @@ export async function signUpAndOnboardHotel(data: SignUpInput, callbackUrl?: str
     });
 
     if (authError) {
+      if (isEmailRateLimitError(authError.message)) {
+        throw new Error(
+          'Auth Signup Error: Too many confirmation emails were requested for this address. Please wait a few minutes and try again.'
+        );
+      }
       throw new Error(`Auth Signup Error: ${authError.message}`);
     }
 
     userId = authData.user?.id;
     authUser = authData.user;
+    requiresEmailConfirmation = true;
   }
-
 
   if (!userId) {
     throw new Error('Supabase Auth user created but failed to return user ID.');
@@ -133,6 +192,7 @@ export async function signUpAndOnboardHotel(data: SignUpInput, callbackUrl?: str
     userId,
     hotel: hotelData,
     user: authUser,
+    requiresEmailConfirmation,
   };
 }
 

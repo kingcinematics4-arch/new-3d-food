@@ -1,10 +1,15 @@
 // lib/supabaseEnv.ts
-// Shared Supabase project configuration.
+// BROWSER-SAFE Supabase configuration.
+//
+// This module is reachable from client components, so it must never reference
+// SUPABASE_SERVICE_ROLE_KEY (or any other server-only secret): Next.js inlines
+// referenced environment values into the browser bundle, which would publish
+// the service-role key. Server-only env access lives in ./supabaseEnv.server.
 //
 // Canonical environment variable names used by Dine3D:
 //   NEXT_PUBLIC_SUPABASE_URL
 //   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY   (alias: NEXT_PUBLIC_SUPABASE_ANON_KEY)
-//   SUPABASE_SERVICE_ROLE_KEY              (server-only secret)
+//   SUPABASE_SERVICE_ROLE_KEY              (server-only, see ./supabaseEnv.server)
 
 function cleanEnvValue(value: string | undefined): string {
   if (!value) return '';
@@ -50,11 +55,6 @@ export const supabasePublishableKey =
   cleanEnvValue(process.env.SUPABASE_ANON_KEY) ||
   cleanEnvValue(process.env.SUPABASE_PUBLISHABLE_KEY);
 
-export const supabaseServiceRoleKey =
-  cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY) ||
-  cleanEnvValue(process.env.SUPABASE_SERVICE_KEY) ||
-  cleanEnvValue(process.env.SUPABASE_SECRET_KEY);
-
 /**
  * Sentinel placeholder used ONLY to construct clients when env vars are missing
  * so createClient does not throw at module evaluation time.
@@ -90,41 +90,7 @@ export function isSupabaseConfigured(): boolean {
   return isValidSupabaseUrl(supabaseUrl) && isRealValue(supabasePublishableKey);
 }
 
-/** True only when the (server-only) service-role key is present. */
-export function hasSupabaseServiceRoleKey(): boolean {
-  return isRealValue(supabaseServiceRoleKey);
-}
-
-/**
- * Returns a list of required variable names that are missing.
- */
-export function getMissingSupabaseEnvVars(): string[] {
-  const missing: string[] = [];
-  if (!isValidSupabaseUrl(supabaseUrl)) {
-    missing.push('NEXT_PUBLIC_SUPABASE_URL');
-  }
-  if (!isRealValue(supabasePublishableKey)) {
-    missing.push('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
-  }
-  if (!isRealValue(supabaseServiceRoleKey)) {
-    missing.push('SUPABASE_SERVICE_ROLE_KEY');
-  }
-  return missing;
-}
-
-/**
- * Human readable description of exactly which environment variables are
- * missing. Only variable NAMES are exposed – never their values.
- */
-export function getMissingSupabaseConfigMessage(): string {
-  const missing = getMissingSupabaseEnvVars();
-  if (missing.length === 0) return '';
-  return (
-    'Supabase is not configured on the server. The following environment variables must be ' +
-    'added to the hosting provider (e.g. Vercel -> Project Settings -> Environment Variables) ' +
-    `and the project must be redeployed: ${missing.join(', ')}.`
-  );
-}
-
+export { cleanEnvValue, isRealValue };
 export { getSiteUrl, getAuthCallbackUrl } from './siteUrl';
+
 

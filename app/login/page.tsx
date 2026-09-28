@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -10,9 +10,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailUnconfirmed, setEmailUnconfirmed] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendStatus, setResendStatus] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [showPw, setShowPw] = useState(false);
+
+  // Ref guards so a double click cannot fire duplicate requests. The resend
+  // endpoint sends a real email, so it must be entered exactly once per click.
+  const submitInFlight = useRef(false);
+  const resendInFlight = useRef(false);
+
+  // Client-side mirror of the server cooldown so the button stays disabled for
+  // the same window the API enforces.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -24,13 +39,18 @@ export default function LoginPage() {
     }
   }, []);
 
-  const handleResendConfirmation = async () => {
+  const handleResendConfirmation = useCallback(async () => {
+    if (resendInFlight.current) return;
+
     if (!email) {
       setError('Please enter your email address in the field below first.');
       return;
     }
+
+    resendInFlight.current = true;
     setResending(true);
     setResendStatus(null);
+
     try {
       const res = await fetch('/api/auth/resend-confirmation', {
         method: 'POST',
@@ -38,20 +58,33 @@ export default function LoginPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to resend confirmation email.');
+
+      if (!res.ok) {
+        const retryAfter = Number(data?.retryAfterSeconds) || 60;
+        setResendCooldown(retryAfter);
+        throw new Error(data.error || 'Failed to resend confirmation email.');
+      }
+
       setResendStatus(data.message || 'Confirmation email sent! Please check your inbox.');
+      setResendCooldown(60);
+      setError(null);
     } catch (err: any) {
       setError(err.message);
     } finally {
+      resendInFlight.current = false;
       setResending(false);
     }
-  };
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitInFlight.current) return;
+
+    submitInFlight.current = true;
     setLoading(true);
     setError(null);
     setResendStatus(null);
+    setEmailUnconfirmed(false);
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -60,11 +93,18 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Invalid credentials');
+
+      if (!res.ok) {
+        if (data?.emailUnconfirmed) {
+          setEmailUnconfirmed(true);
+        }
+        throw new Error(data.error || 'Invalid credentials');
+      }
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {
+      submitInFlight.current = false;
       setLoading(false);
     }
   };
@@ -200,11 +240,11 @@ export default function LoginPage() {
               }}
             >
               <p>{error}</p>
-              {error.toLowerCase().includes('email not confirmed') && (
+              {emailUnconfirmed && (
                 <button
                   type="button"
                   onClick={handleResendConfirmation}
-                  disabled={resending}
+                  disabled={resending || resendCooldown > 0}
                   style={{
                     marginTop: '0.625rem',
                     background: 'none',
@@ -214,11 +254,15 @@ export default function LoginPage() {
                     fontSize: '0.8125rem',
                     textDecoration: 'underline',
                     textUnderlineOffset: 3,
-                    cursor: resending ? 'not-allowed' : 'pointer',
+                    cursor: resending || resendCooldown > 0 ? 'not-allowed' : 'pointer',
                     display: 'block',
                   }}
                 >
-                  {resending ? 'Sending fresh confirmation link...' : 'Resend confirmation email to this address →'}
+                  {resending
+                    ? 'Sending confirmation link...'
+                    : resendCooldown > 0
+                    ? `Please wait ${resendCooldown}s before requesting another link`
+                    : 'Resend confirmation email to this address →'}
                 </button>
               )}
             </div>

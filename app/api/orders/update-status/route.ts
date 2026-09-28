@@ -1,6 +1,6 @@
 // app/api/orders/update-status/route.ts
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 
 const updateStatusSchema = z.object({

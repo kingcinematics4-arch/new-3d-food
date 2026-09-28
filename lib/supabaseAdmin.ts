@@ -1,18 +1,17 @@
 // lib/supabaseAdmin.ts
 // SERVER ONLY. Service-role client used inside API route handlers and server
-// helpers to resolve auth users and read/write database rows. Never import this
-// module from a client component - the service role key bypasses RLS.
+// helpers to resolve auth users and read/write database rows.
+//
+// NEVER import this module from a client component: the service-role key
+// bypasses RLS and would be published in the browser bundle.
 import { createClient } from '@supabase/supabase-js';
+import { supabaseUrl, SUPABASE_URL_SENTINEL, isValidSupabaseUrl, isSupabaseConfigured } from './supabaseEnv';
 import {
-  supabaseUrl,
   supabaseServiceRoleKey,
-  SUPABASE_URL_SENTINEL,
-  isValidSupabaseUrl,
-  isSupabaseConfigured,
   hasSupabaseServiceRoleKey,
   getMissingSupabaseConfigMessage,
   getMissingSupabaseEnvVars,
-} from './supabaseEnv';
+} from './supabaseEnv.server';
 
 export {
   isSupabaseConfigured,
@@ -60,4 +59,3 @@ export const supabaseAdmin = createClient(
     },
   }
 );
-

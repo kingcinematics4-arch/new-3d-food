@@ -1,4 +1,9 @@
 // lib/supabaseClient.ts
+// BROWSER-SAFE Supabase client.
+//
+// This module is imported by client components, so it must not re-export the
+// service-role client or reference SUPABASE_SERVICE_ROLE_KEY. Server code that
+// needs the service role imports from '@/lib/supabaseAdmin' directly.
 import { createClient } from '@supabase/supabase-js';
 import {
   supabaseUrl,
@@ -7,9 +12,8 @@ import {
   isValidSupabaseUrl,
   isSupabaseConfigured,
 } from './supabaseEnv';
-import { supabaseAdmin, assertSupabaseAdminConfigured } from './supabaseAdmin';
 
-export { supabaseAdmin, assertSupabaseAdminConfigured, isSupabaseConfigured };
+export { isSupabaseConfigured };
 
 // Safe construction even when env vars are missing - the sentinel URL is a
 // placeholder that is guarded so it doesn't throw at load time.
@@ -24,4 +28,3 @@ export const supabaseClient = createClient(
   browserUrl,
   supabasePublishableKey || 'missing-anon-key'
 );
-

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -19,8 +19,14 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [step, setStep] = useState(1); // Multi-step form
+
+  // Ref-based guard: React state is not applied synchronously, so a double click
+  // could otherwise fire two signups (and two confirmation emails) for a single
+  // user action.
+  const submitInFlight = useRef(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,26 +34,46 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (submitInFlight.current) return;
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+
+    submitInFlight.current = true;
     setLoading(true);
     setError(null);
 
     try {
+      // Exactly one signup request per submit action.
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to register');
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to register');
+      }
+
+      // Supabase still needs the emailed confirmation link before sign-in.
+      // Show a "check your email" state instead of redirecting, and never
+      // request another email from here.
+      if (data.requiresEmailConfirmation) {
+        setAwaitingConfirmation(true);
+        setSuccess(false);
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: any) {
       setError(err.message);
     } finally {
+      submitInFlight.current = false;
       setLoading(false);
     }
   };
@@ -177,6 +203,48 @@ export default function SignupPage() {
               </Link>
             </p>
           </div>
+
+          {/* Check your email state */}
+          {awaitingConfirmation && (
+            <div
+              className="mb-6 px-4 py-4 rounded-lg space-y-2"
+              style={{
+                background: 'rgba(201,169,110,0.06)',
+                border: '1px solid rgba(201,169,110,0.25)',
+                color: 'var(--text-secondary)',
+                fontSize: '0.875rem',
+              }}
+            >
+              <div className="flex items-center gap-2" style={{ color: 'var(--gold)', fontWeight: 600 }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                  <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M1.5 3.5L7 8L12.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+                <span>Check your email</span>
+              </div>
+              <p>
+                Your restaurant was created. We sent a confirmation link to{' '}
+                <strong style={{ color: 'var(--text-primary)' }}>{formData.email}</strong>. Open it to
+                activate your account, then sign in.
+              </p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>
+                The link expires after a limited time. If it has expired, request a new one from the
+                sign-in screen — we only send a new email when you ask for it.
+              </p>
+              <Link
+                href="/login"
+                style={{
+                  display: 'inline-block',
+                  marginTop: '0.25rem',
+                  color: 'var(--gold)',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 3,
+                }}
+              >
+                Go to Sign In
+              </Link>
+            </div>
+          )}
 
           {/* Success */}
           {success && (
