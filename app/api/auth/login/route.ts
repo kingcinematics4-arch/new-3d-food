@@ -1,6 +1,7 @@
 // app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { getAuthCallbackUrl } from '@/lib/siteUrl';
 
 export async function POST(request: Request) {
   try {
@@ -19,6 +20,33 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      const isUnconfirmed = error.message.toLowerCase().includes('email not confirmed');
+
+      if (isUnconfirmed) {
+        // Trigger a fresh confirmation email targeting the deployed production URL
+        const emailRedirectTo = getAuthCallbackUrl(request, '/dashboard');
+        try {
+          await supabaseClient.auth.resend({
+            type: 'signup',
+            email,
+            options: {
+              emailRedirectTo,
+            },
+          });
+        } catch {
+          // Ignore resend error, still inform the user
+        }
+
+        return NextResponse.json(
+          {
+            success: false,
+            emailUnconfirmed: true,
+            error: 'Email not confirmed. A new confirmation link has been sent to your email address.',
+          },
+          { status: 401 }
+        );
+      }
+
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 401 }
@@ -56,4 +84,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
 
