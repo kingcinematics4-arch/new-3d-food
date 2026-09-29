@@ -1,32 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { getDemoCustomization, saveDemoCustomization, DemoCustomization } from '@/lib/demoData';
+import React, { useState } from 'react';
+import { useHotel, useHotelCustomization } from '@/lib/useHotel';
 
 export default function CustomizeMenuPage() {
-  const [customization, setCustomization] = useState<DemoCustomization>({
-    logo_url: '',
-    primary_color: '#f59e0b',
-    secondary_color: '#10b981',
-    menu_style: 'cards',
-    card_style: 'glassmorphic',
-    dark_mode: true,
-    typography: 'Inter',
-    welcome_banner: 'Experience our gourmet dishes in 360° 3D & Augmented Reality!',
-  });
-
+  const { hotel, loading: hotelLoading } = useHotel();
+  const { customization, loading: customizationLoading, saveCustomization, setCustomization } = useHotelCustomization(hotel?.id || null);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  useEffect(() => {
-    setCustomization(getDemoCustomization());
-  }, []);
+  const hotelSlug = hotel?.slug || '';
+  const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
+  const hotelName = hotel?.name || 'Your Restaurant';
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveDemoCustomization(customization);
+    await saveCustomization(customization);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
+
+  if (hotelLoading || customizationLoading) {
+    return <p className="text-sm text-gray-400">Loading customization settings…</p>;
+  }
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -39,7 +34,7 @@ export default function CustomizeMenuPage() {
           </p>
         </div>
         <a
-          href="/menu/demo-restaurant"
+          href={menuHref}
           target="_blank"
           className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-amber-400 font-bold text-xs border border-amber-500/30 flex items-center space-x-2"
         >
@@ -50,7 +45,7 @@ export default function CustomizeMenuPage() {
 
       {savedSuccess && (
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold">
-          ✓ Menu Design saved! Open /menu/demo-restaurant to see live changes.
+          ✓ Menu Design saved! Open /menu/{hotelSlug} to see live changes.
         </div>
       )}
 
@@ -219,7 +214,7 @@ export default function CustomizeMenuPage() {
                   3D
                 </div>
                 <div>
-                  <p className="font-bold text-xs">Demo Restaurant</p>
+                  <p className="font-bold text-xs">{hotelName}</p>
                   <p className="text-[10px] opacity-70">Table #1</p>
                 </div>
               </div>
@@ -245,7 +240,7 @@ export default function CustomizeMenuPage() {
                   🍔
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-white">Signature Wagyu Burger</span>
+                  <span className="font-bold text-white">Signature Dish</span>
                   <span style={{ color: customization.primary_color }} className="font-extrabold">
                     $22.50
                   </span>

@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function OrderStatusPage({ params }: { params: { orderId: string } }) {
   const { orderId } = params;
+  const searchParams = useSearchParams();
+  const hotelSlug = searchParams?.get('slug') || '';
+  const backHref = hotelSlug ? `/menu/${hotelSlug}` : '/';
   const [currentStep, setCurrentStep] = useState<number>(2); // 1: Received, 2: Preparing, 3: Ready, 4: Served
 
   const steps = [
@@ -76,7 +80,7 @@ export default function OrderStatusPage({ params }: { params: { orderId: string 
       {/* Back to Menu Link */}
       <div className="pb-6 pt-4 text-center">
         <Link
-          href="/menu/grand-bistro-4821?table=1"
+          href={backHref}
           className="inline-flex items-center space-x-2 text-xs font-semibold text-amber-400 hover:underline"
         >
           <span>← Back to 3D Menu</span>

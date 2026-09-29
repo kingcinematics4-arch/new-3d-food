@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabaseClient';
+import { useHotel } from '@/lib/useHotel';
+import { useAuth } from '@/lib/authContext';
 
 // Nav item icons (SVG inline for quality)
 const navIcons: Record<string, React.ReactNode> = {
@@ -79,54 +81,15 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [restaurantName, setRestaurantName] = useState('My Restaurant');
-  const [userEmail, setUserEmail] = useState('');
+  const { user } = useAuth();
+  const { hotel, loading: hotelLoading } = useHotel();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-        if (sessionError) {
-          console.error('Session check error:', sessionError);
-          return;
-        }
-
-        if (session?.user) {
-          setUserEmail(session.user.email || '');
-          const { data: userLink, error: linkError } = await supabaseClient
-            .from('hotel_users')
-            .select('hotel_id, hotel:hotels(name)')
-            .eq('user_id', session.user.id)
-            .single();
-
-          if (linkError) {
-            console.warn('Hotel link query notice:', linkError.message);
-          }
-
-          let fetchedHotelName: string | undefined;
-          const rawHotel = userLink?.hotel as unknown;
-          if (Array.isArray(rawHotel) && rawHotel.length > 0) {
-            fetchedHotelName = (rawHotel[0] as { name?: string })?.name;
-          } else if (rawHotel && typeof rawHotel === 'object' && 'name' in rawHotel) {
-            fetchedHotelName = (rawHotel as { name?: string }).name;
-          }
-
-          if (fetchedHotelName) {
-            setRestaurantName(fetchedHotelName);
-          } else if (session.user.user_metadata?.hotel_name) {
-            setRestaurantName(session.user.user_metadata.hotel_name);
-          }
-        }
-      } catch (err) {
-        console.error('Session check error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkSession();
-  }, []);
+  const restaurantName = hotel?.name || 'Not added yet';
+  const userEmail = user?.email || '';
+  const hotelSlug = hotel?.slug || '';
+  const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
+  const loading = hotelLoading || (!hotel && !!user);
 
   const handleSignOut = async () => {
     await supabaseClient.auth.signOut();
@@ -260,7 +223,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{ borderTop: '1px solid var(--border-subtle)' }}
         >
           <Link
-            href="/menu/demo-restaurant"
+            href={menuHref}
             target="_blank"
             style={{
               display: 'flex',
@@ -305,7 +268,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Signed in as
             </p>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {userEmail || 'owner@restaurant.com'}
+              {userEmail || 'Not available'}
             </p>
           </div>
 
@@ -391,14 +354,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#86EFAC', animation: 'pulseGold 2s ease-in-out infinite' }} />
               LIVE
             </span>
-            <Link
-              href="/menu/demo-restaurant"
-              target="_blank"
-              className="d3-btn-ghost"
-              style={{ padding: '0.4375rem 1rem', fontSize: '0.75rem', display: 'none' }}
-            >
-              View Menu ↗
-            </Link>
+            {hotelSlug && (
+              <Link
+                href={menuHref}
+                target="_blank"
+                className="d3-btn-ghost"
+                style={{ padding: '0.4375rem 1rem', fontSize: '0.75rem' }}
+              >
+                View Menu ↗
+              </Link>
+            )}
           </div>
         </header>
 

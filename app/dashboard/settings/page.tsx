@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { useHotel } from '@/lib/useHotel';
 
 export default function SettingsPage() {
+  const { hotel, loading: hotelLoading } = useHotel();
   const [formData, setFormData] = useState({
-    hotel_id: 'demo-hotel-1',
-    name: 'Grand Bistro & Lounge',
-    owner_name: 'Alex Morgan',
-    email: 'owner@grandbistro.com',
-    phone: '+1 (555) 234-5678',
-    city: 'New York',
-    address: '123 Culinary Blvd, Suite 100',
+    hotel_id: '',
+    name: '',
+    owner_name: '',
+    email: '',
+    phone: '',
+    city: '',
+    address: '',
     logo_url: '',
     primary_color: '#f59e0b',
     welcome_text: 'Experience our delicious menu in interactive 3D!',
@@ -26,41 +27,26 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchHotelProfile();
-  }, []);
-
-  const fetchHotelProfile = async () => {
-    try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session?.user) {
-        const { data } = await supabaseClient
-          .from('hotel_users')
-          .select('hotel_id, hotel:hotels(*)')
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (data?.hotel) {
-          const rawHotel = data.hotel as unknown;
-          const h = (Array.isArray(rawHotel) ? rawHotel[0] : rawHotel) as Record<string, any> | undefined;
-          if (h) {
-            setFormData((prev) => ({
-              ...prev,
-              hotel_id: h.id || prev.hotel_id,
-              name: h.name || prev.name,
-              owner_name: h.owner_name || prev.owner_name,
-              email: h.email || prev.email,
-              phone: h.phone || prev.phone,
-              city: h.city || prev.city,
-              address: h.address || prev.address,
-              custom_domain: h.custom_domain || '',
-            }));
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Profile fetch error, using default settings state:', e);
+    if (hotel) {
+      setFormData((prev) => ({
+        ...prev,
+        hotel_id: hotel.id,
+        name: hotel.name || '',
+        owner_name: hotel.owner_name || '',
+        email: hotel.email || '',
+        phone: hotel.phone || '',
+        city: hotel.city || '',
+        address: hotel.address || '',
+        logo_url: hotel.logo_url || '',
+        primary_color: hotel.primary_color || '#f59e0b',
+        welcome_text: hotel.welcome_text || '',
+        custom_domain: hotel.custom_domain || '',
+        currency: hotel.currency || 'USD ($)',
+        tax_rate: hotel.tax_rate || 8.875,
+        service_charge: hotel.service_charge || 5.0,
+      }));
     }
-  };
+  }, [hotel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,10 +255,10 @@ export default function SettingsPage() {
               <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
                 Current Vercel Deployment URL
               </label>
-              <input
+                 <input
                 type="text"
                 disabled
-                value={`https://dish3d.vercel.app/menu/${formData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                value={formData.name ? `${window.location.origin}/menu/${formData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}` : 'Generate a link after saving'}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-800/50 border border-gray-700 text-amber-300 font-mono text-xs cursor-not-allowed"
               />
             </div>

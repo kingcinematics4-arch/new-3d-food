@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { getDemoOrders, saveDemoOrders, DemoOrder } from '@/lib/demoData';
-import { supabaseClient } from '@/lib/supabaseClient';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useHotel, useOrders, Order } from '@/lib/useHotel';
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, React.CSSProperties> = {
@@ -30,53 +29,52 @@ function getMinutesAgo(dateStr: string) {
 const TABS = ['all', 'placed', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
 
 export default function LiveOrdersPage() {
-  const isDemo = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
-  const [orders, setOrders] = useState<DemoOrder[]>([]);
+  const { hotel, loading: hotelLoading } = useHotel();
+  const { orders, loading: ordersLoading, refetch: refetchOrders, updateOrderStatus } = useOrders(hotel?.id || null);
+  const hotelSlug = hotel?.slug || '';
+  const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
   const [activeTab, setActiveTab] = useState('all');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const handleUpdateStatus = useCallback(
+    async (id: string, status: string) => {
+      await updateOrderStatus(id, status);
+      refetchOrders();
+    },
+    [updateOrderStatus, refetchOrders]
+  );
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    if (isDemo) {
-      setOrders(getDemoOrders());
-      setLoading(false);
-      return;
-    }
-    try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session?.user) {
-        // Live query would go here
-      }
-    } catch (e) {
-      console.warn('Using demo orders:', e);
-    }
-    setOrders(getDemoOrders());
-    setLoading(false);
-  };
-
-  const updateStatus = async (
-    id: string,
-    status: 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED'
-  ) => {
-    const updated = orders.map((o) => (o.id === id ? { ...o, status } : o));
-    setOrders(updated);
-    if (isDemo) saveDemoOrders(updated);
-    else {
-      await fetch('/api/orders/update-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: id, status: status.toLowerCase() }),
-      });
-    }
-  };
-
-  const filtered = orders.filter((o) =>
+  const filtered = orders.filter((o: Order) =>
     activeTab === 'all' ? true : o.status === activeTab.toUpperCase()
   );
+
+  const getOrderItems = (order: Order) => {
+    if (order.order_items && Array.isArray(order.order_items)) {
+      return order.order_items.map((item: any) => ({
+        id: item.id,
+        name: item.name || item.menu_item?.name || 'Unknown',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        notes: item.notes,
+      }));
+    }
+    return [];
+  };
+
+  if (hotelLoading || ordersLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <div
+          style={{
+            width: 40, height: 40, borderRadius: '50%',
+            border: '2px solid rgba(201,169,110,0.2)',
+            borderTop: '2px solid var(--gold)',
+            animation: 'spin 1s linear infinite',
+          }}
+        />
+        <p style={{ color: 'var(--text-dimmed)', fontSize: '0.875rem' }}>Loading orders...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto">
@@ -105,9 +103,9 @@ export default function LiveOrdersPage() {
         {/* Summary pills */}
         <div className="flex items-center gap-2">
           {[
-            { label: 'Placed', count: orders.filter((o) => o.status === 'PLACED').length, color: 'var(--gold)', bg: 'rgba(201,169,110,0.08)', border: 'rgba(201,169,110,0.2)' },
-            { label: 'Cooking', count: orders.filter((o) => ['ACCEPTED','PREPARING'].includes(o.status)).length, color: '#C4B5FD', bg: 'rgba(160,120,255,0.08)', border: 'rgba(160,120,255,0.2)' },
-            { label: 'Ready', count: orders.filter((o) => o.status === 'READY').length, color: '#86EFAC', bg: 'rgba(100,210,150,0.08)', border: 'rgba(100,210,150,0.2)' },
+            { label: 'Placed', count: orders.filter((o: Order) => o.status === 'PLACED').length, color: 'var(--gold)', bg: 'rgba(201,169,110,0.08)', border: 'rgba(201,169,110,0.2)' },
+            { label: 'Cooking', count: orders.filter((o: Order) => ['ACCEPTED','PREPARING'].includes(o.status)).length, color: '#C4B5FD', bg: 'rgba(160,120,255,0.08)', border: 'rgba(160,120,255,0.2)' },
+            { label: 'Ready', count: orders.filter((o: Order) => o.status === 'READY').length, color: '#86EFAC', bg: 'rgba(100,210,150,0.08)', border: 'rgba(100,210,150,0.2)' },
           ].map((pill) => (
             <div
               key={pill.label}
@@ -139,7 +137,7 @@ export default function LiveOrdersPage() {
         }}
       >
         {TABS.map((tab) => {
-          const count = orders.filter((o) => tab === 'all' ? true : o.status === tab.toUpperCase()).length;
+          const count = orders.filter((o: Order) => tab === 'all' ? true : o.status === tab.toUpperCase()).length;
           const isActive = activeTab === tab;
           return (
             <button
@@ -167,19 +165,7 @@ export default function LiveOrdersPage() {
       </div>
 
       {/* Orders Grid */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <div
-            style={{
-              width: 40, height: 40, borderRadius: '50%',
-              border: '2px solid rgba(201,169,110,0.2)',
-              borderTop: '2px solid var(--gold)',
-              animation: 'spin 1s linear infinite',
-            }}
-          />
-          <p style={{ color: 'var(--text-dimmed)', fontSize: '0.875rem' }}>Loading orders...</p>
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div
           className="flex flex-col items-center justify-center py-24 gap-4"
           style={{
@@ -196,17 +182,18 @@ export default function LiveOrdersPage() {
             <p style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 4 }}>No {activeTab} orders</p>
             <p style={{ color: 'var(--text-dimmed)', fontSize: '0.875rem' }}>
               Place a test order via{' '}
-              <a href="/menu/demo-restaurant" target="_blank" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>
-                /menu/demo-restaurant
+              <a href={menuHref} target="_blank" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>
+                /menu/{hotelSlug || 'your-hotel'}
               </a>
             </p>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((order) => {
+          {filtered.map((order: Order) => {
             const minsAgo = getMinutesAgo(order.created_at);
             const isNew = order.status === 'PLACED';
+            const orderItems = getOrderItems(order);
             return (
               <div
                 key={order.id}
@@ -236,13 +223,13 @@ export default function LiveOrdersPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                       <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                        {order.table_number}
+                        Table {order.table_number}
                       </span>
                       <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: 'monospace' }}>
-                        {order.order_code}
+                        #{order.id.slice(0, 8).toUpperCase()}
                       </span>
                     </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{order.customer_name}</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{order.customer_name || 'Guest'}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <StatusBadge status={order.status} />
@@ -255,32 +242,36 @@ export default function LiveOrdersPage() {
                   className="flex flex-col gap-1.5"
                   style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.875rem' }}
                 >
-                  {order.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start justify-between"
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: 6,
-                        background: 'var(--bg-surface-2)',
-                        border: '1px solid var(--border-subtle)',
-                      }}
-                    >
-                      <div className="min-w-0">
-                        <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
-                          {item.quantity}× {item.name}
-                        </span>
-                        {item.notes && (
-                          <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 2 }}>
-                            Note: {item.notes}
+                  {orderItems.length === 0 ? (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>No item details available</p>
+                  ) : (
+                    orderItems.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex items-start justify-between"
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          borderRadius: 6,
+                          background: 'var(--bg-surface-2)',
+                          border: '1px solid var(--border-subtle)',
+                        }}
+                      >
+                        <div className="min-w-0">
+                          <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
+                            {item.quantity}× {item.name}
                           </span>
-                        )}
+                          {item.notes && (
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 2 }}>
+                              Note: {item.notes}
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: 8, flexShrink: 0 }}>
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </span>
                       </div>
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: 8, flexShrink: 0 }}>
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
 
                 {/* Order total */}
@@ -315,7 +306,7 @@ export default function LiveOrdersPage() {
                 <div className="flex gap-2">
                   {order.status === 'PLACED' && (
                     <button
-                      onClick={() => updateStatus(order.id, 'ACCEPTED')}
+                      onClick={() => handleUpdateStatus(order.id, 'accepted')}
                       className="d3-btn-primary"
                       style={{ flex: 1, justifyContent: 'center', padding: '0.625rem', fontSize: '0.75rem' }}
                     >
@@ -324,7 +315,7 @@ export default function LiveOrdersPage() {
                   )}
                   {order.status === 'ACCEPTED' && (
                     <button
-                      onClick={() => updateStatus(order.id, 'PREPARING')}
+                      onClick={() => handleUpdateStatus(order.id, 'preparing')}
                       style={{
                         flex: 1, padding: '0.625rem', fontSize: '0.75rem', fontWeight: 600,
                         borderRadius: 100, cursor: 'pointer', border: 'none',
@@ -337,7 +328,7 @@ export default function LiveOrdersPage() {
                   )}
                   {order.status === 'PREPARING' && (
                     <button
-                      onClick={() => updateStatus(order.id, 'READY')}
+                      onClick={() => handleUpdateStatus(order.id, 'ready')}
                       style={{
                         flex: 1, padding: '0.625rem', fontSize: '0.75rem', fontWeight: 600,
                         borderRadius: 100, cursor: 'pointer', border: 'none',
@@ -350,7 +341,7 @@ export default function LiveOrdersPage() {
                   )}
                   {order.status === 'READY' && (
                     <button
-                      onClick={() => updateStatus(order.id, 'COMPLETED')}
+                      onClick={() => handleUpdateStatus(order.id, 'completed')}
                       style={{
                         flex: 1, padding: '0.625rem', fontSize: '0.75rem', fontWeight: 600,
                         borderRadius: 100, cursor: 'pointer', border: '1px solid var(--border-medium)',
@@ -362,7 +353,7 @@ export default function LiveOrdersPage() {
                   )}
                   {!['COMPLETED', 'CANCELLED'].includes(order.status) && (
                     <button
-                      onClick={() => updateStatus(order.id, 'CANCELLED')}
+                      onClick={() => handleUpdateStatus(order.id, 'cancelled')}
                       style={{
                         padding: '0.625rem 0.875rem', fontSize: '0.6875rem', fontWeight: 600,
                         borderRadius: 100, cursor: 'pointer',

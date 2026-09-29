@@ -17,13 +17,21 @@ export async function GET(request: Request) {
 
     const { data: menuItems, error } = await supabaseAdmin
       .from('menu_items')
-      .select('*')
+      .select(`
+        *,
+        categories ( name )
+      `)
       .eq('hotel_id', hotelId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, menuItems });
+    const items = (menuItems || []).map((item: any) => ({
+      ...item,
+      category: item.categories?.name || '',
+    }));
+
+    return NextResponse.json({ success: true, menuItems: items });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to fetch menu items' },
@@ -50,6 +58,7 @@ export async function POST(request: Request) {
       .from('menu_items')
       .insert({
         hotel_id,
+        category_id: validated.category_id || null,
         name: validated.name,
         description: validated.description,
         price: validated.price,
@@ -58,6 +67,11 @@ export async function POST(request: Request) {
         model_url_usdz: validated.model_url_usdz,
         is_available: validated.is_available,
         is_featured: validated.is_featured,
+        is_popular: validated.is_popular,
+        is_veg: validated.is_veg,
+        allergens: validated.allergens,
+        rating: validated.rating,
+        order_count: validated.order_count,
         dietary_tags: validated.dietary_tags,
         calories: validated.calories,
         preparation_time_mins: validated.preparation_time_mins,

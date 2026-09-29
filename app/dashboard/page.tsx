@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { getDemoOrders, getDemoItems } from '@/lib/demoData';
+import { useHotel, useOrders, useDashboardStats } from '@/lib/useHotel';
 
-function StatCard({ label, value, change, icon }: { label: string; value: string; change: string; icon: React.ReactNode }) {
+function StatCard({ label, value, change, icon, loading }: { label: string; value: string; change: string; icon: React.ReactNode; loading?: boolean }) {
   return (
     <div
       style={{
@@ -16,6 +16,8 @@ function StatCard({ label, value, change, icon }: { label: string; value: string
         flexDirection: 'column',
         gap: '1rem',
         transition: 'all 300ms',
+        opacity: loading ? 0.5 : 1,
+        pointerEvents: loading ? 'none' : 'auto',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = 'rgba(201,169,110,0.15)';
@@ -82,35 +84,63 @@ function StatusDot({ status }: { status: string }) {
 }
 
 export default function DashboardOverview() {
-  const [stats, setStats] = useState([
-    { label: 'Orders Today', value: '–', change: 'Loading...', icon: (
+  const { hotel, loading: hotelLoading } = useHotel();
+  const { orders, loading: ordersLoading } = useOrders(hotel?.id || null);
+  const { stats, loading: statsLoading } = useDashboardStats(hotel?.id || null);
+  const hotelSlug = hotel?.slug || '';
+  const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
+
+  const revenue = stats.revenueToday;
+  const revenueChange = '+0% this week';
+
+  const statCards = [
+    { label: 'Orders Today', value: `${stats.ordersToday}`, change: 'Real-time count', icon: (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2H12L11 5H3L2 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" /><rect x="1" y="5" width="12" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.1" /></svg>
     )},
-    { label: 'Revenue', value: '–', change: 'Loading...', icon: (
+    { label: 'Revenue', value: `$${revenue.toFixed(0)}`, change: revenueChange, icon: (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.1" /><path d="M7 4V5.5M7 8.5V10M5 6.5C5 5.7 5.9 5 7 5C8.1 5 9 5.7 9 6.5C9 7.3 8.1 8 7 8C5.9 8 5 8.7 5 9.5C5 10.3 5.9 11 7 11C8.1 11 9 10.3 9 9.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
     )},
-    { label: '3D Menu Items', value: '–', change: 'Loading...', icon: (
+    { label: '3D Menu Items', value: `${stats.menuItemsCount}`, change: 'See all items', icon: (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L12 4V10L7 13L2 10V4L7 1Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" /></svg>
     )},
-    { label: 'QR Scans Today', value: '–', change: 'Loading...', icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /><rect x="9" y="1" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /><rect x="1" y="9" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /><path d="M9 9H11V11M11 13H13M13 9H13.01M9 13H9.01" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
+    { label: 'QR Scans Today', value: `${stats.qrScansToday}`, change: 'No active scans', icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /><rect x="9" y="1" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /><rect x="1" y="9" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /></svg>
     )},
-  ]);
+  ];
 
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  if (hotelLoading || statsLoading) {
+    return (
+      <div className="flex flex-col gap-8 max-w-[1200px] mx-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.75rem',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                marginBottom: '0.25rem',
+              }}
+            >
+              Good evening
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+              Loading your restaurant data…
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {statCards.map((stat, i) => (
+            <StatCard key={i} {...stat} loading={true} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    const orders = getDemoOrders();
-    const items = getDemoItems();
-    const revenue = orders.reduce((sum, o) => sum + o.total_amount, 0);
-    setStats([
-      { label: 'Orders Today', value: `${orders.length}`, change: '+12% vs yesterday', icon: stats[0].icon },
-      { label: 'Revenue', value: `$${revenue.toFixed(0)}`, change: '+8% this week', icon: stats[1].icon },
-      { label: '3D Menu Items', value: `${items.length}`, change: '2 models pending', icon: stats[2].icon },
-      { label: 'QR Scans Today', value: '189', change: 'Peak at 1:30 PM', icon: stats[3].icon },
-    ]);
-    setRecentOrders(orders.slice(0, 5));
-  }, []);
+  const recentOrders = orders.slice(0, 5);
 
   const quickActions = [
     { label: 'Add Dish', href: '/dashboard/menu', icon: '+' },
@@ -145,7 +175,7 @@ export default function DashboardOverview() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/menu/demo-restaurant"
+            href={menuHref}
             target="_blank"
             className="d3-btn-ghost"
             style={{ padding: '0.5625rem 1.125rem', fontSize: '0.8125rem' }}
@@ -164,7 +194,7 @@ export default function DashboardOverview() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
+        {statCards.map((stat, i) => (
           <StatCard key={i} {...stat} />
         ))}
       </div>
@@ -265,7 +295,7 @@ export default function DashboardOverview() {
                     <StatusDot status={order.status} />
                     <div className="min-w-0">
                       <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
-                        {order.order_code}
+                        #{order.id.slice(0, 8).toUpperCase()}
                       </span>
                       <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block' }}>
                         {order.table_number} · {order.customer_name}
@@ -312,7 +342,7 @@ export default function DashboardOverview() {
           <div className="flex flex-col gap-2.5">
             {[
               { label: '3D Menu Management', desc: 'Add, edit, price, and manage all dishes with 3D models', href: '/dashboard/menu', active: true },
-              { label: 'Customer 3D Menu', desc: '360° dish viewer, cart, checkout & ordering', href: '/menu/demo-restaurant', external: true, active: true },
+              { label: 'Customer 3D Menu', desc: '360° dish viewer, cart, checkout & ordering', href: menuHref, external: true, active: true },
               { label: 'Live Order System', desc: 'PLACED → PREPARING → READY → COMPLETED', href: '/dashboard/orders', active: true },
               { label: 'Brand Customization', desc: 'Colors, typography, branding and menu design', href: '/dashboard/customize', active: true },
             ].map((cap, i) => (
