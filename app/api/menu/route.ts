@@ -1,19 +1,24 @@
 // app/api/menu/route.ts
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getAuthenticatedUser, getHotelForUser } from '@/lib/serverAuth';
+import { requireOwnedHotelId } from '@/lib/hotelAccess';
 import { menuItemSchema } from '@/lib/menu';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const hotelId = searchParams.get('hotel_id');
+    const requestedHotelId = searchParams.get('hotel_id');
 
+    // A dashboard request does not have to know the hotel: it is resolved from
+    // the authenticated Supabase session (auth.uid() -> public.hotels.user_id).
+    // That is why the hotel id is never supplied by the browser and never hardcoded.
+    let hotelId = requestedHotelId;
     if (!hotelId) {
-      return NextResponse.json(
-        { success: false, error: 'hotel_id is required' },
-        { status: 400 }
-      );
+      const access = await requireOwnedHotelId(null);
+      if (!access.ok) {
+        return NextResponse.json({ success: false, error: access.error }, { status: access.status });
+      }
+      hotelId = access.hotelId;
     }
 
     const { data: menuItems, error } = await supabaseAdmin
@@ -44,29 +49,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { hotel_id: providedHotelId, ...itemData } = body;
+    const { hotel_id: requestedHotelId, ...itemData } = body;
 
-    // Resolve the owning hotel. Prefer an explicit hotel_id from the client,
-    // but fall back to the authenticated user's hotel so a dish can never be
-    // created without a real owner (and never with demo / hardcoded data).
-    let hotelId = providedHotelId || null;
-
-    if (!hotelId) {
-      const user = await getAuthenticatedUser();
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: 'Not authenticated' },
-          { status: 401 }
-        );
-      }
-      const hotel = await getHotelForUser(user.id);
-      if (!hotel) {
-        return NextResponse.json(
-          { success: false, error: 'No hotel found for this user' },
-          { status: 404 }
-        );
-      }
-      hotelId = hotel.id;
+    // The owner hotel always comes from the authenticated session. A hotel_id in
+    // the body is only accepted when it matches that hotel.
+    const access = await requireOwnedHotelId(requestedHotelId);
+    if (!access.ok) {
+      return NextResponse.json({ success: false, error: access.error }, { status: access.status });
     }
 
     const validated = menuItemSchema.parse(itemData);
@@ -74,7 +63,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabaseAdmin
       .from('menu_items')
       .insert({
-        hotel_id: hotelId,
+        hotel_id: access.hotelId,
         category_id: validated.category_id || null,
         name: validated.name,
         description: validated.description,
