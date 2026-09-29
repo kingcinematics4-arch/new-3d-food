@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
+import { useHotel } from '@/lib/useHotel';
 
 export default function QRBuilderPage() {
-  const isDemo = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
-
+  const { hotel, loading: hotelLoading } = useHotel();
   const [tableNumber, setTableNumber] = useState('1');
-  const [hotelSlug, setHotelSlug] = useState('demo-restaurant');
+  const [hotelSlug, setHotelSlug] = useState('');
   const [fgColor, setFgColor] = useState('#000000');
   const [bgColor, setBgColor] = useState('#FFFFFF');
   const [templateStyle, setTemplateStyle] = useState<'classic' | 'dark_gold' | 'minimal'>('dark_gold');
@@ -15,14 +15,20 @@ export default function QRBuilderPage() {
   const [batchCount, setBatchCount] = useState<number>(10);
   const [batchQrs, setBatchQrs] = useState<{ table: string; url: string; qrDataUrl: string }[]>([]);
 
+  useEffect(() => {
+    if (hotel?.slug) {
+      setHotelSlug(hotel.slug);
+    }
+  }, [hotel]);
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-  const menuUrl = `${origin}/menu/${hotelSlug}?table=${tableNumber}`;
+  const menuUrl = hotelSlug ? `${origin}/menu/${hotelSlug}?table=${tableNumber}` : '';
 
   useEffect(() => {
     generateQrCode();
   }, [tableNumber, fgColor, bgColor, hotelSlug]);
 
   const generateQrCode = async () => {
+    if (!hotelSlug || !menuUrl) return;
     try {
       const url = await QRCode.toDataURL(menuUrl, {
         width: 360,
@@ -73,11 +79,6 @@ export default function QRBuilderPage() {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center space-x-2">
             <span>QR Code Builder & Table Standee Studio</span>
-            {isDemo && (
-              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded font-extrabold uppercase">
-                Demo Generator Active
-              </span>
-            )}
           </h1>
           <p className="text-gray-400 text-sm">
             Generate custom branded QR codes and printable table standees pointing directly to your digital 3D menu.
@@ -229,7 +230,7 @@ export default function QRBuilderPage() {
 
             {/* QR Image */}
             {qrDataUrl && (
-              <a href={`/menu/demo-restaurant?table=${tableNumber}`} target="_blank" className="p-3 bg-white rounded-2xl shadow-md border group relative">
+               <a href={`${menuUrl}`} target="_blank" className="p-3 bg-white rounded-2xl shadow-md border group relative">
                 <img src={qrDataUrl} alt="QR Code" className="w-44 h-44 object-contain" />
                 <span className="absolute inset-0 bg-black/60 rounded-2xl text-amber-300 text-xs font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                   Test Menu Link ↗

@@ -387,21 +387,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
-            <span style={{ color: 'var(--text-dimmed)', fontSize: '0.75rem', fontFamily: 'var(--font-body)' }}>or</span>
-            <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
-          </div>
-
-          {/* Demo access */}
-          <Link
-            href="/dashboard"
-            className="d3-btn-ghost w-full"
-            style={{ justifyContent: 'center', fontSize: '0.875rem' }}
-          >
-            View Demo Dashboard
-          </Link>
+           {/* Divider */}
+           <div className="flex items-center gap-4 my-6">
+             <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+             <span style={{ color: 'var(--text-dimmed)', fontSize: '0.75rem', fontFamily: 'var(--font-body)' }}>or</span>
+             <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+           </div>
 
         </div>
       </div>

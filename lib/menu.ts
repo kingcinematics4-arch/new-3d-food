@@ -12,6 +12,11 @@ export const menuItemSchema = z.object({
   model_url_usdz: z.string().optional(),
   is_available: z.boolean().default(true),
   is_featured: z.boolean().default(false),
+  is_popular: z.boolean().default(false),
+  is_veg: z.boolean().default(false),
+  allergens: z.array(z.string()).default([]),
+  rating: z.number().min(0).max(5).default(0),
+  order_count: z.number().int().default(0),
   dietary_tags: z.array(z.string()).default([]),
   calories: z.number().optional(),
   preparation_time_mins: z.number().optional(),
@@ -24,6 +29,7 @@ export interface MenuItem {
   id: string;
   hotel_id: string;
   category_id?: string;
+  category?: string;
   name: string;
   description?: string;
   price: number;
@@ -32,6 +38,11 @@ export interface MenuItem {
   model_url_usdz?: string;
   is_available: boolean;
   is_featured: boolean;
+  is_popular: boolean;
+  is_veg: boolean;
+  allergens?: string[];
+  rating: number;
+  order_count: number;
   dietary_tags?: string[];
   calories?: number;
   preparation_time_mins?: number;
