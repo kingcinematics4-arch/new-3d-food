@@ -154,15 +154,14 @@ export function useMenuItems(hotelId: string | null) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchItems = useCallback(async () => {
-    if (!hotelId) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-
+    // `hotelId` is optional: /api/menu resolves the caller's own hotel from the
+    // authenticated session when the query param is absent. Fetching therefore
+    // never depends on the client-side hotel lookup having finished first.
     try {
       setLoading(true);
-      const res = await fetch(`/api/menu?hotel_id=${hotelId}`);
+      const res = await fetch(
+        hotelId ? `/api/menu?hotel_id=${hotelId}` : '/api/menu'
+      );
       const json = await res.json();
       if (json.success) {
         setItems(json.menuItems || []);
@@ -422,15 +421,11 @@ export function useCategories(hotelId: string | null) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchCategories = useCallback(async () => {
-    if (!hotelId) {
-      setCategories([]);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
-      const res = await fetch(`/api/categories?hotel_id=${hotelId}`);
+      const res = await fetch(
+        hotelId ? `/api/categories?hotel_id=${hotelId}` : '/api/categories'
+      );
       const json = await res.json();
       if (json.success) {
         setCategories(json.categories || []);
@@ -451,12 +446,12 @@ export function useCategories(hotelId: string | null) {
   }, [fetchCategories]);
 
   const createCategory = async (name: string) => {
-    if (!hotelId) return null;
     try {
+      // The server derives the hotel from the session, so no id is sent here.
       const res = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hotel_id: hotelId, name }),
+        body: JSON.stringify({ name }),
       });
       const json = await res.json();
       if (json.success) {

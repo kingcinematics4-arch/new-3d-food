@@ -10,13 +10,12 @@ import { useHotel, useMenuItems, useCategories, MenuItem, Category } from '@/lib
 const ALL_CATEGORIES = 'All';
 
 export default function MenuManagementPage() {
-  const { hotel } = useHotel();
+  const { hotel, loading: hotelLoading, refetch: refetchHotel } = useHotel();
   const { items: menuItems, loading, error: loadError, refetch: refetchItems } = useMenuItems(hotel?.id || null);
   const { categories: categoryList, refetch: refetchCategories, createCategory } = useCategories(
     hotel?.id || null
   );
 
-  const hotelId = hotel?.id || '';
   const currencyLabel = resolveCurrency(hotel?.currency).symbol.trim() || '$';
 
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES);
@@ -81,19 +80,21 @@ export default function MenuManagementPage() {
     setIsSaving(true);
     setFormError(null);
     try {
-      if (!hotelId) {
-        throw new Error('Your restaurant could not be resolved. Please refresh and try again.');
-      }
+      // No hotel_id is sent: the API resolves the caller's own hotel from the
+      // authenticated Supabase session, so a dish can never be filed under a
+      // stale, missing or foreign id.
       const res = editingItem
         ? await fetch(`/api/menu/${editingItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
+            credentials: 'include',
           })
         : await fetch('/api/menu', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ hotel_id: hotelId, ...payload }),
+            body: JSON.stringify(payload),
+            credentials: 'include',
           });
 
       const json = await res.json();
@@ -196,8 +197,8 @@ export default function MenuManagementPage() {
           type="button"
           onClick={openCreate}
           className="d3-btn-quiet"
-          style={{ flexShrink: 0, opacity: loading || !hotelId ? 0.5 : 1, cursor: loading || !hotelId ? 'not-allowed' : 'pointer' }}
-          disabled={loading || !hotelId}
+          style={{ flexShrink: 0, opacity: hotelLoading ? 0.5 : 1, cursor: hotelLoading ? 'not-allowed' : 'pointer' }}
+          disabled={hotelLoading}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <path d="M6 1.5V10.5M1.5 6H10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
@@ -344,6 +345,14 @@ export default function MenuManagementPage() {
           body={loadError}
           actionLabel="Try again"
           onAction={() => refetchItems()}
+        />
+      ) : !hotelLoading && !hotel ? (
+        /* ---------- Account without a restaurant ---------- */
+        <EmptyPanel
+          title="No restaurant linked to this account"
+          body="Your login is valid, but no restaurant is attached to it yet. Run the Supabase migration that links your account to a hotel, then try again."
+          actionLabel="Try again"
+          onAction={() => refetchHotel()}
         />
       ) : hasNoDishesAtAll ? (
         /* ---------- Empty state ---------- */
