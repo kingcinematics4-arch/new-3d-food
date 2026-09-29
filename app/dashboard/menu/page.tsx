@@ -81,6 +81,9 @@ export default function MenuManagementPage() {
     setIsSaving(true);
     setFormError(null);
     try {
+      if (!hotelId) {
+        throw new Error('Your restaurant could not be resolved. Please refresh and try again.');
+      }
       const res = editingItem
         ? await fetch(`/api/menu/${editingItem.id}`, {
             method: 'PUT',
@@ -189,7 +192,13 @@ export default function MenuManagementPage() {
           </p>
         </div>
 
-        <button type="button" onClick={openCreate} className="d3-btn-quiet" style={{ flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="d3-btn-quiet"
+          style={{ flexShrink: 0, opacity: loading || !hotelId ? 0.5 : 1, cursor: loading || !hotelId ? 'not-allowed' : 'pointer' }}
+          disabled={loading || !hotelId}
+        >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <path d="M6 1.5V10.5M1.5 6H10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
           </svg>
