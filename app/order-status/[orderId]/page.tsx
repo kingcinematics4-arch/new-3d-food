@@ -9,17 +9,36 @@ export default function OrderStatusPage({ params }: { params: { orderId: string 
   const searchParams = useSearchParams();
   const hotelSlug = searchParams?.get('slug') || '';
   const backHref = hotelSlug ? `/menu/${hotelSlug}` : '/';
-  const [currentStep, setCurrentStep] = useState<number>(2); // 1: Received, 2: Preparing, 3: Ready, 4: Served
+  const [currentStep, setCurrentStep] = useState<number>(2);
 
   const steps = [
-    { title: 'Order Placed', desc: 'Sent to restaurant kitchen', icon: '📝' },
-    { title: 'Preparing Food', desc: 'Chef is crafting your 3D dish', icon: '👨‍🍳' },
-    { title: 'Ready to Serve', desc: 'Waiter is bringing to table', icon: '🔔' },
-    { title: 'Completed', desc: 'Enjoy your meal!', icon: '✨' },
+    { title: 'Order Placed', desc: 'Sent to restaurant kitchen', icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="1.5" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M3.5 4.5H10.5M3.5 7H10.5M3.5 9.5H7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
+    )},
+    { title: 'Preparing Food', desc: 'Chef is crafting your 3D dish', icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M7 2V12M2 7H12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        <circle cx="7" cy="7" r="4" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    )},
+    { title: 'Ready to Serve', desc: 'Waiter is bringing to table', icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M7 2L12 7L7 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    )},
+    { title: 'Completed', desc: 'Enjoy your meal!', icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M3.5 7L6.5 10L10.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )},
   ];
 
   useEffect(() => {
-    // Simulate real-time progress update for customer experience
     const timer = setTimeout(() => {
       if (currentStep < 3) setCurrentStep((prev) => prev + 1);
     }, 15000);
@@ -27,41 +46,117 @@ export default function OrderStatusPage({ params }: { params: { orderId: string 
   }, [currentStep]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-4 flex flex-col justify-between max-w-lg mx-auto">
+    <div
+      className="min-h-screen flex flex-col justify-between max-w-lg mx-auto p-4"
+      style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
+    >
       <div className="space-y-6 pt-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-2xl mb-1 shadow-lg shadow-amber-500/10">
-            ⏳
+          <div
+            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl"
+            style={{
+              background: 'rgba(201,169,110,0.1)',
+              border: '1px solid rgba(201,169,110,0.2)',
+              color: 'var(--gold)',
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
+              <path d="M12 2A10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Live Order Tracking</h1>
-          <p className="text-xs text-gray-400">Order Ref: <span className="font-mono text-amber-400">#{orderId.slice(0, 8).toUpperCase()}</span></p>
+          <h1
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.75rem',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+            }}
+          >
+            Live Order Tracking
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+            Order Ref:{' '}
+            <span
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontWeight: 600,
+                color: 'var(--gold)',
+              }}
+            >
+              #{orderId.slice(0, 8).toUpperCase()}
+            </span>
+          </p>
         </div>
 
         {/* Live Status Stepper */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-6 shadow-xl">
-          <div className="space-y-6 relative before:absolute before:left-5 before:top-3 before:bottom-3 before:w-0.5 before:bg-gray-800">
+        <div
+          className="d3-card"
+          style={{
+            padding: '1.5rem',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 16,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          }}
+        >
+          <div className="space-y-6 relative" style={{ paddingLeft: '1.25rem' }}>
+            <div style={{ position: 'absolute', left: 5, top: 3, bottom: 3, width: 1, background: 'var(--border-subtle)' }} />
             {steps.map((step, idx) => {
               const isDone = idx + 1 <= currentStep;
               const isCurrent = idx + 1 === currentStep;
 
               return (
-                <div key={step.title} className="flex items-start space-x-4 relative z-10">
+                <div key={step.title} className="flex items-start gap-4 relative">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm transition ${
-                      isDone
-                        ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30'
-                        : 'bg-gray-800 text-gray-500 border border-gray-700'
-                    }`}
+                    style={{
+                      width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: isDone ? 'var(--gold)' : 'var(--bg-surface-2)',
+                      border: isDone ? 'none' : '1px solid var(--border-subtle)',
+                      color: isDone ? '#0B0A08' : 'var(--text-dimmed)',
+                      transition: 'all 300ms',
+                      zIndex: 10,
+                    }}
                   >
                     {step.icon}
                   </div>
                   <div>
-                    <h3 className={`font-bold text-sm ${isCurrent ? 'text-amber-400' : isDone ? 'text-white' : 'text-gray-500'}`}>
+                    <h3
+                      style={{
+                        fontFamily: 'var(--font-display)',
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                        color: isCurrent ? 'var(--gold)' : isDone ? 'var(--text-primary)' : 'var(--text-dimmed)',
+                        letterSpacing: '-0.01em',
+                        marginBottom: 4,
+                      }}
+                    >
                       {step.title}
-                      {isCurrent && <span className="ml-2 text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30 animate-pulse">In Progress</span>}
+                      {isCurrent && (
+                        <span
+                          className="ml-2"
+                          style={{
+                            fontSize: '0.5rem',
+                            fontWeight: 600,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            padding: '0.125rem 0.5rem',
+                            borderRadius: 100,
+                            background: 'rgba(201,169,110,0.15)',
+                            border: '1px solid rgba(201,169,110,0.2)',
+                            color: 'var(--gold)',
+                          }}
+                        >
+                          In Progress
+                        </span>
+                      )}
                     </h3>
-                    <p className="text-xs text-gray-400 mt-0.5">{step.desc}</p>
+                    <p className="d3-body-sm" style={{ color: 'var(--text-muted)' }}>
+                      {step.desc}
+                    </p>
                   </div>
                 </div>
               );
@@ -70,10 +165,35 @@ export default function OrderStatusPage({ params }: { params: { orderId: string 
         </div>
 
         {/* Estimated Time Card */}
-        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-2xl p-5 text-center">
-          <p className="text-xs text-amber-300 font-semibold uppercase tracking-wider">Estimated Wait Time</p>
-          <p className="text-3xl font-extrabold text-white mt-1">12 – 15 Mins</p>
-          <p className="text-xs text-gray-400 mt-1">Sit back and relax at Table #1</p>
+        <div
+          className="d3-card"
+          style={{
+            padding: '1.5rem',
+            border: '1px solid rgba(201,169,110,0.2)',
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(201,169,110,0.08) 0%, var(--bg-surface) 100%)',
+            textAlign: 'center',
+          }}
+        >
+          <p className="d3-eyebrow" style={{ color: 'var(--gold)' }}>
+            Estimated Wait Time
+          </p>
+          <p
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '2.5rem',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.03em',
+              lineHeight: 1,
+              marginTop: '0.5rem',
+            }}
+          >
+            12 - 15 Mins
+          </p>
+          <p className="d3-body-sm" style={{ marginTop: '0.5rem', color: 'var(--text-dimmed)' }}>
+            Sit back and relax at Table #1
+          </p>
         </div>
       </div>
 
@@ -81,9 +201,13 @@ export default function OrderStatusPage({ params }: { params: { orderId: string 
       <div className="pb-6 pt-4 text-center">
         <Link
           href={backHref}
-          className="inline-flex items-center space-x-2 text-xs font-semibold text-amber-400 hover:underline"
+          className="d3-btn-text"
+          style={{ fontSize: '0.8125rem', fontWeight: 500 }}
         >
-          <span>← Back to 3D Menu</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginRight: 4 }}>
+            <path d="M10 2L2 6L10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Back to 3D Menu
         </Link>
       </div>
     </div>
