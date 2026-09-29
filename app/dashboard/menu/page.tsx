@@ -1,636 +1,466 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import FoodModelViewer from '@/components/3d/FoodModelViewer';
-import { PRESET_3D_MODELS } from '@/lib/menu';
+import React, { useMemo, useState } from 'react';
+import DishCard from '@/components/menu/DishCard';
+import DishFormModal, { type DishPayload } from '@/components/menu/DishFormModal';
+import Dish3DModal from '@/components/menu/Dish3DModal';
+import { formatPrice, resolveCurrency } from '@/lib/menu';
 import { useHotel, useMenuItems, useCategories, MenuItem, Category } from '@/lib/useHotel';
 
-const AVAILABLE_DIETARY = ['Vegan', 'Vegetarian', 'Gluten-Free', 'Chef Special', 'Spicy', 'Organic'];
-
-const defaultFormData = {
-  name: '',
-  description: '',
-  price: 14.99,
-  category: '',
-  image_url: '',
-  model_url_glb: '',
-  model_url_usdz: '',
-  is_available: true,
-  is_featured: false,
-  is_popular: false,
-  is_veg: true,
-  calories: 500,
-  preparation_time_mins: 15,
-  ingredients: '' as string,
-  allergens: '' as string,
-  dietary_tags: [] as string[],
-};
+const ALL_CATEGORIES = 'All';
 
 export default function MenuManagementPage() {
-  const { hotel, loading: hotelLoading } = useHotel();
-  const { items: menuItems, loading, refetch: refetchItems } = useMenuItems(hotel?.id || null);
-  const { categories: categoryList, refetch: refetchCategories, createCategory } = useCategories(hotel?.id || null);
+  const { hotel } = useHotel();
+  const { items: menuItems, loading, error: loadError, refetch: refetchItems } = useMenuItems(hotel?.id || null);
+  const { categories: categoryList, refetch: refetchCategories, createCategory } = useCategories(
+    hotel?.id || null
+  );
 
   const hotelId = hotel?.id || '';
-  const categories = ['All', ...categoryList.map((c: Category) => c.name)];
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const currencyLabel = resolveCurrency(hotel?.currency).symbol.trim() || '$';
+
+  const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [formData, setFormData] = useState(defaultFormData);
+  const [inspectItem, setInspectItem] = useState<MenuItem | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const findCategoryId = (name: string): string => {
-    const cat = categoryList.find((c: Category) => c.name === name);
-    return cat?.id || '';
-  };
+  /* ---------------- helpers ---------------- */
 
-  const handleOpenModal = (item?: MenuItem) => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({
-        name: item.name,
-        description: item.description || '',
-        price: item.price,
-        category: item.category || '',
-        image_url: item.image_url || '',
-        model_url_glb: item.model_url_glb || '',
-        model_url_usdz: item.model_url_usdz || '',
-        is_available: item.is_available,
-        is_featured: item.is_featured,
-        is_popular: item.is_popular,
-        is_veg: item.is_veg,
-        calories: item.calories || 500,
-        preparation_time_mins: item.preparation_time_mins || 15,
-        ingredients: Array.isArray(item.ingredients) ? item.ingredients.join(', ') : '',
-        allergens: Array.isArray(item.allergens) ? item.allergens.join(', ') : '',
-        dietary_tags: item.dietary_tags || [],
-      });
-    } else {
-      setEditingItem(null);
-      setFormData({
-        ...defaultFormData,
-        model_url_glb: PRESET_3D_MODELS[0].glb,
-        category: categoryList[0]?.name || '',
-      });
-    }
-    setIsModalOpen(true);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const selectedCatId = findCategoryId(formData.category);
-    const payload = {
-      name: formData.name,
-      description: formData.description,
-      price: formData.price,
-      category_id: selectedCatId,
-      image_url: formData.image_url,
-      model_url_glb: formData.model_url_glb,
-      model_url_usdz: formData.model_url_usdz,
-      is_available: formData.is_available,
-      is_featured: formData.is_featured,
-      is_popular: formData.is_popular,
-      is_veg: formData.is_veg,
-      allergens: formData.allergens.split(',').map((s) => s.trim()).filter(Boolean),
-      dietary_tags: formData.dietary_tags,
-      calories: formData.calories,
-      preparation_time_mins: formData.preparation_time_mins,
-      ingredients: formData.ingredients.split(',').map((s) => s.trim()).filter(Boolean),
-      rating: editingItem ? editingItem.rating : 0,
-      order_count: editingItem ? editingItem.order_count : 0,
-    };
-
-    if (editingItem) {
-      const res = await fetch(`/api/menu/${editingItem.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        throw new Error(json.error || 'Failed to update menu item');
-      }
-    } else {
-      const res = await fetch(`/api/menu`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hotel_id: hotelId, ...payload }),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        throw new Error(json.error || 'Failed to create menu item');
-      }
-    }
-
-    await refetchItems();
-    setIsModalOpen(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this menu item?')) return;
-    const res = await fetch(`/api/menu/${id}`, { method: 'DELETE' });
-    const json = await res.json();
-    if (!json.success) {
-      throw new Error(json.error || 'Failed to delete menu item');
-    }
-    await refetchItems();
-  };
-
-  const toggleAvailability = async (item: MenuItem) => {
-    const res = await fetch(`/api/menu/${item.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_available: !item.is_available }),
-    });
-    const json = await res.json();
-    if (json.success) {
-      await refetchItems();
-    }
-  };
-
-  const toggleFeatured = async (item: MenuItem) => {
-    const res = await fetch(`/api/menu/${item.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_featured: !item.is_featured }),
-    });
-    const json = await res.json();
-    if (json.success) {
-      await refetchItems();
-    }
-  };
-
-  const toggleDietaryTag = (tag: string) => {
-    setFormData((prev) => {
-      const exists = prev.dietary_tags.includes(tag);
-      return {
-        ...prev,
-        dietary_tags: exists
-          ? prev.dietary_tags.filter((t) => t !== tag)
-          : [...prev.dietary_tags, tag],
-      };
-    });
-  };
-
-  const filteredItems = menuItems.filter((item: MenuItem) => {
-    if (selectedCategory === 'All') return true;
-    return item.category === selectedCategory;
-  });
-
-  const itemCategory = (item: MenuItem): string => {
+  const categoryNameOf = (item: MenuItem): string => {
     if (item.category) return item.category;
     if (item.category_id) {
-      const cat = categoryList.find((c: Category) => c.id === item.category_id);
-      return cat?.name || '';
+      return categoryList.find((c: Category) => c.id === item.category_id)?.name || '';
     }
     return '';
   };
 
+  const categories = useMemo(
+    () => [ALL_CATEGORIES, ...categoryList.map((c: Category) => c.name)],
+    [categoryList]
+  );
+
+  const countForCategory = (cat: string) =>
+    cat === ALL_CATEGORIES
+      ? menuItems.length
+      : menuItems.filter((i: MenuItem) => categoryNameOf(i) === cat).length;
+
+  const filteredItems = useMemo(
+    () =>
+      menuItems.filter((item: MenuItem) =>
+        selectedCategory === ALL_CATEGORIES ? true : categoryNameOf(item) === selectedCategory
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [menuItems, selectedCategory, categoryList]
+  );
+
+  const modelCount = menuItems.filter(
+    (i: MenuItem) => Boolean(i.model_url_glb?.trim() || i.model_url_usdz?.trim())
+  ).length;
+
+  const photoCount = menuItems.filter((i: MenuItem) => Boolean(i.image_url?.trim())).length;
+
+  const priceOf = (item: MenuItem) => formatPrice(item.price, hotel?.currency);
+
+  /* ---------------- actions ---------------- */
+
+  const openCreate = () => {
+    setEditingItem(null);
+    setFormError(null);
+    setIsFormOpen(true);
+  };
+
+  const openEdit = (item: MenuItem) => {
+    setEditingItem(item);
+    setFormError(null);
+    setIsFormOpen(true);
+  };
+
+  const handleSubmit = async (payload: DishPayload) => {
+    setIsSaving(true);
+    setFormError(null);
+    try {
+      const res = editingItem
+        ? await fetch(`/api/menu/${editingItem.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        : await fetch('/api/menu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hotel_id: hotelId, ...payload }),
+          });
+
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || 'Failed to save dish');
+      }
+
+      await refetchItems();
+      setIsFormOpen(false);
+      setEditingItem(null);
+    } catch (err: any) {
+      setFormError(err?.message || 'Failed to save dish');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCreateCategory = async (name: string): Promise<boolean> => {
+    const created = await createCategory(name);
+    await refetchCategories();
+    return Boolean(created);
+  };
+
   const handleAddCategory = async () => {
-    const name = prompt('Enter category name:');
+    const name = window.prompt('Enter category name:');
     if (name && name.trim()) {
       await createCategory(name.trim());
       await refetchCategories();
     }
   };
 
+  const handleDelete = async (item: MenuItem) => {
+    if (!window.confirm(`Delete “${item.name}” from your menu?`)) return;
+    try {
+      const res = await fetch(`/api/menu/${item.id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to delete dish');
+      await refetchItems();
+    } catch (err: any) {
+      window.alert(err?.message || 'Failed to delete dish');
+    }
+  };
+
+  const toggleFlag = async (item: MenuItem, field: 'is_available' | 'is_featured') => {
+    try {
+      const res = await fetch(`/api/menu/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: !item[field] }),
+      });
+      const json = await res.json();
+      if (json.success) await refetchItems();
+    } catch (err: any) {
+      window.alert(err?.message || 'Failed to update dish');
+    }
+  };
+
+  /* ---------------- render ---------------- */
+
+  const hasNoDishesAtAll = !loading && menuItems.length === 0;
+
   return (
-    <div className="space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex flex-col gap-8 max-w-[1200px] mx-auto">
+
+      {/* ================= Page header ================= */}
+      <header
+        className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-white">
-            3D Menu & Dish Manager
+          <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
+            Menu &amp; 3D Models
+          </span>
+          <h1
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(2rem, 4vw, 2.75rem)',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.025em',
+              lineHeight: 1.1,
+              margin: '0.5rem 0 0',
+            }}
+          >
+            Menu
           </h1>
-          <p className="text-gray-400 text-sm">
-            Manage your 3D models, categories, pricing, calories, prep times, and dietary badges.
+          <p
+            style={{
+              margin: '0.5rem 0 0',
+              fontSize: '0.875rem',
+              lineHeight: 1.6,
+              color: 'var(--text-muted)',
+              maxWidth: '56ch',
+            }}
+          >
+            Manage dishes, categories, food photography and optional 3D experiences.
           </p>
         </div>
 
-        <button
-          onClick={() => handleOpenModal()}
-          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-bold text-sm shadow-lg shadow-amber-500/20 transition transform active:scale-95"
-        >
-          + Add New 3D Dish
+        <button type="button" onClick={openCreate} className="d3-btn-quiet" style={{ flexShrink: 0 }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M6 1.5V10.5M1.5 6H10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          </svg>
+          Add Dish
         </button>
-      </div>
+      </header>
 
-      {/* Category Pills */}
-      <div className="flex space-x-2 border-b border-gray-800 pb-3 overflow-x-auto">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              selectedCategory === cat
-                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
-            }`}
-          >
-            {cat} ({menuItems.filter((i: MenuItem) => cat === 'All' ? true : itemCategory(i) === cat).length})
-          </button>
-        ))}
-        <button
-          onClick={handleAddCategory}
-          className="px-4 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white border border-gray-800 transition"
+      {/* ================= At-a-glance ================= */}
+      {!hasNoDishesAtAll && !loading && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 28,
+            paddingBottom: '1.5rem',
+            borderBottom: '1px solid var(--border-warm)',
+          }}
         >
-          + Add Category
-        </button>
-      </div>
-
-      {/* Menu Cards Grid */}
-      {loading ? (
-        <div className="py-20 text-center text-gray-400">Loading 3D Menu Items...</div>
-      ) : filteredItems.length === 0 ? (
-        <div className="p-12 text-center bg-gray-900 rounded-2xl border border-gray-800">
-          <p className="text-gray-400 text-base">No menu items found in category "{selectedCategory}".</p>
-          <button
-            onClick={() => handleOpenModal()}
-            className="mt-4 px-4 py-2 rounded-xl bg-amber-500 text-black font-semibold text-sm"
-          >
-            + Create New Dish
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map((item: MenuItem) => {
-            const catName = itemCategory(item);
-            return (
-              <div
-                key={item.id}
-                className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden flex flex-col justify-between shadow-xl hover:border-gray-700 transition"
+          {[
+            { label: 'Dishes', value: menuItems.length },
+            { label: 'Categories', value: categoryList.length },
+            { label: 'With photography', value: photoCount },
+            { label: '3D ready', value: modelCount },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <span
+                style={{
+                  display: 'block',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.375rem',
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
+                }}
               >
-                {/* 3D Interactive Canvas Box */}
-                <div className="p-3 relative">
-                  <FoodModelViewer
-                    modelUrlGlb={item.model_url_glb || undefined}
-                    modelUrlUsdz={item.model_url_usdz || undefined}
-                    className="h-56 w-full rounded-xl"
-                  />
+                {stat.value}
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 6,
+                  fontSize: '0.5625rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-dimmed)',
+                }}
+              >
+                {stat.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
-                  {/* Badges Overlay */}
-                  <div className="absolute top-5 left-5 flex flex-col gap-1.5 z-10">
-                    {item.is_veg ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500 text-black border border-emerald-400">
-                        🌱 VEG
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-500 text-white border border-red-400">
-                        🍗 NON-VEG
-                      </span>
-                    )}
-                    {item.is_featured && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500 text-black border border-amber-400">
-                        ⭐ FEATURED
-                      </span>
-                    )}
-                    {item.is_popular && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-500 text-white border border-purple-400">
-                        🔥 POPULAR
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Content Details */}
-                <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-bold text-white">{item.name}</h3>
-                      <span className="text-base font-extrabold text-amber-400">
-                        ${item.price.toFixed(2)}
-                      </span>
-                    </div>
-
-                    <p className="text-gray-400 text-xs mt-1.5 line-clamp-2">
-                      {item.description || 'No description provided.'}
-                    </p>
-
-                    <div className="flex items-center space-x-3 text-[11px] text-gray-400 mt-2.5">
-                      <span>🔥 {item.calories || 0} kcal</span>
-                      <span>⏱ {item.preparation_time_mins || 0} mins</span>
-                      <span>⭐ {item.rating}</span>
-                    </div>
-
-                    {/* Category Tag */}
-                    <p className="text-[10px] text-gray-500 mt-2">
-                      Category: {catName || 'Uncategorized'}
-                    </p>
-
-                    {/* Dietary Tags */}
-                    {item.dietary_tags && item.dietary_tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {item.dietary_tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer Controls */}
-                  <div className="pt-3 border-t border-gray-800 flex items-center justify-between text-xs text-gray-400">
-                    <button
-                      onClick={() => toggleAvailability(item)}
-                      className={`flex items-center space-x-1.5 font-semibold ${
-                        item.is_available ? 'text-emerald-400' : 'text-red-400'
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          item.is_available ? 'bg-emerald-400' : 'bg-red-400'
-                        }`}
-                      ></span>
-                      <span>{item.is_available ? 'Available' : 'Sold Out'}</span>
-                    </button>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => toggleFeatured(item)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                          item.is_featured
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-400'
-                            : 'bg-gray-800 text-gray-400 border-gray-700'
-                        }`}
-                      >
-                        {item.is_featured ? '★ Starred' : '☆ Feature'}
-                      </button>
-                      <button
-                        onClick={() => handleOpenModal(item)}
-                        className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 transition font-medium"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      {/* ================= Category filter ================= */}
+      {!hasNoDishesAtAll && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexWrap: 'wrap',
+          }}
+        >
+          {categories.map((cat) => {
+            const active = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  padding: '0.375rem 0.875rem',
+                  borderRadius: 100,
+                  background: active ? 'rgba(201,169,110,0.08)' : 'transparent',
+                  border: active ? '1px solid rgba(201,169,110,0.22)' : '1px solid var(--border-warm)',
+                  color: active ? 'var(--gold)' : 'var(--text-muted)',
+                  fontSize: '0.75rem',
+                  fontWeight: active ? 600 : 400,
+                  letterSpacing: '0.01em',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'background 200ms, border-color 200ms, color 200ms',
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) e.currentTarget.style.color = 'var(--text-muted)';
+                }}
+              >
+                {cat}
+                <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem' }}>{countForCategory(cat)}</span>
+              </button>
             );
           })}
+
+          <button
+            type="button"
+            onClick={handleAddCategory}
+            className="d3-btn-inline"
+            style={{ borderStyle: 'dashed' }}
+          >
+            + Category
+          </button>
         </div>
       )}
 
-      {/* Modal: Add/Edit 3D Dish */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8">
-            <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-              <h2 className="text-xl font-bold text-white">
-                {editingItem ? 'Edit 3D Dish' : 'Add New 3D Dish'}
-              </h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-white text-xl font-bold"
-              >
-                ✕
-              </button>
+      {/* ================= Grid ================= */}
+      {loading ? (
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
+          aria-busy="true"
+        >
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              style={{
+                borderRadius: 14,
+                overflow: 'hidden',
+                border: '1px solid var(--border-warm)',
+                background: 'var(--bg-surface)',
+              }}
+            >
+              <div style={{ aspectRatio: '4 / 3', background: 'var(--bg-secondary)' }} />
+              <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ height: 10, width: '35%', borderRadius: 4, background: 'var(--bg-surface-3)' }} />
+                <div style={{ height: 18, width: '70%', borderRadius: 4, background: 'var(--bg-surface-3)' }} />
+                <div style={{ height: 10, width: '90%', borderRadius: 4, background: 'var(--bg-surface-2)' }} />
+              </div>
             </div>
-
-            <form onSubmit={handleSave} className="space-y-4">
-              {/* Preset 3D Model Selector */}
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">
-                  Select Preset 3D Model
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {PRESET_3D_MODELS.map((preset) => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, model_url_glb: preset.glb })}
-                      className={`p-2.5 rounded-xl border text-left flex items-center space-x-2 transition ${
-                        formData.model_url_glb === preset.glb
-                          ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                          : 'bg-gray-800/60 border-gray-700 text-gray-300 hover:bg-gray-800'
-                      }`}
-                    >
-                      <span className="text-xl">{preset.icon}</span>
-                      <span className="text-xs font-semibold">{preset.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 3D Preview Canvas */}
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                  Real-time 3D Model Preview
-                </label>
-                <FoodModelViewer
-                  modelUrlGlb={formData.model_url_glb || undefined}
-                  modelUrlUsdz={formData.model_url_usdz || undefined}
-                  className="h-44 w-full rounded-xl"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                    Dish Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Signature Truffle Burger"
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                    Price ($ USD)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => {
-                      setFormData({ ...formData, category: e.target.value });
-                      if (e.target.value === '__add_new__') {
-                        const name = prompt('Enter new category name:');
-                        if (name && name.trim()) {
-                          createCategory(name.trim()).then(() => refetchCategories());
-                          setFormData({ ...formData, category: name.trim() });
-                        }
-                      }
-                    }}
-                    className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs"
-                  >
-                    {categories.filter(c => c !== 'All').map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                    <option value="__add_new__">＋ Add New Category</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                    Calories (kcal)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.calories}
-                    onChange={(e) => setFormData({ ...formData, calories: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                    Prep Time (Mins)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.preparation_time_mins}
-                    onChange={(e) => setFormData({ ...formData, preparation_time_mins: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Toggles */}
-              <div className="flex flex-wrap gap-4 py-2 border-y border-gray-800 text-xs font-semibold">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_veg}
-                    onChange={(e) => setFormData({ ...formData, is_veg: e.target.checked })}
-                    className="rounded bg-gray-800 border-gray-700 text-amber-500 focus:ring-amber-500"
-                  />
-                  <span>🌱 Vegetarian Dish</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_featured}
-                    onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                    className="rounded bg-gray-800 border-gray-700 text-amber-500 focus:ring-amber-500"
-                  />
-                  <span>⭐ Mark as Featured</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_popular}
-                    onChange={(e) => setFormData({ ...formData, is_popular: e.target.checked })}
-                    className="rounded bg-gray-800 border-gray-700 text-amber-500 focus:ring-amber-500"
-                  />
-                  <span>🔥 Mark as Popular / Best Seller</span>
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Ingredients, taste profile, chef commentary..."
-                  className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs focus:border-amber-400 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                    Ingredients (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.ingredients}
-                    onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
-                    placeholder="Wagyu Beef, Brioche Bun, Cheese, Aioli"
-                    className="w-full px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                    Allergens (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.allergens}
-                    onChange={(e) => setFormData({ ...formData, allergens: e.target.value })}
-                    placeholder="Gluten, Dairy, Nuts"
-                    className="w-full px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">
-                  Dietary Tags
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {AVAILABLE_DIETARY.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleDietaryTag(tag)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                        formData.dietary_tags.includes(tag)
-                          ? 'bg-amber-500 text-black'
-                          : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-800">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-gray-800 text-gray-300 font-semibold text-sm hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm shadow-lg shadow-amber-500/20"
-                >
-                  Save 3D Dish
-                </button>
-              </div>
-            </form>
-          </div>
+          ))}
+        </div>
+      ) : loadError ? (
+        <EmptyPanel
+          title="Could not load your menu"
+          body={loadError}
+          actionLabel="Try again"
+          onAction={() => refetchItems()}
+        />
+      ) : hasNoDishesAtAll ? (
+        /* ---------- Empty state ---------- */
+        <EmptyPanel
+          title="No dishes yet"
+          body="Add your first dish to start building your digital menu."
+          actionLabel="Add Dish"
+          onAction={openCreate}
+        />
+      ) : filteredItems.length === 0 ? (
+        <EmptyPanel
+          title={`Nothing in ${selectedCategory}`}
+          body="This part of your menu is still empty. Add a dish or choose another category."
+          actionLabel={selectedCategory === ALL_CATEGORIES ? 'Add Dish' : 'View all dishes'}
+          onAction={() =>
+            selectedCategory === ALL_CATEGORIES ? openCreate() : setSelectedCategory(ALL_CATEGORIES)
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
+          {filteredItems.map((item: MenuItem) => (
+            <DishCard
+              key={item.id}
+              item={item}
+              categoryName={categoryNameOf(item)}
+              priceLabel={priceOf(item)}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+              onToggleAvailable={(i) => toggleFlag(i, 'is_available')}
+              onToggleFeatured={(i) => toggleFlag(i, 'is_featured')}
+              onView3D={setInspectItem}
+            />
+          ))}
         </div>
       )}
+
+      {/* ================= Add / Edit ================= */}
+      {isFormOpen && (
+        <DishFormModal
+          key={editingItem?.id || 'new-dish'}
+          item={editingItem}
+          categories={categoryList}
+          currencyLabel={currencyLabel}
+          isSaving={isSaving}
+          error={formError}
+          onCreateCategory={handleCreateCategory}
+          onSubmit={handleSubmit}
+          onClose={() => {
+            if (!isSaving) {
+              setIsFormOpen(false);
+              setEditingItem(null);
+              setFormError(null);
+            }
+          }}
+        />
+      )}
+
+      {/* ================= Optional 3D viewer ================= */}
+      <Dish3DModal
+        item={inspectItem}
+        priceLabel={inspectItem ? priceOf(inspectItem) : ''}
+        categoryName={inspectItem ? categoryNameOf(inspectItem) : ''}
+        onClose={() => setInspectItem(null)}
+      />
+    </div>
+  );
+}
+
+/* ============================================================
+   EMPTY PANEL — minimal, quiet, no coloured panel
+   ============================================================ */
+function EmptyPanel({
+  title,
+  body,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  body: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <div
+      style={{
+        padding: '4rem 1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        border: '1px solid var(--border-warm)',
+        borderRadius: 14,
+      }}
+    >
+      <svg width="38" height="38" viewBox="0 0 40 40" fill="none" style={{ color: 'var(--text-dimmed)', opacity: 0.55 }} aria-hidden="true">
+        <circle cx="20" cy="22" r="13" stroke="currentColor" strokeWidth="1.1" />
+        <path d="M13 22C13 17.6 16.6 14 20 14C23.4 14 27 17.6 27 22" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+        <path d="M8 10L32 10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" opacity="0.5" />
+      </svg>
+
+      <h3
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: '1.375rem',
+          fontWeight: 500,
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.015em',
+          margin: '1.25rem 0 0',
+        }}
+      >
+        {title}
+      </h3>
+      <p
+        style={{
+          margin: '0.5rem 0 0',
+          fontSize: '0.875rem',
+          lineHeight: 1.65,
+          color: 'var(--text-muted)',
+          maxWidth: '40ch',
+        }}
+      >
+        {body}
+      </p>
+      <button type="button" onClick={onAction} className="d3-btn-quiet" style={{ marginTop: '1.5rem' }}>
+        {actionLabel}
+      </button>
     </div>
   );
 }

@@ -281,6 +281,142 @@ body {
 }
 
 /* ============================================
+   UNDERSTATED PREMIUM CONTROLS
+   Charcoal surfaces, champagne hairlines,
+   no fills, no glows.
+   ============================================ */
+
+/* Primary action — charcoal + champagne hairline */
+.d3-btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5625rem 1.125rem;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  color: var(--gold-pale);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+.d3-btn-quiet:hover {
+  background: var(--bg-surface-3);
+  border-color: rgba(201,169,110,0.4);
+  color: var(--gold);
+}
+
+/* Secondary action — transparent, low contrast */
+.d3-btn-subtle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5625rem 1.125rem;
+  background: transparent;
+  border: 1px solid var(--border-warm);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+.d3-btn-subtle:hover {
+  background: rgba(255,248,235,0.03);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+/* Small refined inline action (Edit / Cancel / links) */
+.d3-btn-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.625rem;
+  background: transparent;
+  border: 1px solid var(--border-warm);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+.d3-btn-inline:hover {
+  background: rgba(255,248,235,0.04);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+/* 3D affordance — small, refined, never a glow */
+.d3-btn-3d {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.625rem;
+  background: rgba(201,169,110,0.06);
+  border: 1px solid rgba(201,169,110,0.22);
+  border-radius: 6px;
+  color: var(--gold);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+.d3-btn-3d:hover {
+  background: rgba(201,169,110,0.12);
+  border-color: rgba(201,169,110,0.4);
+  color: var(--gold-bright);
+}
+
+/* Destructive inline action */
+.d3-btn-danger {
+  color: rgba(200,80,80,0.75);
+}
+.d3-btn-danger:hover {
+  background: rgba(200,80,80,0.07);
+  border-color: rgba(200,80,80,0.22);
+  color: #FCA5A5;
+}
+
+/* Small indicator chip */
+.d3-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 5px;
+  background: rgba(255,248,235,0.04);
+  border: 1px solid var(--border-warm);
+  font-family: var(--font-body);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.d3-chip-3d {
+  background: rgba(201,169,110,0.08);
+  border-color: rgba(201,169,110,0.24);
+  color: var(--gold);
+}
+
+/* ============================================
    CARD / SURFACE COMPONENTS
    ============================================ */
 
@@ -301,6 +437,27 @@ body {
   background-color: var(--bg-surface-2);
   border: 1px solid var(--border-warm);
   border-radius: 12px;
+}
+
+/* Dish card — restrained hover, photography is the focus */
+.d3-dish-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition-smooth), background-color var(--transition-smooth);
+}
+.d3-dish-card:hover {
+  border-color: var(--border-light);
+  background-color: var(--bg-surface-2);
+}
+.d3-dish-card .d3-dish-photo {
+  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1), opacity 400ms ease;
+}
+.d3-dish-card:hover .d3-dish-photo {
+  transform: scale(1.045);
 }
 
 /* ============================================

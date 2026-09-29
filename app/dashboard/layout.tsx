@@ -81,15 +81,23 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { hotel, loading: hotelLoading } = useHotel();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const restaurantName = hotel?.name || 'Not added yet';
-  const userEmail = user?.email || '';
+  // Real records only — no invented placeholders when Supabase has the data.
+  const restaurantName = hotel?.name?.trim() || '';
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
-  const loading = hotelLoading || (!hotel && !!user);
+
+  const ownerName =
+    hotel?.owner_name?.trim() ||
+    (user?.user_metadata?.full_name as string | undefined)?.trim() ||
+    (user?.user_metadata?.name as string | undefined)?.trim() ||
+    '';
+  const userEmail = user?.email || '';
+
+  const loading = authLoading || hotelLoading || (!hotel && !!user);
 
   const handleSignOut = async () => {
     await supabaseClient.auth.signOut();
@@ -97,6 +105,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const currentPage = navItems.find((n) => n.href === pathname)?.label || 'Dashboard';
+
+  const brandSubtitle = loading ? (
+    <span
+      style={{
+        display: 'inline-block',
+        width: 72,
+        height: 9,
+        borderRadius: 4,
+        background: 'var(--bg-surface-3)',
+      }}
+    />
+  ) : restaurantName ? (
+    <span className="truncate" style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', marginTop: 1 }}>
+      {restaurantName}
+    </span>
+  ) : (
+    <Link
+      href="/dashboard/settings"
+      className="truncate"
+      style={{ fontSize: '0.6875rem', color: 'var(--gold-dim)', marginTop: 1 }}
+    >
+      Complete your profile
+    </Link>
+  );
 
   return (
     <div
@@ -151,12 +183,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 Dine<span style={{ color: 'var(--gold)' }}>3D</span>
               </span>
-              <span
-                className="truncate"
-                style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', marginTop: 1 }}
-              >
-                {restaurantName}
-              </span>
+              {brandSubtitle}
             </div>
           </div>
 
@@ -257,19 +284,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
 
           <div
-            className="px-3 py-2"
+            className="px-3 py-2.5"
             style={{
               background: 'var(--bg-surface-2)',
               borderRadius: 8,
               border: '1px solid var(--border-subtle)',
             }}
           >
-            <p style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
-              Signed in as
+            <p style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 4 }}>
+              {ownerName ? 'Owner' : 'Signed in'}
             </p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {userEmail || 'Not available'}
-            </p>
+            {ownerName ? (
+              <p
+                style={{
+                  fontSize: '0.8125rem',
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {ownerName}
+              </p>
+            ) : null}
+            {userEmail && (
+              <p
+                style={{
+                  fontSize: '0.6875rem',
+                  color: ownerName ? 'var(--text-dimmed)' : 'var(--text-secondary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  marginTop: ownerName ? 2 : 0,
+                }}
+              >
+                {userEmail}
+              </p>
+            )}
           </div>
 
           <button

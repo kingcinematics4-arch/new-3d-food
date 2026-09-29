@@ -77,3 +77,78 @@ export const PRESET_3D_MODELS = [
     icon: '🍰',
   },
 ];
+
+// ============================================================
+// CURRENCY FORMATTING
+// The hotel's `currency` column stores a free-text value such as
+// "USD ($)" or "INR (₹)". We resolve it to a symbol so prices render
+// in whatever currency the restaurant actually set in Supabase.
+// ============================================================
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  INR: '₹',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  CNY: '¥',
+  KRW: '₩',
+  AUD: 'A$',
+  CAD: 'C$',
+  SGD: 'S$',
+  NZD: 'NZ$',
+  AED: 'AED ',
+  SAR: 'SAR ',
+  QAR: 'QR ',
+  KWD: 'KD ',
+  BRL: 'R$',
+  MXN: 'MX$',
+  ARS: 'AR$',
+  COP: 'COL$',
+  ZAR: 'R',
+  NGN: '₦',
+  KES: 'KSh ',
+  GHS: 'GH₵',
+  EGP: 'E£',
+  MAD: 'MAD ',
+  LKR: 'Rs ',
+  NPR: 'Rs ',
+  PKR: '₨',
+  BDT: '৳',
+  IDR: 'Rp ',
+  MYR: 'RM ',
+  THB: '฿',
+  VND: '₫',
+  PHP: '₱',
+  RUB: '₽',
+  UAH: '₴',
+  TRY: '₺',
+  CHF: 'CHF ',
+  SEK: 'kr ',
+  NOK: 'kr ',
+  DKK: 'kr ',
+  PLN: 'zł ',
+};
+
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  'JPY', 'KRW', 'VND', 'CLP', 'COP', 'ISK', 'IDR', 'PYG', 'RWF', 'UGX', 'XOF', 'XAF',
+]);
+
+export function resolveCurrency(code?: string | null): { symbol: string; decimals: number } {
+  const raw = (code || '').trim();
+  if (!raw) return { symbol: '$', decimals: 2 };
+
+  const key = raw.split(/[\s(\[]/)[0].toUpperCase();
+  const symbol =
+    CURRENCY_SYMBOLS[key] ||
+    raw.match(/\(([^)]+)\)/)?.[1] ||
+    (/[A-Za-z]{2,}/.test(raw) ? `${raw} ` : raw);
+
+  return { symbol, decimals: ZERO_DECIMAL_CURRENCIES.has(key) ? 0 : 2 };
+}
+
+export function formatPrice(price: number, currency?: string | null): string {
+  const { symbol, decimals } = resolveCurrency(currency);
+  const value = typeof price === 'number' && Number.isFinite(price) ? price : 0;
+  return `${symbol}${value.toFixed(decimals)}`;
+}
