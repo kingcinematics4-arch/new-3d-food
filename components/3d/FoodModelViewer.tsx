@@ -101,9 +101,21 @@ function FallbackPlate() {
 function Loader() {
   return (
     <Html center>
-      <div className="flex flex-col items-center justify-center text-white space-y-2">
-        <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-xs font-semibold text-gray-300">Rendering 3D Model...</span>
+      <div className="flex flex-col items-center justify-center space-y-3" style={{ color: 'var(--text-dimmed)' }}>
+        <span
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: '50%',
+            border: '1px solid rgba(201,169,110,0.2)',
+            borderTopColor: 'var(--gold)',
+            animation: 'spin 1.1s linear infinite',
+            display: 'inline-block',
+          }}
+        />
+        <span style={{ fontSize: '0.5625rem', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+          Rendering 3D
+        </span>
       </div>
     </Html>
   );
@@ -129,20 +141,41 @@ export default function FoodModelViewer({
   const [isRotating, setIsRotating] = useState(autoRotate);
   const [hasError, setHasError] = useState(false);
 
-  // If item has no GLB URL orGLB failed to load, check if 2D image is available
+  // If item has no GLB URL or GLB failed to load, check if 2D image is available
   if ((!modelUrlGlb || hasError) && imageUrl) {
     return (
-      <div className={`relative bg-gradient-to-b from-gray-900 to-gray-950 rounded-2xl overflow-hidden border border-gray-800 ${className} flex items-center justify-center`}>
+      <div
+        className={`relative overflow-hidden ${className} flex items-center justify-center`}
+        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-warm)', borderRadius: 12 }}
+      >
         <img src={imageUrl} alt={altText} className="w-full h-full object-cover" />
-        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur text-[10px] text-amber-300 font-medium border border-amber-500/30">
-          3D Preview Unavailable
+        <div
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            padding: '0.1875rem 0.5rem',
+            borderRadius: 5,
+            background: 'rgba(11,10,8,0.75)',
+            border: '1px solid var(--border-warm)',
+            backdropFilter: 'blur(6px)',
+            color: 'var(--text-dimmed)',
+            fontSize: '0.5625rem',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+          }}
+        >
+          3D unavailable
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`relative bg-gradient-to-b from-gray-900 to-gray-950 rounded-2xl overflow-hidden border border-gray-800 ${className}`}>
+    <div
+      className={`relative overflow-hidden ${className}`}
+      style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-warm)', borderRadius: 12 }}
+    >
       {/* 3D Canvas */}
       <Canvas
         shadows
@@ -181,18 +214,48 @@ export default function FoodModelViewer({
       </Canvas>
 
       {/* Interactive Controls Overlay */}
-      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-gray-300 bg-gray-900/80 backdrop-blur-md px-3 py-2 rounded-xl border border-gray-800">
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 10,
+          left: 10,
+          right: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          padding: '0.4375rem 0.75rem',
+          borderRadius: 8,
+          background: 'rgba(11,10,8,0.7)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid var(--border-warm)',
+          fontSize: '0.625rem',
+          letterSpacing: '0.06em',
+          color: 'var(--text-muted)',
+        }}
+      >
         <button
           type="button"
           onClick={() => setIsRotating(!isRotating)}
-          className="flex items-center space-x-1.5 hover:text-amber-400 transition"
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontSize: 'inherit',
+            letterSpacing: 'inherit',
+            color: 'inherit',
+            transition: 'color 200ms',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--gold)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
         >
-          <span>{isRotating ? '⏸ Pause Spin' : '▶ Spin 360°'}</span>
+          {isRotating ? 'Pause rotation' : 'Rotate 360°'}
         </button>
 
         {hasError && (
-          <span className="text-[10px] text-amber-400 font-semibold">
-            3D preview unavailable
+          <span style={{ color: 'var(--text-dimmed)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+            Preview unavailable
           </span>
         )}
 
@@ -201,9 +264,18 @@ export default function FoodModelViewer({
             href={modelUrlUsdz}
             rel="ar"
             target="_blank"
-            className="flex items-center space-x-1 text-amber-400 font-semibold hover:underline"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              color: 'var(--gold)',
+              textDecoration: 'none',
+              transition: 'color 200ms',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--gold-bright)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--gold)')}
           >
-            <span>📱 View in AR</span>
+            View in AR
           </a>
         )}
       </div>
