@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabaseClient } from './supabaseClient';
 import { useAuth } from './authContext';
 
 export interface Hotel {
@@ -121,36 +120,16 @@ export function useHotel() {
 
     try {
       setLoading(true);
-      const { data: userLink, error: linkError } = await supabaseClient
-        .from('hotel_users')
-        .select('hotel_id, hotel:hotels(*)')
-        .eq('user_id', user.id)
-        .single();
-
-      if (linkError) {
-        if (linkError.code === 'PGRST116') {
-          setHotel(null);
-        } else {
-          throw linkError;
-        }
-        setLoading(false);
+      // Resolve the hotel through a server route so the auth->hotel lookup
+      // runs with the request's authenticated session (RLS-safe). The browser
+      // client cannot query hotels / hotel_users directly.
+      const res = await fetch('/api/hotel/me');
+      const json = await res.json();
+      if (!res.ok || !json.success || !json.hotel) {
+        setHotel(null);
         return;
       }
-
-      const rawHotel = userLink?.hotel as unknown;
-      let fetchedHotel: Hotel | null = null;
-
-      if (Array.isArray(rawHotel) && rawHotel.length > 0) {
-        fetchedHotel = rawHotel[0] as Hotel;
-      } else if (rawHotel && typeof rawHotel === 'object') {
-        fetchedHotel = rawHotel as Hotel;
-      }
-
-      if (fetchedHotel) {
-        setHotel(fetchedHotel);
-      } else {
-        setHotel(null);
-      }
+      setHotel(json.hotel as Hotel);
     } catch (err: any) {
       console.error('Error fetching hotel:', err);
       setError(err.message);

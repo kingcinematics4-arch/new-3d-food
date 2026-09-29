@@ -1,6 +1,7 @@
 // app/api/menu/route.ts
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getAuthenticatedUser, getHotelForUser } from '@/lib/serverAuth';
 import { menuItemSchema } from '@/lib/menu';
 
 export async function GET(request: Request) {
@@ -43,13 +44,29 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { hotel_id, ...itemData } = body;
+    const { hotel_id: providedHotelId, ...itemData } = body;
 
-    if (!hotel_id) {
-      return NextResponse.json(
-        { success: false, error: 'hotel_id is required' },
-        { status: 400 }
-      );
+    // Resolve the owning hotel. Prefer an explicit hotel_id from the client,
+    // but fall back to the authenticated user's hotel so a dish can never be
+    // created without a real owner (and never with demo / hardcoded data).
+    let hotelId = providedHotelId || null;
+
+    if (!hotelId) {
+      const user = await getAuthenticatedUser();
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: 'Not authenticated' },
+          { status: 401 }
+        );
+      }
+      const hotel = await getHotelForUser(user.id);
+      if (!hotel) {
+        return NextResponse.json(
+          { success: false, error: 'No hotel found for this user' },
+          { status: 404 }
+        );
+      }
+      hotelId = hotel.id;
     }
 
     const validated = menuItemSchema.parse(itemData);
@@ -57,7 +74,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabaseAdmin
       .from('menu_items')
       .insert({
-        hotel_id,
+        hotel_id: hotelId,
         category_id: validated.category_id || null,
         name: validated.name,
         description: validated.description,
