@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -108,11 +109,31 @@ export default function LoginPage() {
         throw new Error(errorMessage);
       }
 
-      if (!data?.session) {
+      if (!data?.session?.access_token || !data?.session?.refresh_token) {
         throw new Error('Login succeeded but no session returned');
       }
 
-      router.push('/dashboard');
+      // Hand the freshly issued session to the browser client. The API route has
+      // already written it to the shared Supabase session cookie; this adopts the
+      // very same session in the client (no new login, no second copy) so the
+      // mounted AuthProvider sees the user before the dashboard renders.
+      const { error: adoptError } = await supabaseClient.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      if (adoptError) {
+        throw new Error(adoptError.message);
+      }
+
+      // Honour the ?redirect= the middleware attached, but only for same-origin
+      // paths so it can never be used as an open redirect.
+      const requested = new URLSearchParams(window.location.search).get('redirect');
+      const destination =
+        requested && requested.startsWith('/') && !requested.startsWith('//')
+          ? requested
+          : '/dashboard';
+      router.push(destination);
+      router.refresh();
     } catch (err: any) {
       const message = err?.message || String(err) || 'An unknown error occurred';
       setError(message);

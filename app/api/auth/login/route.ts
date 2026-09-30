@@ -1,6 +1,6 @@
 // app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { getServerSupabase, clearLegacyAuthCookies } from '@/lib/serverAuth';
 import { isEmailRateLimitError, isEmailUnconfirmedError } from '@/lib/authThrottle';
 import { isSupabaseConfigured } from '@/lib/supabaseEnv';
 
@@ -34,7 +34,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
+    // The session is written by @supabase/ssr itself, into the standard
+    // `sb-<project-ref>-auth-token` cookie. That is the exact store the browser
+    // client, the middleware and every API route read, so signing in here is
+    // what makes the dashboard AND /api/* see the same Supabase user.
+    const { data, error } = await getServerSupabase().auth.signInWithPassword({
       email,
       password,
     });
@@ -79,23 +83,16 @@ export async function POST(request: Request) {
     const response = NextResponse.json({
       success: true,
       user: data.user,
-      session: data.session,
+      session: {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+        expires_in: data.session.expires_in,
+        token_type: data.session.token_type,
+      },
     });
 
-    response.cookies.set('sb-access-token', data.session.access_token, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: data.session.expires_in || 3600 * 24 * 7,
-    });
-    if (data.session.refresh_token) {
-      response.cookies.set('sb-refresh-token', data.session.refresh_token, {
-        path: '/',
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 3600 * 24 * 30,
-      });
-    }
+    clearLegacyAuthCookies(response);
 
     return response;
   } catch (error: any) {

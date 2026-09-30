@@ -16,8 +16,6 @@ import { getAuthenticatedUser } from './serverAuth';
 
 export interface OwnedHotel {
   id: string;
-  name: string | null;
-  slug: string | null;
 }
 
 export type HotelAccess =
@@ -36,6 +34,10 @@ function isMissingObject(error: { code?: string } | null): boolean {
 /**
  * The hotel owned by `userId`, or null when the account owns none.
  * `public.hotels.user_id` is checked first; `public.hotel_users` is the fallback.
+ *
+ * Only `id` is selected on purpose: this is the security-critical
+ * `auth.uid() -> hotel` link, and it must not be breakable by a missing or
+ * renamed display column. Callers that need the full row re-select it by id.
  */
 export async function findHotelOwnedByUser(
   userId: string | null | undefined
@@ -44,7 +46,7 @@ export async function findHotelOwnedByUser(
 
   const { data: direct, error: directError } = await supabaseAdmin
     .from('hotels')
-    .select('id, name, slug')
+    .select('id')
     .eq('user_id', userId)
     .limit(1);
 
@@ -68,7 +70,7 @@ export async function findHotelOwnedByUser(
 
   const { data: fallback, error: fallbackError } = await supabaseAdmin
     .from('hotels')
-    .select('id, name, slug')
+    .select('id')
     .eq('id', link.hotel_id)
     .limit(1);
 

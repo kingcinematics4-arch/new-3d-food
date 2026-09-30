@@ -12,7 +12,7 @@
 //   * Email verification is never bypassed: the same Supabase confirmation flow
 //     is used, just at most once per allowed interval.
 import { NextResponse } from 'next/server';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { getServerSupabase } from '@/lib/serverAuth';
 import { getAuthCallbackUrl } from '@/lib/siteUrl';
 import {
   commitEmailSend,
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
     const emailRedirectTo = getAuthCallbackUrl(request);
 
-    const { error } = await supabaseClient.auth.resend({
+    const { error } = await getServerSupabase().auth.resend({
       type: 'signup',
       email,
       options: {
