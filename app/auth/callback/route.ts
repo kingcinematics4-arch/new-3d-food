@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { supabaseUrl, supabasePublishableKey, isSupabaseConfigured } from '@/lib/supabaseEnv';
+import { clearLegacyAuthCookies } from '@/lib/serverAuth';
 import { getPublicSiteUrl } from '@/lib/siteUrl';
 
 export async function GET(request: NextRequest) {
@@ -55,35 +56,31 @@ export async function GET(request: NextRequest) {
 
   let response = NextResponse.redirect(destinationUrl);
 
+  // @supabase/ssr writes the confirmed session into the standard
+  // `sb-<project-ref>-auth-token` cookie, which is the same store the dashboard
+  // and every API route read. Nothing about the session is hand-rolled here.
+  const applyCookiesToResponse = (cookiesToSet: { name: string; value: string; options?: any }[]) => {
+    for (const { name, value, options } of cookiesToSet) {
+      response.cookies.set(name, value, options ?? {});
+    }
+  };
+
   const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value;
+      getAll() {
+        return request.cookies.getAll().map(({ name, value }) => ({ name, value }));
       },
-      set(name: string, value: string, options: any) {
-        response.cookies.set({ name, value, ...options });
-      },
-      remove(name: string, options: any) {
-        response.cookies.set({ name, value: '', ...options });
+      setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
+        applyCookiesToResponse(cookiesToSet);
       },
     },
   });
 
-  const applySession = (session: { access_token: string; refresh_token?: string; expires_in?: number }) => {
-    response.cookies.set('sb-access-token', session.access_token, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: session.expires_in || 3600 * 24 * 7,
-    });
-    if (session.refresh_token) {
-      response.cookies.set('sb-refresh-token', session.refresh_token, {
-        path: '/',
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 3600 * 24 * 30,
-      });
-    }
+  const redirectWithSession = () => {
+    const next = NextResponse.redirect(destinationUrl);
+    response.cookies.getAll().forEach((cookie) => next.cookies.set(cookie));
+    clearLegacyAuthCookies(next);
+    return next;
   };
 
   try {
@@ -103,8 +100,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (data?.session) {
-        applySession(data.session);
-        return response;
+        return redirectWithSession();
       }
     }
 
@@ -121,8 +117,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (data?.session) {
-        applySession(data.session);
-        return response;
+        return redirectWithSession();
       }
     }
   } catch (err) {

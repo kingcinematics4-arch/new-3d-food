@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -68,8 +69,22 @@ export default function SignupPage() {
         return;
       }
 
+      // Adopt the session the API route just wrote to the shared Supabase
+      // session cookie, so the mounted AuthProvider is authenticated by the time
+      // the dashboard renders.
+      if (data.session?.access_token && data.session?.refresh_token) {
+        const { error: adoptError } = await supabaseClient.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+        if (adoptError) throw new Error(adoptError.message);
+      }
+
       setSuccess(true);
-      setTimeout(() => router.push('/dashboard'), 1500);
+      setTimeout(() => {
+        router.push('/dashboard');
+        router.refresh();
+      }, 1500);
     } catch (err: any) {
       setError(err.message);
     } finally {

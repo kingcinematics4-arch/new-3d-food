@@ -44,6 +44,12 @@ export interface HotelRecord {
 /**
  * Supabase client bound to the incoming request's auth cookies.
  * Use in server components / route handlers that need an RLS-scoped session.
+ *
+ * The cookie adapter is the `getAll` / `setAll` form required by @supabase/ssr.
+ * That matters for two reasons: chunked session cookies are read and rewritten
+ * as a unit (so a long session never turns into a JSON parse error), and a token
+ * that Supabase refreshes mid-request is written straight back onto the outgoing
+ * response, so the session the browser ends up with is the verified one.
  */
 export function getServerSupabase() {
   const cookieStore = cookies();
@@ -52,26 +58,36 @@ export function getServerSupabase() {
 
   return createServerClient(url, key, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+      getAll() {
+        return cookieStore.getAll().map(({ name, value }) => ({ name, value }));
       },
-      set(name: string, value: string, options: Record<string, unknown>) {
+      setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
         try {
-          cookieStore.set({ name, value, ...options });
+          for (const { name, value, options } of cookiesToSet) {
+            cookieStore.set(name, value, options as any);
+          }
         } catch {
           // Called from a Server Component where cookies are read-only.
-          // Safe to ignore: the session is already persisted in cookies.
-        }
-      },
-      remove(name: string, options: Record<string, unknown>) {
-        try {
-          cookieStore.set({ name, value: '', ...options });
-        } catch {
-          // See note above.
+          // Safe to ignore: the session is already persisted in cookies and
+          // middleware refreshes it on the next navigation.
         }
       },
     },
   });
+}
+
+/**
+ * Cookies written by the pre-Supabase-SSR login flow. They held a bare access
+ * token that no Supabase client could read, which is why the API layer could not
+ * see a session the dashboard considered valid. They are expired on sign-in so a
+ * stale, non-refreshable copy of the token never lingers in the browser.
+ */
+const LEGACY_AUTH_COOKIES = ['sb-access-token', 'sb-refresh-token'] as const;
+
+export function clearLegacyAuthCookies(response: { cookies: { set: (name: string, value: string, opts: any) => any } }): void {
+  for (const name of LEGACY_AUTH_COOKIES) {
+    response.cookies.set(name, '', { path: '/', maxAge: 0 });
+  }
 }
 
 /**
