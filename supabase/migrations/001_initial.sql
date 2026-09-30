@@ -100,9 +100,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS hotels_slug_unique
   WHERE slug IS NOT NULL;
 
 -- Backfill, then tighten the NOT NULL constraints only when no row is broken.
-UPDATE public.hotels
-   SET name = COALESCE(NULLIF(name, ''), NULLIF(restaurant_name::text, ''), 'Restaurant')
- WHERE name IS NULL OR name = '';
+-- NOTE: the `restaurant_name` backfill runs dynamically inside the DO block
+-- below, because this file re-runs against deployments where the legacy column
+-- has already been renamed to `name`. Referencing `restaurant_name` directly
+-- here would fail the whole migration on those deployments.
 
 DO $$
 BEGIN
@@ -243,6 +244,17 @@ CREATE TABLE IF NOT EXISTS public.qr_codes (
   target_url text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+-- Hot-spot foreign-key indexes for hotel-scoped tables (idempotent).
+CREATE INDEX IF NOT EXISTS idx_categories_hotel_id ON public.categories (hotel_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_hotel_id ON public.menu_items (hotel_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_category_id ON public.menu_items (category_id);
+CREATE INDEX IF NOT EXISTS idx_orders_hotel_id ON public.orders (hotel_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items (order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_menu_item_id ON public.order_items (menu_item_id);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_order_id ON public.order_status_history (order_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_hotel_id ON public.reviews (hotel_id);
+CREATE INDEX IF NOT EXISTS idx_qr_codes_hotel_id ON public.qr_codes (hotel_id);
+
 
 -- Enable Row‑Level Security for all hotel‑scoped tables
 ALTER TABLE public.hotels ENABLE ROW LEVEL SECURITY;
@@ -272,17 +284,21 @@ SELECT h.user_id, h.id, 'owner'
       WHERE hu.user_id = h.user_id AND hu.hotel_id = h.id
    );
 
+-- Only accounts onboarded through the app signup flow carry real `hotel_name`
+-- metadata. Never invent a name (no email-derived names, no demo rows); accounts
+-- without metadata are left for the manual repair step in verify_schema.sql.
 INSERT INTO public.hotels (user_id, name, slug, owner_name, email, is_active, subscription_plan)
 SELECT u.id,
-       COALESCE(NULLIF(u.raw_user_meta_data ->> 'hotel_name', ''), u.email),
-       lower(regexp_replace(COALESCE(NULLIF(u.raw_user_meta_data ->> 'hotel_name', ''), u.email), '[^a-zA-Z0-9]+', '-', 'g'))
+       trim(u.raw_user_meta_data ->> 'hotel_name'),
+       lower(regexp_replace(trim(u.raw_user_meta_data ->> 'hotel_name'), '[^a-zA-Z0-9]+', '-', 'g'))
          || '-' || substr(md5(u.id::text), 1, 6),
-       u.raw_user_meta_data ->> 'owner_name',
+       nullif(trim(u.raw_user_meta_data ->> 'owner_name'), ''),
        u.email,
        true,
        'starter'
   FROM auth.users u
- WHERE NOT EXISTS (SELECT 1 FROM public.hotels h WHERE h.user_id = u.id);
+ WHERE NOT EXISTS (SELECT 1 FROM public.hotels h WHERE h.user_id = u.id)
+   AND nullif(trim(u.raw_user_meta_data ->> 'hotel_name'), '') IS NOT NULL;
 
 INSERT INTO public.hotel_users (user_id, hotel_id, role)
 SELECT h.user_id, h.id, 'owner'

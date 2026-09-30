@@ -1,5 +1,6 @@
 // lib/auth.ts
 import { supabaseAdmin, assertSupabaseAdminConfigured } from './supabaseAdmin';
+import { findHotelOwnedByUser } from './hotelAccess';
 import { z } from 'zod';
 import { getAuthCallbackUrl } from './siteUrl';
 import { isEmailRateLimitError } from './authThrottle';
@@ -118,6 +119,15 @@ async function performHotelOnboarding(
     }
 
     if (adminMsg.toLowerCase().includes('already') || adminMsg.toLowerCase().includes('exists')) {
+      // The Auth account already exists, but onboarding may never have finished
+      // (for example when the hotels table was missing a column at the time).
+      // Without this branch such an account is stranded forever: the address is
+      // taken, so it can never sign up again, and it owns no hotel. Prove the
+      // caller owns the existing account with the submitted password and finish
+      // its onboarding. auth.users is only read here, never modified.
+      const recovered = await recoverIncompleteOnboarding(data);
+      if (recovered) return recovered;
+
       throw new Error(`Auth Signup Error: An account with email ${data.email} already exists. Please sign in instead.`);
     }
 
@@ -154,14 +164,32 @@ async function performHotelOnboarding(
     throw new Error('Supabase Auth user created but failed to return user ID.');
   }
 
-  // 2. Generate slug and insert hotel record into 'hotels' table
-  const slug = generateSlug(data.hotel_name);
+  // 2. Create the hotel owned by this authenticated user, then link it.
+  const hotel = await createHotelForUser(userId, data);
+
+  return {
+    userId,
+    hotel,
+    user: authUser,
+    requiresEmailConfirmation,
+  };
+}
+
+/**
+ * Insert the hotel row owned by `userId` plus the hotel_users membership row.
+ *
+ * `public.hotels.user_id` is the canonical owner link that
+ * findHotelOwnedByUser resolves first, so the membership row is best-effort:
+ * failing it must not abort onboarding and strand the Auth account, which is
+ * exactly the half-onboarded state recoverIncompleteOnboarding exists to fix.
+ */
+async function createHotelForUser(userId: string, data: SignUpInput) {
   const { data: hotelData, error: hotelError } = await supabaseAdmin
     .from('hotels')
     .insert({
       user_id: userId,
       name: data.hotel_name,
-      slug: slug,
+      slug: generateSlug(data.hotel_name),
       owner_name: data.owner_name,
       email: data.email,
       phone: data.phone || null,
@@ -174,27 +202,74 @@ async function performHotelOnboarding(
     .single();
 
   if (hotelError) {
-    throw new Error(`Hotel Creation Error (${hotelError.code}): ${hotelError.message} - ${hotelError.details || ''}`);
+    throw new Error(describeHotelInsertError(hotelError));
   }
 
-  // 3. Link user to hotel in 'hotel_users' table
   const { error: linkError } = await supabaseAdmin
     .from('hotel_users')
-    .insert({
-      user_id: userId,
-      hotel_id: hotelData.id,
-      role: 'owner',
-    });
+    .insert({ user_id: userId, hotel_id: hotelData.id, role: 'owner' });
 
   if (linkError) {
-    throw new Error(`User-Hotel Linking Error (${linkError.code}): ${linkError.message}`);
+    console.error(
+      '[auth] hotel_users membership insert failed; ownership still resolves via hotels.user_id:',
+      linkError.message
+    );
   }
 
+  return hotelData;
+}
+
+/**
+ * Turn a "relation or column does not exist" failure into an actionable
+ * message. PGRST204 = column missing from the schema cache, PGRST205 = table
+ * missing, 42703 = undefined_column.
+ */
+function describeHotelInsertError(error: {
+  code?: string;
+  message?: string;
+  details?: string;
+}): string {
+  const base = `Hotel Creation Error (${error.code}): ${error.message} - ${error.details || ''}`;
+
+  if (error.code === 'PGRST204' || error.code === '42703' || error.code === 'PGRST205') {
+    return (
+      `${base} -- the public schema is missing a column or table the app writes. ` +
+      'Run supabase/migrations/001_initial.sql and 002_auth_identity_and_menu_fields.sql in the Supabase SQL Editor, refresh the schema cache, then retry signup.'
+    );
+  }
+
+  return base;
+}
+
+/**
+ * Finish onboarding for an Auth account that exists but owns no hotel.
+ *
+ * Returns null when the credentials do not match that address, or when the
+ * account is already fully onboarded - in both cases the caller keeps the
+ * normal "already exists, please sign in" message. The user id always comes
+ * from Supabase Auth: nothing is hardcoded and auth.users is never written to.
+ */
+async function recoverIncompleteOnboarding(data: SignUpInput): Promise<OnboardingResult | null> {
+  // A password grant doubles as proof that the caller owns this address. The
+  // service-role client keeps this independent of the request cookie jar.
+  const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    email: data.email,
+    password: data.password,
+  });
+
+  const existingUserId = signInData?.user?.id;
+  if (signInError || !existingUserId) return null;
+
+  // Already onboarded: nothing to repair, keep the "sign in instead" message.
+  if (await findHotelOwnedByUser(existingUserId)) return null;
+
+  const hotel = await createHotelForUser(existingUserId, data);
+
   return {
-    userId,
-    hotel: hotelData,
-    user: authUser,
-    requiresEmailConfirmation,
+    userId: existingUserId,
+    hotel,
+    user: signInData.user,
+    requiresEmailConfirmation: false,
   };
 }
 

@@ -13,7 +13,8 @@ This full-stack **3D Digital Food Menu & Restaurant Ordering SaaS** is built wit
    - **Service Role Key** (`SUPABASE_SERVICE_ROLE_KEY`) *(Keep this private; server-side only)*
 
 3. Go to the **SQL Editor** in your Supabase project dashboard:
-   - Open and run the contents of [`supabase/migrations/001_initial.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/001_initial.sql) to create all database tables.
+   - Open and run the contents of [`supabase/migrations/001_initial.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/001_initial.sql) to create all database tables (safe to re-run).
+   - Open and run the contents of [`supabase/migrations/002_auth_identity_and_menu_fields.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/002_auth_identity_and_menu_fields.sql) to add the auth-identity, menu and review fields (safe to re-run).
    - Open and run the contents of [`supabase/policies.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/policies.sql) to enable multi-tenant Row Level Security (RLS).
 
 ---
