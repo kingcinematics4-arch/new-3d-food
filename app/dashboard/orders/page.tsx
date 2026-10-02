@@ -2,22 +2,31 @@
 
 import React, { useState, useCallback } from 'react';
 import { useHotel, useOrders, Order } from '@/lib/useHotel';
+import { formatPrice } from '@/lib/menu';
+
+/* The statuses the app actually stores (see app/api/orders/update-status).
+   They are written lowercase, so every comparison here normalises case rather
+   than assuming one. */
+
+const normalise = (status: string) => (status || '').trim().toLowerCase();
 
 /* Statuses read as one monochrome family — only the newest
    order carries the champagne accent. */
 const STATUS_CLASS: Record<string, string> = {
-  PLACED: 'd3-status-placed',
-  ACCEPTED: 'd3-status-accepted',
-  PREPARING: 'd3-status-preparing',
-  READY: 'd3-status-ready',
-  COMPLETED: 'd3-status-completed',
-  CANCELLED: 'd3-status-cancelled',
+  placed: 'd3-status-placed',
+  pending: 'd3-status-placed',
+  accepted: 'd3-status-accepted',
+  preparing: 'd3-status-preparing',
+  ready: 'd3-status-ready',
+  completed: 'd3-status-completed',
+  cancelled: 'd3-status-cancelled',
 };
 
 function StatusBadge({ status }: { status: string }) {
+  const key = normalise(status);
   return (
-    <span className={`d3-badge ${STATUS_CLASS[status] || STATUS_CLASS.CANCELLED}`}>
-      {status}
+    <span className={`d3-badge ${STATUS_CLASS[key] || STATUS_CLASS.cancelled}`}>
+      {key || 'unknown'}
     </span>
   );
 }
@@ -26,7 +35,7 @@ function getMinutesAgo(dateStr: string) {
   return Math.max(1, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
 }
 
-const TABS = ['all', 'placed', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
+const TABS = ['all', 'pending', 'preparing', 'ready', 'completed', 'cancelled'];
 
 export default function LiveOrdersPage() {
   const { hotel, loading: hotelLoading } = useHotel();
@@ -44,7 +53,7 @@ export default function LiveOrdersPage() {
   );
 
   const filtered = orders.filter((o: Order) =>
-    activeTab === 'all' ? true : o.status === activeTab.toUpperCase()
+    activeTab === 'all' ? true : normalise(o.status) === activeTab
   );
 
   const getOrderItems = (order: Order) => {
@@ -116,9 +125,9 @@ export default function LiveOrdersPage() {
         {/* Service counters */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           {[
-            { label: 'New', count: orders.filter((o: Order) => o.status === 'PLACED').length },
-            { label: 'In Kitchen', count: orders.filter((o: Order) => ['ACCEPTED','PREPARING'].includes(o.status)).length },
-            { label: 'Ready', count: orders.filter((o: Order) => o.status === 'READY').length },
+            { label: 'New', count: orders.filter((o: Order) => normalise(o.status) === 'pending').length },
+            { label: 'In Kitchen', count: orders.filter((o: Order) => normalise(o.status) === 'preparing').length },
+            { label: 'Ready', count: orders.filter((o: Order) => normalise(o.status) === 'ready').length },
           ].map((stat) => (
             <div key={stat.label}>
               <span className="d3-figure" style={{ display: 'block', fontSize: '1.5rem' }}>
@@ -145,7 +154,7 @@ export default function LiveOrdersPage() {
       {/* Tab filter */}
       <div className="d3-segment" role="group" aria-label="Filter orders by status">
         {TABS.map((tab) => {
-          const count = orders.filter((o: Order) => tab === 'all' ? true : o.status === tab.toUpperCase()).length;
+          const count = orders.filter((o: Order) => tab === 'all' ? true : normalise(o.status) === tab).length;
           const isActive = activeTab === tab;
           return (
             <button
@@ -168,20 +177,30 @@ export default function LiveOrdersPage() {
             <rect x="6" y="9" width="28" height="22" rx="3" stroke="currentColor" strokeWidth="1.1" />
             <path d="M13 17H27M13 22H21" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
           </svg>
-          <h3 className="d3-empty-title">No {activeTab} orders</h3>
+          <h3 className="d3-empty-title">
+            {activeTab === 'all' ? 'No orders yet' : `No ${activeTab} orders`}
+          </h3>
           <p className="d3-empty-body">
-            Nothing in this state right now. Place a test order from{' '}
-            <a href={menuHref} target="_blank" style={{ color: 'var(--gold)' }}>
-              /menu/{hotelSlug || 'your-restaurant'}
-            </a>{' '}
-            to see it appear here.
+            {orders.length === 0
+              ? 'Orders placed from your guest menu land here instantly.'
+              : 'Nothing is in this state right now.'}
+            {hotelSlug ? (
+              <>
+                {' '}
+                Open{' '}
+                <a href={menuHref} target="_blank" style={{ color: 'var(--gold)' }}>
+                  /menu/{hotelSlug}
+                </a>{' '}
+                to place one.
+              </>
+            ) : null}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((order: Order) => {
             const minsAgo = getMinutesAgo(order.created_at);
-            const isNew = order.status === 'PLACED';
+            const isNew = normalise(order.status) === 'pending';
             const orderItems = getOrderItems(order);
             return (
               <article
@@ -203,7 +222,7 @@ export default function LiveOrdersPage() {
                       className="d3-figure"
                       style={{ display: 'block', fontSize: '1.125rem' }}
                     >
-                      Table {order.table_number}
+                      Table {order.table_number || '—'}
                     </span>
                     <span
                       style={{
@@ -257,7 +276,7 @@ export default function LiveOrdersPage() {
                           )}
                         </div>
                         <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: 8, flexShrink: 0 }}>
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
                         </span>
                       </div>
                     ))
@@ -290,33 +309,23 @@ export default function LiveOrdersPage() {
                     {order.payment_method} · {order.payment_status}
                   </span>
                   <span className="d3-figure" style={{ fontSize: '1.125rem', color: 'var(--gold)' }}>
-                    ${order.total_amount.toFixed(2)}
+                    {formatPrice(Number(order.total_amount) || 0, hotel?.currency)}
                   </span>
                 </div>
 
                 {/* Actions */}
                 <div className="flex flex-col gap-8" style={{ gap: 8 }}>
-                  {order.status === 'PLACED' && (
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateStatus(order.id, 'accepted')}
-                      className="d3-btn-primary"
-                      style={{ flex: 1 }}
-                    >
-                      Accept Order
-                    </button>
-                  )}
-                  {order.status === 'ACCEPTED' && (
+                  {normalise(order.status) === 'pending' && (
                     <button
                       type="button"
                       onClick={() => handleUpdateStatus(order.id, 'preparing')}
-                      className="d3-btn-quiet"
+                      className="d3-btn-primary"
                       style={{ flex: 1 }}
                     >
                       Start Preparing
                     </button>
                   )}
-                  {order.status === 'PREPARING' && (
+                  {normalise(order.status) === 'preparing' && (
                     <button
                       type="button"
                       onClick={() => handleUpdateStatus(order.id, 'ready')}
@@ -326,7 +335,7 @@ export default function LiveOrdersPage() {
                       Mark Ready
                     </button>
                   )}
-                  {order.status === 'READY' && (
+                  {normalise(order.status) === 'ready' && (
                     <button
                       type="button"
                       onClick={() => handleUpdateStatus(order.id, 'completed')}
@@ -336,7 +345,7 @@ export default function LiveOrdersPage() {
                       Complete
                     </button>
                   )}
-                  {!['COMPLETED', 'CANCELLED'].includes(order.status) && (
+                  {!['completed', 'cancelled'].includes(normalise(order.status)) && (
                     <button
                       type="button"
                       onClick={() => handleUpdateStatus(order.id, 'cancelled')}

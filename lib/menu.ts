@@ -50,33 +50,8 @@ export interface MenuItem {
   created_at?: string;
 }
 
-// Preset 3D Model Templates for demo / quick assignment (Uses local paths & procedural 3D plate fallback)
-export const PRESET_3D_MODELS = [
-  {
-    name: 'Gourmet Burger',
-    glb: '/models/burger.glb',
-    category: 'Main Course',
-    icon: '🍔',
-  },
-  {
-    name: 'Artisan Pizza',
-    glb: '/models/pizza.glb',
-    category: 'Main Course',
-    icon: '🍕',
-  },
-  {
-    name: 'Fresh Salad Bowl',
-    glb: '/models/salad.glb',
-    category: 'Starters',
-    icon: '🥗',
-  },
-  {
-    name: 'Decadent Cake',
-    glb: '/models/cake.glb',
-    category: 'Dessert',
-    icon: '🍰',
-  },
-];
+// There is no preset model library: a dish is only shown in 3D once the
+// restaurant has stored its own GLB/USDZ file for that dish.
 
 // ============================================================
 // CURRENCY FORMATTING

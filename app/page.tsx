@@ -146,11 +146,11 @@ function HeroSection() {
                     letterSpacing: '-0.02em',
                   }}
                 >
-                  500+
-                </span>
-                <span className="d3-eyebrow" style={{ color: 'var(--text-dimmed)', fontSize: '0.6rem' }}>
-                  RESTAURANTS ONBOARDED
-                </span>
+360°
+                  </span>
+                  <span className="d3-eyebrow" style={{ color: 'var(--text-dimmed)', fontSize: '0.6rem' }}>
+                    3D MENU VIEWER
+                  </span>
               </div>
               <div
                 style={{
@@ -168,11 +168,11 @@ function HeroSection() {
                     letterSpacing: '-0.02em',
                   }}
                 >
-                  2M+
-                </span>
-                <span className="d3-eyebrow" style={{ color: 'var(--text-dimmed)', fontSize: '0.6rem' }}>
-                  QR SCANS SERVED
-                </span>
+GLB / USDZ
+                  </span>
+                  <span className="d3-eyebrow" style={{ color: 'var(--text-dimmed)', fontSize: '0.6rem' }}>
+                    YOUR OWN MODELS
+                  </span>
               </div>
               <div
                 style={{
@@ -190,11 +190,11 @@ function HeroSection() {
                     letterSpacing: '-0.02em',
                   }}
                 >
-                  30%
-                </span>
-                <span className="d3-eyebrow" style={{ color: 'var(--text-dimmed)', fontSize: '0.6rem' }}>
-                  AVG ORDER UPLIFT
-                </span>
+No App
+                  </span>
+                  <span className="d3-eyebrow" style={{ color: 'var(--text-dimmed)', fontSize: '0.6rem' }}>
+                    SCAN AND ORDER
+                  </span>
               </div>
             </div>
           </div>
@@ -235,7 +235,7 @@ function HeroSection() {
                     3D LIVE
                   </span>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-body)' }}>
-                    Signature Wagyu Gourmet Burger
+                    Your dishes, in 3D
                   </span>
                 </div>
                 <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem' }}>Drag to rotate · Scroll to zoom</span>
@@ -244,9 +244,6 @@ function HeroSection() {
               {/* 3D Viewer */}
               <div style={{ height: 420 }}>
                 <FoodModelViewer
-                  modelUrlGlb="/models/burger.glb"
-                  altText="Signature Wagyu Gourmet Burger"
-                  autoRotate={true}
                   className="h-full w-full"
                 />
               </div>
@@ -261,16 +258,18 @@ function HeroSection() {
               >
                 <div className="flex flex-col">
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', color: 'var(--text-primary)', fontWeight: 500 }}>
-                    $22.50
+                    Upload your own GLB
                   </span>
-                  <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>780 cal · 15 min</span>
+                  <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
+                    Menus, prices and 3D models come from your data
+                  </span>
                 </div>
                 <Link
-                  href="/menu/demo-restaurant"
+                  href="/signup"
                   className="d3-btn-primary"
                   style={{ padding: '0.5rem 1.25rem', fontSize: '0.75rem' }}
                 >
-                  View Full Menu
+                  Start Free
                 </Link>
               </div>
             </div>
@@ -726,7 +725,7 @@ const faqs = [
   { q: 'What is Dine3D?', a: 'Dine3D is a premium restaurant technology platform that transforms static menus into interactive 3D and AR dining experiences, accessible through a simple QR code.' },
   { q: 'How does the QR menu work?', a: 'Each restaurant gets a unique QR code. Guests scan it with any smartphone camera — no app download required — and instantly access the 3D menu experience.' },
   { q: 'Does Dine3D support AR?', a: 'Yes. Where supported by the device (iOS via Safari, Android via Chrome), guests can place dishes in their real environment using native augmented reality.' },
-  { q: 'Can restaurants upload their own 3D models?', a: 'Yes. Restaurants can upload GLB and GLTF format 3D models through the dashboard, or choose from our curated preset model library.' },
+  { q: 'Can restaurants upload their own 3D models?', a: 'Yes. Restaurants upload their own GLB and USDZ models per dish through the dashboard. A dish only appears in 3D once its model is saved.' },
   { q: 'Can I customize my menu?', a: 'Absolutely. Each restaurant has full control over branding: logo, colors, typography, cover image, categories and every dish detail.' },
   { q: 'How does ordering work?', a: 'Guests browse the 3D menu, add items to cart, add notes, and place orders. The restaurant receives orders instantly in the dashboard and kitchen display.' },
   { q: 'Can customers add special instructions?', a: 'Yes. Customers can add special instructions for each item as well as a general note with the order.' },
@@ -856,14 +855,14 @@ function CTABanner() {
           </em>
         </h2>
         <p className="d3-body" style={{ maxWidth: 440 }}>
-          Join hundreds of restaurants delivering unforgettable dining experiences with Dine3D.
+          Create your restaurant and publish your own menu.
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
           <Link href="/signup" className="d3-btn-primary" style={{ padding: '0.875rem 2.25rem', fontSize: '0.9375rem' }}>
             Start Free Today →
           </Link>
-          <Link href="/menu/demo-restaurant" className="d3-btn-ghost" style={{ padding: '0.875rem 2.25rem', fontSize: '0.9375rem' }}>
-            View Live Demo
+          <Link href="/login" className="d3-btn-ghost" style={{ padding: '0.875rem 2.25rem', fontSize: '0.9375rem' }}>
+            Sign In to Dashboard
           </Link>
         </div>
       </div>

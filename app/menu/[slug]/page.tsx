@@ -1,22 +1,66 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import {
-  getDemoItems,
-  getDemoOrders,
-  saveDemoOrders,
-  getDemoCustomization,
-  DemoMenuItem,
-  DemoOrder,
-} from '@/lib/demoData';
+import { formatPrice } from '@/lib/menu';
 
 // Lazy-load 3D viewer
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 
+/* ============================================================
+   LIVE TYPES — every field below comes from the database.
+   Nothing here is invented: a value the restaurant has not
+   stored is simply absent and is not rendered.
+   ============================================================ */
+
+interface PublicMenuItem {
+  id: string;
+  category_id: string | null;
+  name: string;
+  description: string | null;
+  price: number;
+  image_url: string | null;
+  model_url_glb: string | null;
+  model_url_usdz: string | null;
+  is_veg: boolean;
+  calories: number | null;
+  preparation_time_mins: number | null;
+  ingredients: string[] | null;
+  allergens: string[] | null;
+  dietary_tags: string[] | null;
+  rating: number | null;
+  order_count: number | null;
+  is_featured: boolean;
+  is_popular: boolean;
+}
+
+interface PublicCategory {
+  id: string;
+  name: string;
+  position: number | null;
+}
+
+interface PublicHotel {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  currency: string | null;
+  welcome_text: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  menu_style: string | null;
+  card_style: string | null;
+  dark_mode: boolean | null;
+  typography: string | null;
+  tax_rate: number | null;
+  service_charge: number | null;
+  city: string | null;
+}
+
 interface CartItem {
-  menuItem: DemoMenuItem;
+  menuItem: PublicMenuItem;
   quantity: number;
   notes?: string;
 }
@@ -26,17 +70,24 @@ interface CartItem {
    ============================================================ */
 function FoodDetailModal({
   item,
+  currency,
   onClose,
   onAddToCart,
   cartQty,
 }: {
-  item: DemoMenuItem;
+  item: PublicMenuItem;
+  currency: string | null;
   onClose: () => void;
-  onAddToCart: (item: DemoMenuItem, qty: number, notes: string) => void;
+  onAddToCart: (item: PublicMenuItem, qty: number, notes: string) => void;
   cartQty: number;
 }) {
   const [qty, setQty] = useState(Math.max(1, cartQty));
   const [notes, setNotes] = useState('');
+  const has3D = Boolean(item.model_url_glb?.trim());
+  const image = item.image_url?.trim() || '';
+  const ingredients = Array.isArray(item.ingredients) ? item.ingredients : [];
+  const rating = Number(item.rating) || 0;
+  const orderCount = Number(item.order_count) || 0;
 
   return (
     <div
@@ -55,7 +106,7 @@ function FoodDetailModal({
           boxShadow: '0 -32px 80px rgba(0,0,0,0.8)',
         }}
       >
-        {/* 3D Viewer */}
+        {/* 3D viewer — only when the restaurant actually uploaded a model */}
         <div
           className="relative"
           style={{
@@ -65,12 +116,24 @@ function FoodDetailModal({
             overflow: 'hidden',
           }}
         >
-          <FoodModelViewer
-            modelUrlGlb={item.model_url_glb}
-            altText={item.name}
-            autoRotate
-            className="h-full w-full"
-          />
+          {has3D ? (
+            <FoodModelViewer
+              modelUrlGlb={item.model_url_glb ?? undefined}
+              modelUrlUsdz={item.model_url_usdz ?? undefined}
+              altText={item.name}
+              autoRotate
+              className="h-full w-full"
+            />
+          ) : image ? (
+            <img
+              src={image}
+              alt={item.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <NoAssetPanel label="No 3D model" height="100%" />
+          )}
+
           {/* Close button */}
           <button
             onClick={onClose}
@@ -134,9 +197,11 @@ function FoodDetailModal({
               >
                 {item.name}
               </h2>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                {item.description}
-              </p>
+              {item.description ? (
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  {item.description}
+                </p>
+              ) : null}
             </div>
             <span
               style={{
@@ -148,48 +213,57 @@ function FoodDetailModal({
                 flexShrink: 0,
               }}
             >
-              ${item.price.toFixed(2)}
+              {formatPrice(Number(item.price) || 0, currency)}
             </span>
           </div>
 
-          {/* Meta row */}
-          <div className="flex items-center gap-4 flex-wrap">
-            <span
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                fontSize: '0.6875rem', color: 'var(--text-muted)',
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" /><path d="M6 3.5V6L8 7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" /></svg>
-              {item.preparation_time_mins} min
-            </span>
-            <span
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                fontSize: '0.6875rem', color: 'var(--text-muted)',
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2C6 2 3 3.5 2 6C3.5 8 6 9 6 9C6 9 8.5 8 10 6C9 3.5 6 2 6 2Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" /></svg>
-              {item.calories} kcal
-            </span>
-            <span
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                fontSize: '0.6875rem', color: 'var(--gold)',
-              }}
-            >
-              ★ {item.rating || 4.8} ({item.order_count || 0} orders)
-            </span>
-          </div>
+          {/* Meta row — only the fields the restaurant stored */}
+          {(item.preparation_time_mins || item.calories || rating > 0) && (
+            <div className="flex items-center gap-4 flex-wrap">
+              {item.preparation_time_mins ? (
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    fontSize: '0.6875rem', color: 'var(--text-muted)',
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" /><path d="M6 3.5V6L8 7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" /></svg>
+                  {item.preparation_time_mins} min
+                </span>
+              ) : null}
+              {item.calories ? (
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    fontSize: '0.6875rem', color: 'var(--text-muted)',
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2C6 2 3 3.5 2 6C3.5 8 6 9 6 9C6 9 8.5 8 10 6C9 3.5 6 2 6 2Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" /></svg>
+                  {item.calories} kcal
+                </span>
+              ) : null}
+              {rating > 0 ? (
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    fontSize: '0.6875rem', color: 'var(--gold)',
+                  }}
+                >
+                  ★ {rating.toFixed(1)}
+                  {orderCount > 0 ? ` (${orderCount} orders)` : ''}
+                </span>
+              ) : null}
+            </div>
+          )}
 
           {/* Ingredients */}
-          {item.ingredients?.length > 0 && (
+          {ingredients.length > 0 && (
             <div>
               <p style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
                 Ingredients
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {item.ingredients.map((ing, i) => (
+                {ingredients.map((ing, i) => (
                   <span
                     key={i}
                     style={{
@@ -217,7 +291,7 @@ function FoodDetailModal({
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="E.g., No onions, extra sauce..."
+              placeholder="Any request for the kitchen"
               rows={2}
               style={{
                 width: '100%', resize: 'none',
@@ -281,7 +355,7 @@ function FoodDetailModal({
               className="d3-btn-primary"
               style={{ flex: 1, justifyContent: 'center', padding: '0.875rem', fontSize: '0.9375rem' }}
             >
-              Add to Cart · ${(item.price * qty).toFixed(2)}
+              Add to Order · {formatPrice((Number(item.price) || 0) * qty, currency)}
             </button>
           </div>
         </div>
@@ -291,24 +365,49 @@ function FoodDetailModal({
 }
 
 /* ============================================================
+   NO-ASSET PANEL — the honest placeholder for a dish that has
+   neither a stored 3D model nor a stored photograph.
+   ============================================================ */
+function NoAssetPanel({ label, height }: { label: string; height?: number | string }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center gap-3 w-full"
+      style={{ height, background: 'var(--bg-secondary)', color: 'var(--text-dimmed)' }}
+    >
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" style={{ opacity: 0.5 }} aria-hidden="true">
+        <path d="M17 3L30 10.5V24L17 31.5L4 24V10.5L17 3Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+        <path d="M17 3V31.5M4 10.5L17 18L30 10.5" stroke="currentColor" strokeWidth="0.9" strokeOpacity="0.5" strokeLinejoin="round" />
+      </svg>
+      <span style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/* ============================================================
    CART DRAWER
    ============================================================ */
 function CartDrawer({
   cart,
+  currency,
   onClose,
   onAdd,
   onRemove,
   totalPrice,
   tableNumber,
+  hotelId,
   slug,
   router,
 }: {
   cart: CartItem[];
+  currency: string | null;
   onClose: () => void;
-  onAdd: (item: DemoMenuItem) => void;
+  onAdd: (item: PublicMenuItem) => void;
   onRemove: (id: string) => void;
   totalPrice: number;
   tableNumber: string;
+  hotelId: string;
   slug: string;
   router: any;
 }) {
@@ -316,36 +415,42 @@ function CartDrawer({
   const [orderNotes, setOrderNotes] = useState('');
   const [payment, setPayment] = useState<'pay_at_table' | 'card' | 'upi'>('pay_at_table');
   const [submitting, setSubmitting] = useState(false);
-  const isDemo = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+  const [error, setError] = useState<string | null>(null);
 
   const handlePlaceOrder = async () => {
     if (cart.length === 0) return;
     setSubmitting(true);
+    setError(null);
 
-    const newOrderId = `demo-ord-${Date.now()}`;
-    const newOrder: DemoOrder = {
-      id: newOrderId,
-      order_code: `ORD-${Math.floor(500 + Math.random() * 400)}`,
-      table_number: `Table ${tableNumber}`,
-      customer_name: customerName || 'Guest Diner',
-      status: 'PLACED',
-      total_amount: totalPrice,
-      payment_method: payment === 'pay_at_table' ? 'Pay at Table' : payment === 'card' ? 'Card / POS' : 'UPI / Wallet',
-      payment_status: payment === 'pay_at_table' ? 'Unpaid' : 'Paid',
-      created_at: new Date().toISOString(),
-      notes: orderNotes,
-      items: cart.map((c) => ({ id: c.menuItem.id, name: c.menuItem.name, quantity: c.quantity, price: c.menuItem.price })),
-    };
+    try {
+      const res = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hotel_id: hotelId,
+          table_number: tableNumber,
+          customer_name: customerName.trim() || undefined,
+          notes: orderNotes.trim() || undefined,
+          payment_method: payment,
+          items: cart.map((c) => ({
+            menu_item_id: c.menuItem.id,
+            quantity: c.quantity,
+            price_at_time: Number(c.menuItem.price) || 0,
+            notes: c.notes || undefined,
+          })),
+        }),
+      });
+      const json = await res.json();
 
-    if (isDemo || slug === 'demo-restaurant') {
-      const existing = getDemoOrders();
-      saveDemoOrders([newOrder, ...existing]);
-    }
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'We could not send your order. Please try again.');
+      }
 
-    setTimeout(() => {
+      router.push(`/order-status/${json.orderId}?slug=${encodeURIComponent(slug)}`);
+    } catch (err: any) {
+      setError(err.message || 'We could not send your order. Please try again.');
       setSubmitting(false);
-      router.push(`/order-status/${newOrderId}`);
-    }, 600);
+    }
   };
 
   return (
@@ -369,7 +474,7 @@ function CartDrawer({
               Your Order
             </h3>
             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
-              Table {tableNumber} · {cart.reduce((s, c) => s + c.quantity, 0)} items
+              {cart.reduce((s, c) => s + c.quantity, 0)} item{cart.reduce((s, c) => s + c.quantity, 0) === 1 ? '' : 's'}
             </span>
           </div>
           <button
@@ -402,7 +507,7 @@ function CartDrawer({
                   {menuItem.name}
                 </p>
                 <p style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
-                  ${menuItem.price.toFixed(2)} each
+                  {formatPrice(Number(menuItem.price) || 0, currency)} each
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -422,7 +527,7 @@ function CartDrawer({
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-primary)', minWidth: 16, textAlign: 'center' }}>
                   {quantity}
                 </span>
-<button
+                <button
                   onClick={() => onAdd(menuItem)}
                   style={{
                     width: 26, height: 26, borderRadius: 5,
@@ -436,7 +541,7 @@ function CartDrawer({
                   +
                 </button>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--gold)', minWidth: 52, textAlign: 'right' }}>
-                  ${(menuItem.price * quantity).toFixed(2)}
+                  {formatPrice((Number(menuItem.price) || 0) * quantity, currency)}
                 </span>
               </div>
             </div>
@@ -451,7 +556,7 @@ function CartDrawer({
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Guest Diner"
+                placeholder="Name for the order"
                 className="d3-input"
               />
             </div>
@@ -461,7 +566,7 @@ function CartDrawer({
                 type="text"
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
-                placeholder="Allergies, preferences..."
+                placeholder="Allergies or preferences"
                 className="d3-input"
               />
             </div>
@@ -508,9 +613,25 @@ function CartDrawer({
           <div className="flex items-center justify-between">
             <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Total</span>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 500, color: 'var(--gold)', letterSpacing: '-0.02em' }}>
-              ${totalPrice.toFixed(2)}
+              {formatPrice(totalPrice, currency)}
             </span>
           </div>
+          {error && (
+            <p
+              role="alert"
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-warm)',
+                borderRadius: 8,
+                padding: '0.625rem 0.75rem',
+                lineHeight: 1.5,
+              }}
+            >
+              {error}
+            </p>
+          )}
           <button
             onClick={handlePlaceOrder}
             disabled={submitting || cart.length === 0}
@@ -523,7 +644,7 @@ function CartDrawer({
                   <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
                   <path d="M8 2A6 6 0 0 1 14 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-                Placing Order...
+                Sending Order...
               </>
             ) : 'Place Order →'}
           </button>
@@ -536,60 +657,146 @@ function CartDrawer({
 /* ============================================================
    MENU CONTENT
    ============================================================ */
+const UNCATEGORISED = '__uncategorised__';
+
 function MenuContent({ slug }: { slug: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const isDemo = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
-  const tableNumber = searchParams.get('table') || '1';
 
-  const [restaurantName, setRestaurantName] = useState('Demo Restaurant');
-  const [menuItems, setMenuItems] = useState<DemoMenuItem[]>([]);
-  const [categories, setCategories] = useState<string[]>(['All']);
+  const [hotel, setHotel] = useState<PublicHotel | null>(null);
+  const [menuItems, setMenuItems] = useState<PublicMenuItem[]>([]);
+  const [categories, setCategories] = useState<PublicCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [inspectItem, setInspectItem] = useState<DemoMenuItem | null>(null);
+  const [inspectItem, setInspectItem] = useState<PublicMenuItem | null>(null);
   const [search, setSearch] = useState('');
-  const [accentColor, setAccentColor] = useState('#C9A96E');
 
-  useEffect(() => {
-    if (isDemo || slug === 'demo-restaurant') {
-      const items = getDemoItems();
-      const cust = getDemoCustomization();
-      setMenuItems(items);
-      setAccentColor(cust.primary_color || '#C9A96E');
-      const cats = Array.from(new Set(items.map((i) => i.category || 'Main Course')));
-      setCategories(['All', ...cats]);
-      setRestaurantName('Demo Restaurant');
+  const loadMenu = useCallback(async () => {
+    try {
+      setLoading(true);
+      setLoadError(null);
+
+      const res = await fetch(`/api/public/menu?slug=${encodeURIComponent(slug)}`);
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        setHotel(null);
+        setMenuItems([]);
+        setCategories([]);
+        setLoadError(json.error || 'This menu is not available right now.');
+        return;
+      }
+
+      setHotel(json.hotel as PublicHotel);
+      setMenuItems((json.menuItems || []) as PublicMenuItem[]);
+      setCategories((json.categories || []) as PublicCategory[]);
+    } catch {
+      setHotel(null);
+      setMenuItems([]);
+      setCategories([]);
+      setLoadError('This menu could not be loaded. Please refresh to try again.');
+    } finally {
+      setLoading(false);
     }
   }, [slug]);
 
-  const addToCart = (item: DemoMenuItem, qty = 1) => {
+  useEffect(() => {
+    loadMenu();
+  }, [loadMenu]);
+
+  const currency = hotel?.currency ?? null;
+
+  // Category pills come from the restaurant's own categories. "Uncategorised"
+  // only appears when there is genuinely at least one uncategorised dish.
+  const pills = useMemo(() => {
+    const names = categories.map((c) => c.name).filter(Boolean);
+    const hasUncategorised = menuItems.some((i) => !i.category_id || !categories.some((c) => c.id === i.category_id));
+    return ['All', ...names, ...(hasUncategorised ? ['Uncategorised'] : [])];
+  }, [categories, menuItems]);
+
+  const categoryNameOf = useCallback(
+    (item: PublicMenuItem) => {
+      if (!item.category_id) return 'Uncategorised';
+      return categories.find((c) => c.id === item.category_id)?.name || 'Uncategorised';
+    },
+    [categories]
+  );
+
+  const filteredItems = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return menuItems.filter((item) => {
+      const catMatch =
+        selectedCategory === 'All' ||
+        (selectedCategory === 'Uncategorised'
+          ? categoryNameOf(item) === 'Uncategorised'
+          : categoryNameOf(item) === selectedCategory);
+      const searchMatch =
+        !term ||
+        item.name.toLowerCase().includes(term) ||
+        (item.description || '').toLowerCase().includes(term);
+      return catMatch && searchMatch;
+    });
+  }, [menuItems, selectedCategory, search, categoryNameOf]);
+
+  const addToCart = (item: PublicMenuItem, qty = 1) => {
     setCart((prev) => {
-      const ex = prev.find((c) => c.menuItem.id === item.id);
-      if (ex) return prev.map((c) => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + qty } : c);
+      const existing = prev.find((c) => c.menuItem.id === item.id);
+      if (existing) return prev.map((c) => (c.menuItem.id === item.id ? { ...c, quantity: c.quantity + qty } : c));
       return [...prev, { menuItem: item, quantity: qty }];
     });
   };
 
   const removeFromCart = (itemId: string) => {
     setCart((prev) =>
-      prev.map((c) => c.menuItem.id === itemId ? { ...c, quantity: c.quantity - 1 } : c).filter((c) => c.quantity > 0)
+      prev
+        .map((c) => (c.menuItem.id === itemId ? { ...c, quantity: c.quantity - 1 } : c))
+        .filter((c) => c.quantity > 0)
     );
   };
 
   const totalCount = cart.reduce((s, c) => s + c.quantity, 0);
-  const totalPrice = cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0);
-
-  const filteredItems = menuItems.filter((item) => {
-    const catMatch = selectedCategory === 'All' || item.category === selectedCategory;
-    const searchMatch = !search || item.name.toLowerCase().includes(search.toLowerCase()) || item.description?.toLowerCase().includes(search.toLowerCase());
-    return catMatch && searchMatch;
-  });
+  const totalPrice = cart.reduce((s, c) => s + (Number(c.menuItem.price) || 0) * c.quantity, 0);
 
   const featured = filteredItems.filter((i) => i.is_featured);
   const popular = filteredItems.filter((i) => i.is_popular && !i.is_featured);
   const rest = filteredItems.filter((i) => !i.is_featured && !i.is_popular);
+
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)' }}
+      >
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(201,169,110,0.2)', borderTop: '2px solid var(--gold)', animation: 'spin 1s linear infinite' }} />
+      </div>
+    );
+  }
+
+  if (!hotel) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center px-6"
+        style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)' }}
+      >
+        <div className="flex flex-col items-center gap-4 text-center" style={{ maxWidth: 420 }}>
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ color: 'var(--text-dimmed)', opacity: 0.5 }} aria-hidden="true">
+            <circle cx="22" cy="22" r="18" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M15 22h14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          </svg>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+            Menu unavailable
+          </h1>
+          <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.7, color: 'var(--text-muted)' }}>
+            {loadError || 'No menu was found for this restaurant.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -610,21 +817,27 @@ function MenuContent({ slug }: { slug: string }) {
           style={{ maxWidth: 720, margin: '0 auto' }}
         >
           <div className="flex items-center gap-2.5">
-            {/* Geometric mark */}
-            <svg width="20" height="20" viewBox="0 0 26 26" fill="none">
-              <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="none" stroke="#C9A96E" strokeWidth="1.2" />
-              <line x1="13" y1="1" x2="13" y2="25" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-            </svg>
+            {hotel.logo_url?.trim() ? (
+              <img
+                src={hotel.logo_url}
+                alt={hotel.name}
+                style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 4 }}
+              />
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 26 26" fill="none">
+                <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="none" stroke="#C9A96E" strokeWidth="1.2" />
+                <line x1="13" y1="1" x2="13" y2="25" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
+              </svg>
+            )}
             <div>
               <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-                {restaurantName}
+                {hotel.name}
               </h1>
-              <div className="flex items-center gap-1.5">
-                <span className="d3-live-dot" />
+              {hotel.city?.trim() ? (
                 <span style={{ fontSize: '0.6rem', color: 'var(--text-dimmed)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                  Table {tableNumber}
+                  {hotel.city}
                 </span>
-              </div>
+              ) : null}
             </div>
           </div>
 
@@ -649,123 +862,170 @@ function MenuContent({ slug }: { slug: string }) {
               <circle cx="5.5" cy="11.5" r="1" fill="currentColor" />
               <circle cx="9.5" cy="11.5" r="1" fill="currentColor" />
             </svg>
-            {totalCount > 0 ? `${totalCount} item${totalCount > 1 ? 's' : ''} · $${totalPrice.toFixed(2)}` : 'Cart'}
+            {totalCount > 0 ? `${totalCount} item${totalCount > 1 ? 's' : ''} · ${formatPrice(totalPrice, currency)}` : 'Order'}
           </button>
         </div>
 
         {/* Search + Categories */}
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 1rem 0.625rem' }}>
-          {/* Search */}
-          <div className="relative mb-2">
-            <svg
-              width="14" height="14" viewBox="0 0 14 14" fill="none"
-              style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dimmed)' }}
-            >
-              <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search dishes..."
-              style={{
-                width: '100%',
-                padding: '0.5rem 0.875rem 0.5rem 2rem',
-                borderRadius: 8,
-                background: 'var(--bg-surface-2)',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--text-primary)',
-                fontSize: '0.8125rem',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          {/* Category pills */}
-          <div className="flex gap-1.5 overflow-x-auto" style={{ paddingBottom: 2 }}>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                style={{
-                  padding: '0.3125rem 0.875rem',
-                  borderRadius: 4,
-                  fontSize: '0.6875rem', fontWeight: 500,
-                  letterSpacing: '0.06em',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  border: selectedCategory === cat ? '1px solid var(--border-medium)' : '1px solid var(--border-warm)',
-                  background: selectedCategory === cat ? 'var(--bg-surface-2)' : 'transparent',
-                  color: selectedCategory === cat ? 'var(--gold-pale)' : 'var(--text-muted)',
-                  transition: 'all 200ms',
-                }}
+        {menuItems.length > 0 && (
+          <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 1rem 0.625rem' }}>
+            {/* Search */}
+            <div className="relative mb-2">
+              <svg
+                width="14" height="14" viewBox="0 0 14 14" fill="none"
+                style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dimmed)' }}
               >
-                {cat}
-              </button>
-            ))}
+                <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search this menu"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.875rem 0.5rem 2rem',
+                  borderRadius: 8,
+                  background: 'var(--bg-surface-2)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.8125rem',
+                  outline: 'none',
+                }}
+              />
+            </div>
+
+            {/* Category pills */}
+            {pills.length > 1 && (
+              <div className="flex gap-1.5 overflow-x-auto" style={{ paddingBottom: 2 }}>
+                {pills.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    style={{
+                      padding: '0.3125rem 0.875rem',
+                      borderRadius: 4,
+                      fontSize: '0.6875rem', fontWeight: 500,
+                      letterSpacing: '0.06em',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      border: selectedCategory === cat ? '1px solid var(--border-medium)' : '1px solid var(--border-warm)',
+                      background: selectedCategory === cat ? 'var(--bg-surface-2)' : 'transparent',
+                      color: selectedCategory === cat ? 'var(--gold-pale)' : 'var(--text-muted)',
+                      transition: 'all 200ms',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </header>
 
       {/* Menu content */}
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '1.5rem 1rem' }}>
+        {hotel.welcome_text?.trim() && menuItems.length > 0 ? (
+          <p
+            style={{
+              margin: '0 0 1.75rem',
+              fontSize: '0.8125rem',
+              lineHeight: 1.7,
+              color: 'var(--text-muted)',
+              textAlign: 'center',
+            }}
+          >
+            {hotel.welcome_text}
+          </p>
+        ) : null}
 
-        {/* Featured section */}
-        {featured.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>CHEF'S FEATURED</span>
-              <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {featured.map((item) => (
-                <FoodCard key={item.id} item={item} cart={cart} onAdd={addToCart} onRemove={removeFromCart} onInspect={setInspectItem} />
-              ))}
-            </div>
-          </section>
-        )}
+        {menuItems.length === 0 ? (
+          <MenuEmptyState hasSearch={Boolean(search.trim())} />
+        ) : (
+          <>
+            {/* Featured section */}
+            {featured.length > 0 && (
+              <section className="mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>CHEF'S FEATURED</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {featured.map((item) => (
+                    <FoodCard
+                      key={item.id}
+                      item={item}
+                      currency={currency}
+                      cart={cart}
+                      onAdd={addToCart}
+                      onRemove={removeFromCart}
+                      onInspect={setInspectItem}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
 
-        {/* Popular section */}
-        {popular.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>MOST POPULAR</span>
-              <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {popular.map((item) => (
-                <FoodCard key={item.id} item={item} cart={cart} onAdd={addToCart} onRemove={removeFromCart} onInspect={setInspectItem} />
-              ))}
-            </div>
-          </section>
-        )}
+            {/* Popular section */}
+            {popular.length > 0 && (
+              <section className="mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>MOST POPULAR</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {popular.map((item) => (
+                    <FoodCard
+                      key={item.id}
+                      item={item}
+                      currency={currency}
+                      cart={cart}
+                      onAdd={addToCart}
+                      onRemove={removeFromCart}
+                      onInspect={setInspectItem}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
 
-        {/* All other items */}
-        {rest.length > 0 && (
-          <section>
-            {(featured.length > 0 || popular.length > 0) && (
-              <div className="flex items-center gap-3 mb-4">
-                <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>ALL DISHES</span>
-                <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
+            {/* All other items */}
+            {rest.length > 0 && (
+              <section>
+                {(featured.length > 0 || popular.length > 0) && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>ALL DISHES</span>
+                    <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {rest.map((item) => (
+                    <FoodCard
+                      key={item.id}
+                      item={item}
+                      currency={currency}
+                      cart={cart}
+                      onAdd={addToCart}
+                      onRemove={removeFromCart}
+                      onInspect={setInspectItem}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {filteredItems.length === 0 && (
+              <div className="py-20 text-center flex flex-col items-center gap-4">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ color: 'var(--text-dimmed)', opacity: 0.4 }} aria-hidden="true">
+                  <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M16 24C16 19.6 19.6 16 24 16C28.4 16 32 19.6 32 24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>No dishes found</p>
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {rest.map((item) => (
-                <FoodCard key={item.id} item={item} cart={cart} onAdd={addToCart} onRemove={removeFromCart} onInspect={setInspectItem} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {filteredItems.length === 0 && (
-          <div className="py-20 text-center flex flex-col items-center gap-4">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ color: 'var(--text-dimmed)', opacity: 0.4 }}>
-              <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M16 24C16 19.6 19.6 16 24 16C28.4 16 32 19.6 32 24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>No dishes found</p>
-          </div>
+          </>
         )}
       </main>
 
@@ -773,11 +1033,12 @@ function MenuContent({ slug }: { slug: string }) {
       {inspectItem && (
         <FoodDetailModal
           item={inspectItem}
+          currency={currency}
           onClose={() => setInspectItem(null)}
           onAddToCart={(item, qty, notes) => {
             setCart((prev) => {
-              const ex = prev.find((c) => c.menuItem.id === item.id);
-              if (ex) return prev.map((c) => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + qty } : c);
+              const existing = prev.find((c) => c.menuItem.id === item.id);
+              if (existing) return prev.map((c) => (c.menuItem.id === item.id ? { ...c, quantity: c.quantity + qty, notes } : c));
               return [...prev, { menuItem: item, quantity: qty, notes }];
             });
           }}
@@ -789,17 +1050,19 @@ function MenuContent({ slug }: { slug: string }) {
       {isCartOpen && (
         <CartDrawer
           cart={cart}
+          currency={currency}
           onClose={() => setIsCartOpen(false)}
           onAdd={addToCart}
           onRemove={removeFromCart}
           totalPrice={totalPrice}
-          tableNumber={tableNumber}
-          slug={slug}
+          tableNumber={searchParams.get('table') || ''}
+          hotelId={hotel.id}
+          slug={hotel.slug}
           router={router}
         />
       )}
 
-      {/* Floating cart bar */}
+      {/* Floating order bar */}
       {totalCount > 0 && !isCartOpen && (
         <div
           className="fixed bottom-4 left-4 right-4 z-20"
@@ -814,9 +1077,31 @@ function MenuContent({ slug }: { slug: string }) {
               {totalCount}
             </span>
             <span>View Order</span>
-            <span>${totalPrice.toFixed(2)}</span>
+            <span>{formatPrice(totalPrice, currency)}</span>
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   MENU EMPTY STATE
+   ============================================================ */
+function MenuEmptyState({ hasSearch }: { hasSearch: boolean }) {
+  return (
+    <div className="py-20 text-center flex flex-col items-center gap-4">
+      <svg width="46" height="46" viewBox="0 0 46 46" fill="none" style={{ color: 'var(--text-dimmed)', opacity: 0.45 }} aria-hidden="true">
+        <path d="M23 4L41 14V32L23 42L5 32V14L23 4Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+        <path d="M23 4V42M5 14L23 23L41 14" stroke="currentColor" strokeWidth="0.9" strokeOpacity="0.5" strokeLinejoin="round" />
+      </svg>
+      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9375rem' }}>
+        {hasSearch ? 'No dishes found' : 'No menu items yet'}
+      </p>
+      {hasSearch ? null : (
+        <p style={{ margin: 0, maxWidth: '32ch', color: 'var(--text-dimmed)', fontSize: '0.8125rem', lineHeight: 1.7 }}>
+          This restaurant has not published any dishes for this menu yet.
+        </p>
       )}
     </div>
   );
@@ -827,18 +1112,24 @@ function MenuContent({ slug }: { slug: string }) {
    ============================================================ */
 function FoodCard({
   item,
+  currency,
   cart,
   onAdd,
   onRemove,
   onInspect,
 }: {
-  item: DemoMenuItem;
+  item: PublicMenuItem;
+  currency: string | null;
   cart: CartItem[];
-  onAdd: (item: DemoMenuItem) => void;
+  onAdd: (item: PublicMenuItem) => void;
   onRemove: (id: string) => void;
-  onInspect: (item: DemoMenuItem) => void;
+  onInspect: (item: PublicMenuItem) => void;
 }) {
   const inCart = cart.find((c) => c.menuItem.id === item.id);
+  const has3D = Boolean(item.model_url_glb?.trim());
+  const image = item.image_url?.trim() || '';
+  const price = Number(item.price) || 0;
+  const rating = Number(item.rating) || 0;
 
   return (
     <div
@@ -852,31 +1143,46 @@ function FoodCard({
         transition: 'border-color 300ms',
       }}
     >
-      {/* 3D viewer area */}
+      {/* Visual area — a stored model, a stored photo, or an honest empty panel */}
       <div className="relative" style={{ background: 'var(--bg-secondary)' }}>
-        <FoodModelViewer
-          modelUrlGlb={item.model_url_glb}
-          altText={item.name}
-          autoRotate
-          className="h-48 w-full"
-        />
-        {/* Inspect button */}
-        <button
-          onClick={() => onInspect(item)}
-          style={{
-            position: 'absolute', top: 8, right: 8,
-            padding: '0.25rem 0.625rem',
-            borderRadius: 6,
-            background: 'rgba(0,0,0,0.7)',
-            border: '1px solid rgba(201,169,110,0.2)',
-            color: 'var(--gold)',
-            fontSize: '0.5625rem', fontWeight: 600,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            cursor: 'pointer',
-          }}
-        >
-          Inspect 3D
-        </button>
+        {has3D ? (
+          <FoodModelViewer
+            modelUrlGlb={item.model_url_glb ?? undefined}
+            modelUrlUsdz={item.model_url_usdz ?? undefined}
+            altText={item.name}
+            autoRotate
+            className="h-48 w-full"
+          />
+        ) : image ? (
+          <img
+            src={image}
+            alt={item.name}
+            loading="lazy"
+            style={{ width: '100%', height: '12rem', objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <NoAssetPanel label="No 3D model" height="12rem" />
+        )}
+
+        {/* Inspect button — only meaningful when a model exists */}
+        {has3D && (
+          <button
+            onClick={() => onInspect(item)}
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              padding: '0.25rem 0.625rem',
+              borderRadius: 6,
+              background: 'rgba(0,0,0,0.7)',
+              border: '1px solid rgba(201,169,110,0.2)',
+              color: 'var(--gold)',
+              fontSize: '0.5625rem', fontWeight: 600,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >
+            Inspect 3D
+          </button>
+        )}
 
         {/* Badges */}
         <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
@@ -915,35 +1221,39 @@ function FoodCard({
                 {item.name}
               </h3>
             </div>
-            <p style={{
-              fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5,
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            }}>
-              {item.description}
-            </p>
+            {item.description ? (
+              <p style={{
+                fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5,
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              }}>
+                {item.description}
+              </p>
+            ) : null}
           </div>
           <span style={{
             fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 500,
             color: 'var(--gold)', flexShrink: 0, letterSpacing: '-0.02em',
           }}>
-            ${item.price.toFixed(2)}
+            {formatPrice(price, currency)}
           </span>
         </div>
 
-        {/* Meta */}
-        <div className="flex items-center gap-3" style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>
-          <span>{item.calories} kcal</span>
-          <span>·</span>
-          <span>{item.preparation_time_mins} min</span>
-          {item.rating && (
-            <>
-              <span>·</span>
-              <span style={{ color: 'var(--gold)' }}>★ {item.rating}</span>
-            </>
-          )}
-        </div>
+        {/* Meta — rendered only for values the restaurant stored */}
+        {item.calories || item.preparation_time_mins || rating > 0 ? (
+          <div className="flex items-center gap-3" style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>
+            {item.calories ? <span>{item.calories} kcal</span> : null}
+            {item.calories && item.preparation_time_mins ? <span>·</span> : null}
+            {item.preparation_time_mins ? <span>{item.preparation_time_mins} min</span> : null}
+            {rating > 0 ? (
+              <>
+                {(item.calories || item.preparation_time_mins) ? <span>·</span> : null}
+                <span style={{ color: 'var(--gold)' }}>★ {rating.toFixed(1)}</span>
+              </>
+            ) : null}
+          </div>
+        ) : null}
 
-        {/* Cart controls */}
+        {/* Order controls */}
         {inCart ? (
           <div
             className="flex items-center justify-between"
@@ -986,28 +1296,28 @@ function FoodCard({
             </button>
           </div>
         ) : (
-<button
-              onClick={() => onAdd(item)}
-              style={{
-                width: '100%', padding: '0.5625rem',
-                borderRadius: 5, border: '1px solid var(--border-medium)',
-                background: 'var(--bg-surface-2)',
-                color: 'var(--gold-pale)',
-                fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.04em',
-                cursor: 'pointer',
-                transition: 'all 200ms',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--bg-surface-3)';
-                e.currentTarget.style.borderColor = 'rgba(184,164,122,0.45)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--bg-surface-2)';
-                e.currentTarget.style.borderColor = 'var(--border-medium)';
-              }}
-            >
-              Add to Order
-            </button>
+          <button
+            onClick={() => onAdd(item)}
+            style={{
+              width: '100%', padding: '0.5625rem',
+              borderRadius: 5, border: '1px solid var(--border-medium)',
+              background: 'var(--bg-surface-2)',
+              color: 'var(--gold-pale)',
+              fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.04em',
+              cursor: 'pointer',
+              transition: 'all 200ms',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-surface-3)';
+              e.currentTarget.style.borderColor = 'rgba(184,164,122,0.45)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--bg-surface-2)';
+              e.currentTarget.style.borderColor = 'var(--border-medium)';
+            }}
+          >
+            Add to Order
+          </button>
         )}
       </div>
     </div>

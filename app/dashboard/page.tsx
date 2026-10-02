@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useHotel, useOrders, useDashboardStats } from '@/lib/useHotel';
+import { formatPrice } from '@/lib/menu';
 
 function StatCard({ label, value, change, icon, loading }: { label: string; value: string; change: string; icon: React.ReactNode; loading?: boolean }) {
   return (
@@ -35,14 +36,16 @@ function StatCard({ label, value, change, icon, loading }: { label: string; valu
   );
 }
 
-/* One monochrome family — only the newest order is marked. */
+/* One monochrome family — only the newest order is marked.
+   Keys are the lowercase statuses the app stores. */
 const STATUS_CLASS: Record<string, string> = {
-  PLACED: 'd3-status-placed',
-  ACCEPTED: 'd3-status-accepted',
-  PREPARING: 'd3-status-preparing',
-  READY: 'd3-status-ready',
-  COMPLETED: 'd3-status-completed',
-  CANCELLED: 'd3-status-cancelled',
+  placed: 'd3-status-placed',
+  pending: 'd3-status-placed',
+  accepted: 'd3-status-accepted',
+  preparing: 'd3-status-preparing',
+  ready: 'd3-status-ready',
+  completed: 'd3-status-completed',
+  cancelled: 'd3-status-cancelled',
 };
 
 export default function DashboardOverview() {
@@ -53,20 +56,16 @@ export default function DashboardOverview() {
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
 
   const revenue = stats.revenueToday;
-  const revenueChange = '+0% this week';
 
   const statCards = [
     { label: 'Orders Today', value: `${stats.ordersToday}`, change: 'Real-time count', icon: (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2H12L11 5H3L2 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" /><rect x="1" y="5" width="12" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.1" /></svg>
     )},
-    { label: 'Revenue', value: `$${revenue.toFixed(0)}`, change: revenueChange, icon: (
+    { label: 'Revenue Today', value: formatPrice(revenue, hotel?.currency), change: 'From today’s orders', icon: (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.1" /><path d="M7 4V5.5M7 8.5V10M5 6.5C5 5.7 5.9 5 7 5C8.1 5 9 5.7 9 6.5C9 7.3 8.1 8 7 8C5.9 8 5 8.7 5 9.5C5 10.3 5.9 11 7 11C8.1 11 9 10.3 9 9.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
     )},
     { label: '3D Menu Items', value: `${stats.menuItemsCount}`, change: 'See all items', icon: (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L12 4V10L7 13L2 10V4L7 1Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" /></svg>
-    )},
-    { label: 'QR Scans Today', value: `${stats.qrScansToday}`, change: 'No active scans', icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /><rect x="9" y="1" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /><rect x="1" y="9" width="4" height="4" rx="0.75" stroke="currentColor" strokeWidth="1.1" /></svg>
     )},
   ];
 
@@ -255,15 +254,15 @@ export default function DashboardOverview() {
                       #{order.id.slice(0, 8).toUpperCase()}
                     </span>
                     <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 3 }}>
-                      {order.table_number} · {order.customer_name}
+                      {order.table_number || '—'} · {order.customer_name || '—'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                    <span className={`d3-badge ${STATUS_CLASS[order.status] || STATUS_CLASS.CANCELLED}`}>
+                    <span className={`d3-badge ${STATUS_CLASS[(order.status || '').toLowerCase()] || STATUS_CLASS.cancelled}`}>
                       {order.status}
                     </span>
                     <span className="d3-figure" style={{ fontSize: '1rem', color: 'var(--gold)' }}>
-                      ${order.total_amount.toFixed(2)}
+                      {formatPrice(Number(order.total_amount) || 0, hotel?.currency)}
                     </span>
                   </div>
                 </div>

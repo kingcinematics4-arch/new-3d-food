@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useHotel, useHotelCustomization } from '@/lib/useHotel';
+import { useHotel, useHotelCustomization, useMenuItems } from '@/lib/useHotel';
+import type { MenuItem } from '@/lib/useHotel';
+import { formatPrice } from '@/lib/menu';
 
 /* ============================================================
    MENU DESIGN STUDIO
@@ -39,6 +41,7 @@ export default function CustomizeMenuPage() {
     setCustomization,
   } = useHotelCustomization(hotel?.id || null);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const { items: menuItems } = useMenuItems(hotel?.id || null);
 
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
@@ -126,9 +129,16 @@ export default function CustomizeMenuPage() {
             <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span>
-            Design published. Your guest menu at{' '}
-            <span style={{ color: 'var(--gold)' }}>/menu/{hotelSlug || 'your-restaurant'}</span>{' '}
-            now reflects these settings.
+            Design published.{' '}
+            {hotelSlug ? (
+              <>
+                Your guest menu at{' '}
+                <span style={{ color: 'var(--gold)' }}>/menu/{hotelSlug}</span>{' '}
+                now reflects these settings.
+              </>
+            ) : (
+              'These settings are saved to your restaurant profile.'
+            )}
           </span>
         </div>
       )}
@@ -324,6 +334,8 @@ export default function CustomizeMenuPage() {
 
           <MenuPreview
             hotelName={hotelName}
+            currency={hotel?.currency ?? null}
+            items={menuItems}
             primary={customization.primary_color}
             secondary={customization.secondary_color}
             typography={customization.typography}
@@ -356,6 +368,8 @@ export default function CustomizeMenuPage() {
 
 function MenuPreview({
   hotelName,
+  currency,
+  items,
   primary,
   secondary,
   typography,
@@ -365,6 +379,8 @@ function MenuPreview({
   darkMode,
 }: {
   hotelName: string;
+  currency: string | null;
+  items: MenuItem[];
   primary: string;
   secondary: string;
   typography: string;
@@ -396,6 +412,10 @@ function MenuPreview({
     cardStyle === 'bordered' ? primary : cardStyle === 'glassmorphic' ? pageLine : pageLine;
 
   const columns = menuStyle === 'grid' ? '1fr 1fr' : menuStyle === 'list' ? '1fr' : '1fr';
+
+  // The preview is a rehearsal of the real menu: it shows the dishes this
+  // restaurant has actually saved, and says so plainly when there are none.
+  const dishes = items.slice(0, 4);
 
   return (
     <div
@@ -481,15 +501,36 @@ function MenuPreview({
           padding: menuStyle === 'list' ? '0 1.5rem 1.5rem' : '1.25rem 1.5rem 1.75rem',
         }}
       >
-        {[
-          { name: 'Charred Sea Bass', note: 'Beetroot, citrus oil', price: '32' },
-          { name: 'Truffle Risotto', note: 'Aged parmesan, chive', price: '26' },
-        ].map((dish, i) => {
+        {dishes.length === 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+              padding: '2.75rem 1.5rem 3rem',
+              textAlign: 'center',
+            }}
+          >
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none" style={{ color: pageMuted, opacity: 0.55 }} aria-hidden="true">
+              <path d="M17 3L30 10.5V24L17 31.5L4 24V10.5L17 3Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+              <path d="M17 3V31.5M4 10.5L17 18L30 10.5" stroke="currentColor" strokeWidth="0.9" strokeOpacity="0.5" strokeLinejoin="round" />
+            </svg>
+            <p style={{ margin: 0, fontFamily: face, fontSize: '0.875rem', color: pageInk }}>
+              No menu items yet
+            </p>
+            <p style={{ margin: 0, fontSize: '0.6875rem', color: pageMuted, lineHeight: 1.6, maxWidth: '26ch' }}>
+              Add a dish and it appears here, styled exactly as your guests will see it.
+            </p>
+          </div>
+        ) : (
+dishes.map((dish, i) => {
           const isList = menuStyle === 'list';
+          const note = dish.description || (dish.category ? dish.category : '');
 
           return (
             <div
-              key={dish.name}
+              key={dish.id}
               style={
                 isList
                   ? { padding: '1rem 0', borderTop: `1px solid ${pageLine}` }
@@ -531,9 +572,10 @@ function MenuPreview({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {dish.price}
+                {formatPrice(Number(dish.price) || 0, currency)}
               </span>
             </div>
+            {note ? (
             <p
               style={{
                 fontSize: '0.6875rem',
@@ -542,8 +584,9 @@ function MenuPreview({
                 lineHeight: 1.6,
               }}
             >
-              {dish.note}
+              {note}
             </p>
+            ) : null}
             {isList && (
               <div
                 style={{
@@ -557,7 +600,8 @@ function MenuPreview({
             )}
             </div>
           );
-        })}
+        })
+        )}
       </div>
 
       {/* Footer note */}
@@ -582,7 +626,7 @@ function MenuPreview({
             color: primary,
           }}
         >
-          Table 1
+          {items.length} item{items.length === 1 ? '' : 's'} live
         </span>
       </div>
     </div>

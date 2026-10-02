@@ -307,7 +307,7 @@ export default function DishFormModal({
                     required
                     value={form.name}
                     onChange={(e) => set('name', e.target.value)}
-                    placeholder="e.g. Signature Truffle Burger"
+                    placeholder="Name of the dish"
                     className="d3-input"
                   />
                 </div>
@@ -453,7 +453,7 @@ export default function DishFormModal({
                     type="url"
                     value={form.image_url}
                     onChange={(e) => set('image_url', e.target.value)}
-                    placeholder="https://…/chicken-biryani.jpg"
+                    placeholder="https://your-cdn.com/dish.jpg"
                     className="d3-input"
                   />
                   <p
@@ -504,7 +504,7 @@ export default function DishFormModal({
                   type="url"
                   value={form.model_url_glb}
                   onChange={(e) => set('model_url_glb', e.target.value)}
-                  placeholder="https://…/biryani.glb"
+                  placeholder="https://your-cdn.com/dish.glb"
                   className="d3-input"
                 />
               </div>
@@ -518,7 +518,7 @@ export default function DishFormModal({
                   type="url"
                   value={form.model_url_usdz}
                   onChange={(e) => set('model_url_usdz', e.target.value)}
-                  placeholder="https://…/biryani.usdz"
+                  placeholder="https://your-cdn.com/dish.usdz"
                   className="d3-input"
                 />
               </div>
@@ -576,7 +576,7 @@ export default function DishFormModal({
                     type="text"
                     value={form.ingredients}
                     onChange={(e) => set('ingredients', e.target.value)}
-                    placeholder="Basmati rice, Saffron, Chicken"
+                    placeholder="Separate each ingredient with a comma"
                     className="d3-input"
                   />
                 </div>
@@ -589,7 +589,7 @@ export default function DishFormModal({
                     type="text"
                     value={form.allergens}
                     onChange={(e) => set('allergens', e.target.value)}
-                    placeholder="Gluten, Dairy, Nuts"
+                    placeholder="Separate each allergen with a comma"
                     className="d3-input"
                   />
                 </div>

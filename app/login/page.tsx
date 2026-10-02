@@ -313,7 +313,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="owner@restaurant.com"
+                placeholder="you@example.com"
                 className="d3-input"
               />
             </div>
