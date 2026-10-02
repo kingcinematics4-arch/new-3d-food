@@ -20,12 +20,56 @@
 --   * no INSERT of a hotels / categories / menu_items / demo row
 --   * no DROP TABLE, no TRUNCATE, no DELETE
 --   * no UPDATE that invents a value: every written value is read from the DB
+--   * never disables or bypasses RLS
 --   * never modifies auth.users
 --   * 001_initial.sql:275-285 is deliberately NOT reproduced, because it
 --     fabricates a hotels row for every auth user that lacks one
 --
+-- =====================================================================
+-- ORDERING INVARIANT -- READ BEFORE EDITING
+--
+-- PostgreSQL validates the body of a LANGUAGE sql function at CREATE time,
+-- not at first call. Creating a function that reads a column the table does
+-- not have yet therefore fails immediately with
+--     ERROR: 42703: column "<alias>" does not exist
+-- and, inside this transaction, rolls the whole migration back.
+--
+-- The first version of this file created the policy helpers in section 2,
+-- before hotels was reconciled, so `hotel_is_active()` referenced
+-- `hotels.is_active` while only `restaurant_name` existed. That aborted the
+-- run with exactly that error.
+--
+-- Three independent guards now prevent a repeat:
+--
+--   1. ORDER. public.hotels is created and fully reconciled in section 3,
+--      and every other relation in section 4, BEFORE the persistent policy
+--      helpers (section 6) and the RLS policies (section 12) that read them.
+--      Nothing is ever declared before the relations and columns it reads
+--      already exist.
+--
+--   2. NO UNGUARDED ALTER. Section 3 runs `CREATE TABLE IF NOT EXISTS
+--      public.hotels` before the `ALTER TABLE public.hotels ... ADD COLUMN IF
+--      NOT EXISTS` that follows it, so the unconditional ALTER can never hit
+--      "relation public.hotels does not exist".
+--
+--   3. DEFERRED PARSING. Each policy helper is LANGUAGE plpgsql and builds
+--      its query with EXECUTE ... USING, so the SQL is parsed at first call
+--      rather than at CREATE time. A helper therefore always creates cleanly,
+--      even against a partial legacy schema.
+--
+-- RLS policies are parsed when CREATE POLICY runs, which is why section 12
+-- comes after sections 3-6.
+--
+-- CAUTION WHEN EDITING ANY plpgsql BLOCK BELOW: PL/pgSQL validates a RAISE
+-- statement's placeholder count against its argument list at COMPILE time,
+-- i.e. the first time the function is called -- not when the branch executes.
+-- A mismatch therefore aborts the whole transaction even when the branch is
+-- unreachable. `RAISE WARNING '%.% ...'` consumes three arguments ('%.%' is
+-- two, not one).
+--
 -- IDEMPOTENT. Safe to run in the Supabase SQL Editor. Afterwards click
 -- "Refresh schema cache" so PostgREST picks up the new relations.
+-- =====================================================================
 
 BEGIN;
 
@@ -92,44 +136,9 @@ EXCEPTION WHEN others THEN
 END $$;
 
 -- =====================================================================
--- 2. PERSISTENT POLICY HELPERS
---    SECURITY DEFINER so the tenant checks used inside RLS policies are not
---    themselves blocked by hotels' own RLS. Pinned search_path; every
---    reference inside is schema-qualified, so auth.uid()/auth.role() resolve.
--- =====================================================================
-
-CREATE OR REPLACE FUNCTION public.hotel_is_active(p_hotel_id uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public, pg_temp AS $$
-  SELECT EXISTS (SELECT 1 FROM public.hotels h
-                  WHERE h.id = p_hotel_id AND h.is_active IS TRUE);
-$$;
-
-CREATE OR REPLACE FUNCTION public.user_owns_hotel(p_hotel_id uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public, pg_temp AS $$
-  SELECT
-    auth.role() = 'service_role'
-    OR EXISTS (SELECT 1 FROM public.hotels h
-                WHERE h.id = p_hotel_id AND h.user_id = auth.uid())
-    OR EXISTS (SELECT 1 FROM public.hotel_users hu
-                WHERE hu.hotel_id = p_hotel_id AND hu.user_id = auth.uid());
-$$;
-
-CREATE OR REPLACE FUNCTION public.order_hotel_id(p_order_id uuid)
-RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public, pg_temp AS $$
-  SELECT o.hotel_id FROM public.orders o WHERE o.id = p_order_id;
-$$;
-
-CREATE OR REPLACE FUNCTION public.menu_item_hotel_id(p_menu_item_id uuid)
-RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public, pg_temp AS $$
-  SELECT m.hotel_id FROM public.menu_items m WHERE m.id = p_menu_item_id;
-$$;
-
--- =====================================================================
--- 3. TRANSIENT DDL HELPERS  (dropped before COMMIT)
+-- 2. TRANSIENT DDL HELPERS  (dropped before COMMIT)
+--     LANGUAGE plpgsql, so every statement inside is parsed at run time and
+--     these create cleanly no matter how partial the schema is.
 -- =====================================================================
 
 -- Add a FK if the column has none. Orphan-checked first; never fatal.
@@ -202,7 +211,7 @@ BEGIN
   END;
 
   IF v_orphans > 0 THEN
-    RAISE WARNING 'NOT adding FK %.% -> %.%: % orphan row(s) would violate it.',
+    RAISE WARNING 'NOT adding FK %.% -> %: % orphan row(s) would violate it.',
       p_table, p_column, p_ref_table, v_orphans;
     RETURN;
   END IF;
@@ -213,7 +222,7 @@ BEGIN
       p_table, p_table || '_' || p_column || '_fkey', p_column,
       p_ref_table, p_ref_col, p_on_delete);
   EXCEPTION WHEN others THEN
-    RAISE WARNING 'could not add FK %.% -> %.%: %', p_table, p_column, p_ref_table, SQLERRM;
+    RAISE WARNING 'could not add FK %.% -> %: %', p_table, p_column, p_ref_table, SQLERRM;
   END;
 END $$;
 
@@ -263,10 +272,10 @@ END $$;
 -- Set NOT NULL ONLY when the column already has zero NULL rows. Never writes.
 CREATE OR REPLACE FUNCTION public._fix_tighten(p_table text, p_column text) RETURNS void
 LANGUAGE plpgsql AS $$
-DECLARE v_nulls bigint; v_notnull text;
+DECLARE v_nulls bigint; v_notnull boolean;
 BEGIN
   IF to_regclass('public.' || p_table) IS NULL THEN RETURN; END IF;
-  SELECT a.attnotnull INTO v_notnull FROM pg_attribute a
+  SELECT (a.attnotnull = 't') INTO v_notnull FROM pg_attribute a
    WHERE a.attrelid = to_regclass('public.' || p_table) AND a.attname = p_column;
   IF v_notnull IS NULL OR v_notnull THEN RETURN; END IF;
 
@@ -280,13 +289,61 @@ BEGIN
 END $$;
 
 -- =====================================================================
--- 4. HOTELS RECONCILIATION  --  restaurant_name -> name
+-- 3. HOTELS RECONCILIATION  --  restaurant_name -> name
 --    The app writes `name` (lib/auth.ts, app/api/hotel/update/route.ts,
 --    lib/useHotel.ts Hotel, lib/serverAuth.ts HotelRecord).
+--
+--    This is the FIRST thing that touches public.hotels, and it runs BEFORE
+--    the policy helpers (section 6) and the policies (section 12), because
+--    both of those read hotels.is_active / hotels.user_id. Nothing below
+--    this point may assume a hotels column that is not added here.
+--
+--    Order inside this section matters:
+--      3a  CREATE TABLE IF NOT EXISTS  -> guarantees the relation exists,
+--                                          so the unconditional ALTER below
+--                                          can never hit
+--                                          "relation public.hotels does not exist"
+--      3b  rename restaurant_name -> name (skipped when already done)
+--      3c  ADD COLUMN IF NOT EXISTS for every column the app uses
+--      3d  coerce hotels.id / hotels.user_id to uuid
 -- =====================================================================
+
+CREATE TABLE IF NOT EXISTS public.hotels (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  name              text NOT NULL,
+  slug              text,
+  owner_name        text,
+  email             text,
+  phone             text,
+  city              text,
+  address           text,
+  location          text,
+  logo_url          text,
+  primary_color     text DEFAULT '#f59e0b',
+  secondary_color   text DEFAULT '#10b981',
+  menu_style        text DEFAULT 'cards',
+  card_style        text DEFAULT 'glassmorphic',
+  dark_mode         boolean DEFAULT true,
+  typography        text DEFAULT 'Inter',
+  welcome_text      text DEFAULT 'Experience our menu in 3D!',
+  custom_domain     text,
+  currency          text DEFAULT 'USD ($)',
+  tax_rate          numeric(5,2) DEFAULT 8.875,
+  service_charge    numeric(5,2) DEFAULT 5.0,
+  is_active         boolean DEFAULT true,
+  subscription_plan text DEFAULT 'starter',
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  updated_at        timestamptz NOT NULL DEFAULT now()
+);
 
 DO $$
 BEGIN
+  IF to_regclass('public.hotels') IS NULL THEN
+    RAISE NOTICE 'public.hotels absent; the rename step is skipped.';
+    RETURN;
+  END IF;
+
   IF EXISTS (SELECT 1 FROM information_schema.columns
               WHERE table_schema='public' AND table_name='hotels' AND column_name='restaurant_name')
      AND NOT EXISTS (SELECT 1 FROM information_schema.columns
@@ -296,7 +353,8 @@ BEGIN
   END IF;
 END $$;
 
--- Every hotels column the current application reads or writes.
+-- Every hotels column the current application reads or writes. After this
+-- statement, hotels has all 24 columns, including is_active and user_id.
 ALTER TABLE public.hotels
   ADD COLUMN IF NOT EXISTS user_id           uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   ADD COLUMN IF NOT EXISTS name              text,
@@ -332,6 +390,8 @@ ALTER TABLE public.hotels
 DO $$
 DECLARE v_type text;
 BEGIN
+  IF to_regclass('public.hotels') IS NULL THEN RETURN; END IF;
+
   SELECT a.atttypid::regtype::text INTO v_type
     FROM pg_attribute a
    WHERE a.attrelid = to_regclass('public.hotels') AND a.attname = 'id';
@@ -349,6 +409,8 @@ END $$;
 DO $$
 DECLARE v_type text;
 BEGIN
+  IF to_regclass('public.hotels') IS NULL THEN RETURN; END IF;
+
   SELECT a.atttypid::regtype::text INTO v_type
     FROM pg_attribute a
    WHERE a.attrelid = to_regclass('public.hotels') AND a.attname = 'user_id';
@@ -363,37 +425,13 @@ BEGIN
 END $$;
 
 -- =====================================================================
--- 5. TABLES  (created only when absent -- nothing is overwritten)
+-- 4. TABLES  (created only when absent -- nothing is overwritten)
+--    public.hotels was already created and reconciled in section 3; it is
+--    deliberately NOT repeated here, so the hotels definition exists exactly
+--    once and always precedes the ALTER that depends on it.
+--    All ten tables exist before the policy helpers in section 6 and the
+--    policies in section 12 are created.
 -- =====================================================================
-
-CREATE TABLE IF NOT EXISTS public.hotels (
-  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id           uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  name              text NOT NULL,
-  slug              text,
-  owner_name        text,
-  email             text,
-  phone             text,
-  city              text,
-  address           text,
-  location          text,
-  logo_url          text,
-  primary_color     text DEFAULT '#f59e0b',
-  secondary_color   text DEFAULT '#10b981',
-  menu_style        text DEFAULT 'cards',
-  card_style        text DEFAULT 'glassmorphic',
-  dark_mode         boolean DEFAULT true,
-  typography        text DEFAULT 'Inter',
-  welcome_text      text DEFAULT 'Experience our menu in 3D!',
-  custom_domain     text,
-  currency          text DEFAULT 'USD ($)',
-  tax_rate          numeric(5,2) DEFAULT 8.875,
-  service_charge    numeric(5,2) DEFAULT 5.0,
-  is_active         boolean DEFAULT true,
-  subscription_plan text DEFAULT 'starter',
-  created_at        timestamptz NOT NULL DEFAULT now(),
-  updated_at        timestamptz NOT NULL DEFAULT now()
-);
 
 CREATE TABLE IF NOT EXISTS public.hotel_users (
   user_id  uuid NOT NULL REFERENCES auth.users(id)  ON DELETE CASCADE,
@@ -499,7 +537,7 @@ CREATE TABLE IF NOT EXISTS public.qr_codes (
 );
 
 -- =====================================================================
--- 6. ADD MISSING COLUMNS ON THE NON-HOTELS TABLES (no-ops when fresh)
+-- 5. ADD MISSING COLUMNS ON THE NON-HOTELS TABLES (no-ops when fresh)
 -- =====================================================================
 
 ALTER TABLE public.hotel_users
@@ -585,11 +623,78 @@ ALTER TABLE public.qr_codes
   ADD COLUMN IF NOT EXISTS created_at   timestamptz NOT NULL DEFAULT now();
 
 -- =====================================================================
+-- 6. PERSISTENT POLICY HELPERS
+--
+--    PLACEMENT IS LOAD-BEARING: every relation and column these read is
+--    guaranteed to exist only after sections 3, 4 and 5.
+--
+--    Each body is built with EXECUTE ... USING, so the SQL is parsed at first
+--    call rather than at CREATE time. That is a second, independent guard
+--    against the 42703 failure this file previously hit, and it means the
+--    helpers create cleanly even against a partial legacy schema.
+-- =====================================================================
+
+CREATE OR REPLACE FUNCTION public.hotel_is_active(p_hotel_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
+DECLARE v_result boolean;
+BEGIN
+  EXECUTE 'SELECT EXISTS (SELECT 1 FROM public.hotels h
+                        WHERE h.id = $1 AND h.is_active IS TRUE)'
+    INTO v_result USING p_hotel_id;
+  RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_owns_hotel(p_hotel_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
+DECLARE v_result boolean;
+BEGIN
+  EXECUTE $body$
+    SELECT auth.role() = 'service_role'
+       OR EXISTS (SELECT 1 FROM public.hotels h
+                   WHERE h.id = $1 AND h.user_id = auth.uid())
+       OR EXISTS (SELECT 1 FROM public.hotel_users hu
+                   WHERE hu.hotel_id = $1 AND hu.user_id = auth.uid())
+  $body$
+    INTO v_result USING p_hotel_id;
+  RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.order_hotel_id(p_order_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
+DECLARE v_result uuid;
+BEGIN
+  EXECUTE 'SELECT o.hotel_id FROM public.orders o WHERE o.id = $1'
+    INTO v_result USING p_order_id;
+  RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.menu_item_hotel_id(p_menu_item_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
+DECLARE v_result uuid;
+BEGIN
+  EXECUTE 'SELECT m.hotel_id FROM public.menu_items m WHERE m.id = $1'
+    INTO v_result USING p_menu_item_id;
+  RETURN v_result;
+END;
+$$;
+
+-- =====================================================================
 -- 7. REAL-DATA REPAIRS  (every written value is read from the database)
 --    On the diagnosed state (zero rows) every statement is a no-op.
 -- =====================================================================
 
--- Only when both columns exist (the rename above already handles the usual case).
+-- Only when both columns exist (the rename in section 3 handles the usual case).
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.columns
@@ -792,7 +897,11 @@ CREATE TRIGGER hotels_touch_updated_at
 -- 12. ROW LEVEL SECURITY
 --     Every application read/write goes through supabaseAdmin (service_role,
 --     BYPASSRLS), so these policies do not change app behaviour. They protect
---     the anon/authenticated keys.
+--     the anon/authenticated keys. RLS is only ever enabled, never disabled.
+--
+--     CREATE POLICY parses its USING/WITH CHECK expression immediately, which
+--     is why this section must follow sections 3-6: the functions it calls
+--     and the hotel_id columns it references are only guaranteed then.
 -- =====================================================================
 
 ALTER TABLE public.hotels               ENABLE ROW LEVEL SECURITY;
@@ -959,6 +1068,8 @@ CREATE POLICY "qr_codes_manage" ON public.qr_codes
 
 -- =====================================================================
 -- 13. GRANTS  (least privilege, explicit per table)
+--     No sequence is used anywhere (every id default is gen_random_uuid()),
+--     so no sequence grants are required.
 -- =====================================================================
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
@@ -983,7 +1094,7 @@ GRANT EXECUTE ON FUNCTION public.order_hotel_id(uuid)     TO anon, authenticated
 GRANT EXECUTE ON FUNCTION public.menu_item_hotel_id(uuid) TO anon, authenticated, service_role;
 
 -- =====================================================================
--- 14. DROP TRANSIENT HELPERS  (the 4 policy helpers in section 2 stay)
+-- 14. DROP TRANSIENT HELPERS  (the 4 policy helpers in section 6 stay)
 -- =====================================================================
 
 DROP FUNCTION IF EXISTS public._fix_ensure_fk(text,text,text,text,text,boolean);

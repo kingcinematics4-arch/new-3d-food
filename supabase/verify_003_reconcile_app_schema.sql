@@ -7,13 +7,13 @@
 -- Expected on the diagnosed starting state:
 --   V1  10 tables
 --   V2  every count 0  (hotels MUST stay 0 - the migration creates no hotel)
---   V3  name present, restaurant_name ABSENT, name NOT NULL
---   V4  15 foreign keys; reviews/order_item_id = ON DELETE SET NULL
+--   V3  name present, restaurant_name ABSENT, name NOT NULL; 26 columns
+--   V4  14 foreign keys; reviews/order_item_id = ON DELETE SET NULL
 --   V5  21 menu_items columns
 --   V6  30 policies
 --   V7  10 tables with RLS enabled
 --   V8  0 rows (no blanket-access policy)
---   V10 16 app indexes
+--   V10 15 app indexes
 --   V11 10 primary keys
 --   V13 all zeros
 
@@ -40,7 +40,8 @@ UNION ALL SELECT 'reviews',              count(*) FROM public.reviews
 UNION ALL SELECT 'qr_codes',             count(*) FROM public.qr_codes;
 
 -- ==========================================================================
--- V3. restaurant_name -> name resolved? 24 columns expected.
+-- V3. restaurant_name -> name resolved? 26 columns expected
+--     (25 app columns + legacy `password` only if some deployment still has it).
 -- ==========================================================================
 SELECT column_name, data_type, is_nullable, column_default
   FROM information_schema.columns
@@ -48,7 +49,7 @@ SELECT column_name, data_type, is_nullable, column_default
  ORDER BY ordinal_position;
 
 -- ==========================================================================
--- V4. Every foreign key that actually exists. EXPECT 15 ROWS.
+-- V4. Every foreign key that actually exists. EXPECT 14 ROWS.
 --     pg_constraint.conname / conkey / confrelid / contype are the real
 --     catalog columns.
 -- ==========================================================================
@@ -119,7 +120,7 @@ SELECT pg_get_expr(p.polqual, p.polrelid) AS orders_select_using
  WHERE n.nspname = 'public' AND c.relname = 'orders' AND p.polname = 'orders_select';
 
 -- ==========================================================================
--- V10. Indexes. EXPECT 16 app indexes (pkey excluded).
+-- V10. Indexes. EXPECT 15 app indexes (pkey excluded).
 -- ==========================================================================
 SELECT indexname
   FROM pg_indexes
