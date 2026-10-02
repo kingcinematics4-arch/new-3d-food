@@ -112,11 +112,11 @@ export default function OrderStatusPage({ params }: { params: { orderId: string 
                 <div key={step.title} className="flex items-start gap-4 relative">
                   <div
                     style={{
-                      width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                      width: 40, height: 40, borderRadius: 8, flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: isDone ? 'var(--gold)' : 'var(--bg-surface-2)',
-                      border: isDone ? 'none' : '1px solid var(--border-subtle)',
-                      color: isDone ? '#0B0A08' : 'var(--text-dimmed)',
+                      background: 'var(--bg-surface-2)',
+                      border: isDone ? '1px solid var(--border-medium)' : '1px solid var(--border-warm)',
+                      color: isDone ? 'var(--gold)' : 'var(--text-dimmed)',
                       transition: 'all 300ms',
                       zIndex: 10,
                     }}
@@ -137,18 +137,8 @@ export default function OrderStatusPage({ params }: { params: { orderId: string 
                       {step.title}
                       {isCurrent && (
                         <span
-                          className="ml-2"
-                          style={{
-                            fontSize: '0.5rem',
-                            fontWeight: 600,
-                            letterSpacing: '0.08em',
-                            textTransform: 'uppercase',
-                            padding: '0.125rem 0.5rem',
-                            borderRadius: 100,
-                            background: 'rgba(201,169,110,0.15)',
-                            border: '1px solid rgba(201,169,110,0.2)',
-                            color: 'var(--gold)',
-                          }}
+                          className="ml-2 d3-badge d3-badge-gold"
+                          style={{ marginLeft: 8 }}
                         >
                           In Progress
                         </span>

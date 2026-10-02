@@ -17,6 +17,122 @@ function getRelativeTime(dateStr: string): string {
   return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
 }
 
+/* ============================================================
+   RATING — drawn, not emoji
+   ============================================================ */
+function Stars({ count, size = 11 }: { count: number; size?: number }) {
+  return (
+    <span style={{ display: 'inline-flex', gap: 2 }} aria-label={`${count} of 5`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <svg key={i} width={size} height={size} viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path
+            d="M6 1L7.4 4.3L11 4.6L8.4 7L9.2 10.5L6 8.8L2.8 10.5L3.6 7L1 4.6L4.6 4.3L6 1Z"
+            fill={i <= count ? 'var(--gold)' : 'transparent'}
+            stroke={i <= count ? 'var(--gold)' : 'var(--text-dimmed)'}
+            strokeWidth="0.9"
+            strokeLinejoin="round"
+            opacity={i <= count ? 0.9 : 0.4}
+          />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+/* ============================================================
+   REVIEW ENTRY
+   ============================================================ */
+function ReviewCard({ review }: { review: Review }) {
+  const initial = (review.customer_name || 'G').charAt(0).toUpperCase();
+
+  return (
+    <article className="d3-panel p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            aria-hidden="true"
+            style={{
+              width: 34,
+              height: 34,
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              border: '1px solid var(--border-light)',
+              background: 'var(--bg-secondary)',
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.9375rem',
+              color: 'var(--gold)',
+            }}
+          >
+            {initial}
+          </span>
+          <div className="min-w-0">
+            <h4
+              style={{
+                margin: 0,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+              }}
+            >
+              {review.customer_name || 'Anonymous diner'}
+            </h4>
+            <p
+              style={{
+                margin: '2px 0 0',
+                fontSize: '0.6875rem',
+                color: 'var(--text-dimmed)',
+              }}
+            >
+              {review.menu_item_name ? (
+                <>
+                  Ordered <span style={{ color: 'var(--text-muted)' }}>{review.menu_item_name}</span>
+                </>
+              ) : (
+                'Reviewed your restaurant'
+              )}
+              {review.table_number ? ` · Table ${review.table_number}` : ''}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <Stars count={review.rating} />
+          <p
+            style={{
+              margin: '5px 0 0',
+              fontSize: '0.625rem',
+              color: 'var(--text-dimmed)',
+              letterSpacing: '0.04em',
+            }}
+          >
+            {getRelativeTime(review.created_at)}
+          </p>
+        </div>
+      </div>
+
+      {review.comment && (
+        <blockquote
+          style={{
+            margin: '1.125rem 0 0',
+            paddingTop: '1.125rem',
+            borderTop: '1px solid var(--border-warm)',
+            fontFamily: 'var(--font-display)',
+            fontSize: '1rem',
+            lineHeight: 1.7,
+            fontStyle: 'italic',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          “{review.comment}”
+        </blockquote>
+      )}
+    </article>
+  );
+}
+
 export default function ReviewsDashboardPage() {
   const { hotel, loading: hotelLoading } = useHotel();
   const { reviews, loading: reviewsLoading } = useReviews(hotel?.id || null);
@@ -40,153 +156,196 @@ export default function ReviewsDashboardPage() {
     return dist;
   }, [reviews]);
 
-  const renderStars = (count: number) => {
-    return '⭐'.repeat(count);
-  };
-
-  if (hotelLoading || reviewsLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Customer Reviews & Dish Feedback</h1>
-          <p className="text-gray-400 text-sm">
-            Monitor diner ratings, feedback on 3D dishes, and customer satisfaction scores.
-          </p>
-        </div>
-        <p className="text-sm text-gray-400">Loading reviews…</p>
-      </div>
-    );
-  }
+  const loading = hotelLoading || reviewsLoading;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Customer Reviews & Dish Feedback</h1>
-          <p className="text-gray-400 text-sm">
-            Monitor diner ratings, feedback on 3D dishes, and customer satisfaction scores.
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-col gap-8" style={{ maxWidth: 1180 }}>
+      {/* ================= Page header ================= */}
+      <header>
+        <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
+          Reviews
+        </span>
+        <h1
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(2rem, 4vw, 2.75rem)',
+            fontWeight: 500,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.025em',
+            lineHeight: 1.1,
+            margin: '0.5rem 0 0',
+          }}
+        >
+          Guest Feedback
+        </h1>
+        <p
+          style={{
+            margin: '0.5rem 0 0',
+            fontSize: '0.875rem',
+            lineHeight: 1.6,
+            color: 'var(--text-muted)',
+            maxWidth: '56ch',
+          }}
+        >
+          What your diners said after dining — scores, comments and the dishes they
+          mentioned.
+        </p>
+      </header>
 
-      {/* Summary Score Card */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center text-center">
-          <p className="text-xs uppercase font-semibold text-gray-400">Average Rating</p>
-          {reviews.length === 0 ? (
-            <>
-              <p className="text-5xl font-extrabold text-amber-400 mt-2">—</p>
-              <p className="text-xs text-gray-400 mt-2">No reviews yet</p>
-            </>
-          ) : (
-            <>
-              <p className="text-5xl font-extrabold text-amber-400 mt-2">{avgRating.toFixed(1)}</p>
-              <div className="text-lg mt-1">{renderStars(Math.round(avgRating))}</div>
-              <p className="text-xs text-gray-400 mt-2">Based on {reviews.length} verified diner reviews</p>
-            </>
-          )}
-        </div>
-
-        <div className="md:col-span-2 bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl space-y-2 flex flex-col justify-center">
-          <h3 className="text-xs font-bold uppercase text-gray-400 mb-2">Rating Distribution</h3>
-          {reviews.length === 0 ? (
-            <p className="text-xs text-gray-400">No rating data available.</p>
-          ) : (
-            [5, 4, 3, 2, 1].map((stars) => {
-              const count = ratingDistribution[stars] || 0;
-              const pct = reviews.length > 0 ? `${Math.round((count / reviews.length) * 100)}%` : '0%';
-              return (
-                <div key={stars} className="flex items-center space-x-3 text-xs">
-                  <span className="w-14 text-gray-400 font-medium">{stars} Stars</span>
-                  <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-amber-400 rounded-full"
-                      style={{ width: pct }}
-                    ></div>
-                  </div>
-                  <span className="w-10 text-right text-gray-400 font-mono">{count}</span>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex space-x-2 border-b border-gray-800 pb-3 overflow-x-auto">
-        {(['all', 5, 4, 3] as const).map((r) => (
-          <button
-            key={String(r)}
-            onClick={() => setFilterRating(r)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-              filterRating === r
-                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
-            }`}
-          >
-            {r === 'all' ? 'All Reviews' : `${r} Star Ratings`}
-          </button>
-        ))}
-      </div>
-
-      {/* Reviews Feed Grid */}
-      {filteredReviews.length === 0 ? (
-        <div className="p-12 text-center bg-gray-900 rounded-2xl border border-gray-800">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ color: 'var(--text-dimmed)', opacity: 0.4, margin: '0 auto 1rem' }}>
-            <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M16 20l4 4 8-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <p style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 4 }}>No reviews found</p>
-          <p style={{ color: 'var(--text-dimmed)', fontSize: '0.875rem' }}>
-            {filterRating !== 'all'
-              ? `No ${filterRating}-star reviews. Try adjusting your filter.`
-              : 'No customer reviews have been submitted yet.'}
-          </p>
-        </div>
+      {loading ? (
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          Gathering guest feedback…
+        </p>
       ) : (
-        <div className="space-y-4">
-          {filteredReviews.map((rev: Review) => (
-            <div
-              key={rev.id}
-              className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-3 shadow-md"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">
-                    {(rev.customer_name || 'G').charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-sm">{rev.customer_name || 'Anonymous'}</h4>
-                    <p className="text-xs text-gray-400">
-                      {rev.menu_item_name && (
-                        <>
-                          Ordered <strong className="text-amber-300">{rev.menu_item_name}</strong>
-                        </>
-                      )}
-                      {rev.table_number && (
-                        <>
-                          {' '}
-                          at {rev.table_number}
-                        </>
-                      )}
-                      {!rev.menu_item_name && !rev.table_number && 'Reviewed your restaurant'}
-                    </p>
-                  </div>
-                </div>
+        <>
+          {/* ================= Score + distribution ================= */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <section className="lg:col-span-4 d3-panel p-6 flex flex-col justify-center">
+              <span
+                style={{
+                  fontSize: '0.5625rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-dimmed)',
+                }}
+              >
+                Average Rating
+              </span>
 
-                <div className="text-right">
-                  <span className="text-sm">{renderStars(rev.rating)}</span>
-                  <p className="text-[11px] text-gray-500 mt-0.5">{getRelativeTime(rev.created_at)}</p>
-                </div>
+              <span
+                className="d3-figure"
+                style={{ display: 'block', fontSize: '3.25rem', margin: '1rem 0 0.75rem' }}
+              >
+                {reviews.length === 0 ? '—' : avgRating.toFixed(1)}
+              </span>
+
+              <Stars count={reviews.length === 0 ? 0 : Math.round(avgRating)} size={13} />
+
+              <p
+                style={{
+                  margin: '0.875rem 0 0',
+                  fontSize: '0.6875rem',
+                  color: 'var(--text-dimmed)',
+                }}
+              >
+                {reviews.length === 0
+                  ? 'No reviews yet'
+                  : `Based on ${reviews.length} verified diner review${reviews.length === 1 ? '' : 's'}`}
+              </p>
+            </section>
+
+            <section className="lg:col-span-8 d3-panel p-6">
+              <div
+                className="flex items-baseline justify-between gap-4"
+                style={{ paddingBottom: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-warm)' }}
+              >
+                <h3 className="d3-panel-title" style={{ fontSize: '1.125rem' }}>
+                  Distribution
+                </h3>
+                <span className="d3-chip">All ratings</span>
               </div>
 
-              <p className="text-gray-300 text-xs leading-relaxed bg-gray-950/60 p-3 rounded-xl border border-gray-800">
-                "{rev.comment || 'No comment provided.'}"
+              {reviews.length === 0 ? (
+                <p style={{ color: 'var(--text-dimmed)', fontSize: '0.875rem' }}>
+                  No rating data available.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {[5, 4, 3, 2, 1].map((stars) => {
+                    const count = ratingDistribution[stars] || 0;
+                    const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                    return (
+                      <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <span
+                          style={{
+                            width: 54,
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            fontSize: '0.6875rem',
+                            color: 'var(--text-muted)',
+                          }}
+                        >
+                          {stars} <Stars count={1} size={9} />
+                        </span>
+                        <span
+                          style={{
+                            flex: 1,
+                            height: 3,
+                            borderRadius: 2,
+                            background: 'var(--bg-surface-3)',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <span
+                            style={{
+                              display: 'block',
+                              height: '100%',
+                              width: `${pct}%`,
+                              background: 'var(--gold)',
+                              opacity: stars === 5 ? 1 : 0.6,
+                            }}
+                          />
+                        </span>
+                        <span
+                          style={{
+                            width: 26,
+                            textAlign: 'right',
+                            flexShrink: 0,
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                            fontSize: '0.6875rem',
+                            color: 'var(--text-dimmed)',
+                          }}
+                        >
+                          {count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+
+          {/* ================= Filter ================= */}
+          <div className="d3-segment" role="group" aria-label="Filter reviews by rating">
+            {(['all', 5, 4, 3] as const).map((r) => (
+              <button
+                key={String(r)}
+                type="button"
+                className="d3-segment-item"
+                data-active={filterRating === r}
+                onClick={() => setFilterRating(r)}
+              >
+                {r === 'all' ? 'All' : `${r} Star`}
+              </button>
+            ))}
+          </div>
+
+          {/* ================= Feed ================= */}
+          {filteredReviews.length === 0 ? (
+            <div className="d3-empty">
+              <svg width="36" height="36" viewBox="0 0 40 40" fill="none" style={{ opacity: 0.45 }} aria-hidden="true">
+                <rect x="5" y="8" width="30" height="24" rx="3" stroke="currentColor" strokeWidth="1.1" />
+                <path d="M12 17H28M12 22H22" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+              </svg>
+              <h3 className="d3-empty-title">No reviews found</h3>
+              <p className="d3-empty-body">
+                {filterRating !== 'all'
+                  ? `No ${filterRating}-star reviews yet. Try a different filter.`
+                  : 'Guests have not left feedback yet. Reviews appear here once diners submit them from the menu.'}
               </p>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {filteredReviews.map((rev: Review) => (
+                <ReviewCard key={rev.id} review={rev} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
