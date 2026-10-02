@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { PRESET_3D_MODELS } from '@/lib/menu';
 import type { Category, MenuItem } from '@/lib/useHotel';
 import { CubeIcon } from './DishCard';
 
@@ -204,7 +203,7 @@ export default function DishFormModal({
   const checkboxStyle: React.CSSProperties = {
     width: 15,
     height: 15,
-    accentColor: '#C9A96E',
+    accentColor: '#B8A47A',
     cursor: 'pointer',
     flexShrink: 0,
   };
@@ -234,8 +233,8 @@ export default function DishFormModal({
           width: '100%',
           maxWidth: 760,
           background: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 16,
+          border: '1px solid var(--border-warm)',
+          borderRadius: 10,
           overflow: 'hidden',
           margin: 'auto',
         }}
@@ -525,32 +524,12 @@ export default function DishFormModal({
               </div>
 
               {/* Quick presets */}
-              <div>
-                <span className="d3-label">Quick 3D Templates</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {PRESET_3D_MODELS.map((preset) => {
-                    const active = form.model_url_glb === preset.glb;
-                    return (
-                      <button
-                        key={preset.name}
-                        type="button"
-                        onClick={() => set('model_url_glb', active ? '' : preset.glb)}
-                        className="d3-btn-inline"
-                        style={
-                          active
-                            ? {
-                                background: 'rgba(201,169,110,0.08)',
-                                borderColor: 'rgba(201,169,110,0.3)',
-                                color: 'var(--gold)',
-                              }
-                            : undefined
-                        }
-                      >
-                        {preset.name}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="d3-note">
+                <span>
+                  3D is an <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>optional</strong>{' '}
+                  enhancement. Paste a link to a real GLB or USDZ asset to enable it — the
+                  food photograph stays the primary visual either way.
+                </span>
               </div>
 
               {/* Preview only when a model is actually attached */}

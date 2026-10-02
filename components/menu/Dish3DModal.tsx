@@ -75,8 +75,8 @@ export default function Dish3DModal({ item, priceLabel, categoryName, onClose }:
           maxHeight: '90vh',
           overflowY: 'auto',
           background: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 16,
+          border: '1px solid var(--border-warm)',
+          borderRadius: 10,
           overflow: 'hidden',
         }}
       >

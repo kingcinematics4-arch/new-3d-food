@@ -93,18 +93,25 @@ function FoodDetailModal({
           <div style={{ position: 'absolute', top: 12, left: 12 }}>
             <span
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '0.2rem 0.625rem',
-                borderRadius: 100,
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '0.1875rem 0.5rem',
+                borderRadius: 4,
                 fontSize: '0.5625rem',
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                background: item.is_veg ? 'rgba(100,210,150,0.15)' : 'rgba(200,80,80,0.15)',
-                border: item.is_veg ? '1px solid rgba(100,210,150,0.3)' : '1px solid rgba(200,80,80,0.3)',
-                color: item.is_veg ? '#86EFAC' : '#FCA5A5',
+                fontWeight: 600,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                background: 'rgba(11,11,10,0.75)',
+                border: '1px solid var(--border-warm)',
+                color: item.is_veg ? 'var(--gold)' : 'var(--text-dimmed)',
               }}
             >
-              {item.is_veg ? '● VEG' : '● NON-VEG'}
+              <span
+                style={{
+                  width: 6, height: 6, borderRadius: 1,
+                  border: `1px solid ${item.is_veg ? 'var(--gold-dim)' : 'var(--text-dimmed)'}`,
+                }}
+              />
+              {item.is_veg ? 'Veg' : 'Non-veg'}
             </span>
           </div>
         </div>
@@ -255,12 +262,13 @@ function FoodDetailModal({
               <button
                 onClick={() => setQty(qty + 1)}
                 style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: 'var(--gold)',
-                  border: 'none', cursor: 'pointer',
-                  color: '#0B0A08',
+                  width: 32, height: 32, borderRadius: 5,
+                  background: 'var(--bg-surface-3)',
+                  border: '1px solid var(--border-light)',
+                  cursor: 'pointer',
+                  color: 'var(--gold-pale)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem', lineHeight: 1, fontWeight: 700,
+                  fontSize: '1rem', lineHeight: 1, fontWeight: 500,
                 }}
               >
                 +
@@ -414,15 +422,15 @@ function CartDrawer({
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-primary)', minWidth: 16, textAlign: 'center' }}>
                   {quantity}
                 </span>
-                <button
+<button
                   onClick={() => onAdd(menuItem)}
                   style={{
-                    width: 26, height: 26, borderRadius: '50%',
-                    background: 'rgba(201,169,110,0.15)',
-                    border: '1px solid rgba(201,169,110,0.2)',
-                    color: 'var(--gold)', cursor: 'pointer',
+                    width: 26, height: 26, borderRadius: 5,
+                    background: 'var(--bg-surface-3)',
+                    border: '1px solid var(--border-light)',
+                    color: 'var(--gold-pale)', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.875rem', lineHeight: 1, fontWeight: 700,
+                    fontSize: '0.875rem', lineHeight: 1, fontWeight: 500,
                   }}
                 >
                   +
@@ -612,8 +620,8 @@ function MenuContent({ slug }: { slug: string }) {
                 {restaurantName}
               </h1>
               <div className="flex items-center gap-1.5">
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#86EFAC', display: 'inline-block', animation: 'pulseGold 2s ease-in-out infinite' }} />
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-dimmed)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                <span className="d3-live-dot" />
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-dimmed)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                   Table {tableNumber}
                 </span>
               </div>
@@ -624,13 +632,14 @@ function MenuContent({ slug }: { slug: string }) {
           <button
             onClick={() => setIsCartOpen(true)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
+              display: 'flex', alignItems: 'center', gap: 7,
               padding: '0.5rem 0.875rem',
-              borderRadius: 100,
-              background: totalCount > 0 ? 'var(--gold)' : 'var(--bg-surface)',
-              border: totalCount > 0 ? 'none' : '1px solid var(--border-subtle)',
-              color: totalCount > 0 ? '#0B0A08' : 'var(--text-muted)',
-              fontWeight: 600, fontSize: '0.75rem',
+              borderRadius: 5,
+              background: 'var(--bg-surface)',
+              border: totalCount > 0 ? '1px solid var(--border-medium)' : '1px solid var(--border-warm)',
+              color: totalCount > 0 ? 'var(--gold-pale)' : 'var(--text-muted)',
+              fontWeight: 500, fontSize: '0.75rem',
+              letterSpacing: '0.02em',
               cursor: 'pointer',
               transition: 'all 200ms',
             }}
@@ -681,13 +690,14 @@ function MenuContent({ slug }: { slug: string }) {
                 onClick={() => setSelectedCategory(cat)}
                 style={{
                   padding: '0.3125rem 0.875rem',
-                  borderRadius: 100,
-                  fontSize: '0.6875rem', fontWeight: 600,
+                  borderRadius: 4,
+                  fontSize: '0.6875rem', fontWeight: 500,
+                  letterSpacing: '0.06em',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
-                  border: selectedCategory === cat ? 'none' : '1px solid var(--border-subtle)',
-                  background: selectedCategory === cat ? 'var(--gold)' : 'transparent',
-                  color: selectedCategory === cat ? '#0B0A08' : 'var(--text-muted)',
+                  border: selectedCategory === cat ? '1px solid var(--border-medium)' : '1px solid var(--border-warm)',
+                  background: selectedCategory === cat ? 'var(--bg-surface-2)' : 'transparent',
+                  color: selectedCategory === cat ? 'var(--gold-pale)' : 'var(--text-muted)',
                   transition: 'all 200ms',
                 }}
               >
@@ -871,21 +881,13 @@ function FoodCard({
         {/* Badges */}
         <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
           {item.is_featured && (
-            <span style={{
-              padding: '0.125rem 0.5rem', borderRadius: 100, fontSize: '0.5rem',
-              background: 'rgba(201,169,110,0.15)', border: '1px solid rgba(201,169,110,0.25)',
-              color: 'var(--gold)', fontWeight: 700, letterSpacing: '0.1em',
-            }}>
-              FEATURED
+            <span className="d3-chip d3-chip-3d" style={{ background: 'rgba(11,11,10,0.75)' }}>
+              Featured
             </span>
           )}
           {item.is_popular && !item.is_featured && (
-            <span style={{
-              padding: '0.125rem 0.5rem', borderRadius: 100, fontSize: '0.5rem',
-              background: 'rgba(160,120,255,0.1)', border: '1px solid rgba(160,120,255,0.2)',
-              color: '#C4B5FD', fontWeight: 700, letterSpacing: '0.1em',
-            }}>
-              POPULAR
+            <span className="d3-chip" style={{ background: 'rgba(11,11,10,0.75)' }}>
+              Popular
             </span>
           )}
         </div>
@@ -896,11 +898,14 @@ function FoodCard({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span style={{
-                width: 8, height: 8, borderRadius: '50%',
-                display: 'inline-block', flexShrink: 0,
-                background: item.is_veg ? '#86EFAC' : '#FCA5A5',
-              }} />
+              <span
+                style={{
+                  width: 8, height: 8, borderRadius: 2,
+                  display: 'inline-block', flexShrink: 0,
+                  border: `1px solid ${item.is_veg ? 'var(--gold-dim)' : 'var(--text-dimmed)'}`,
+                  background: item.is_veg ? 'transparent' : 'var(--text-dimmed)',
+                }}
+              />
               <h3 style={{
                 fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 500,
                 color: 'var(--text-primary)', letterSpacing: '-0.01em', lineHeight: 1.3,
@@ -968,41 +973,41 @@ function FoodCard({
             <button
               onClick={() => onAdd(item)}
               style={{
-                width: 28, height: 28, borderRadius: '50%',
-                background: 'var(--gold)',
-                border: 'none', cursor: 'pointer',
-                color: '#0B0A08',
+                width: 28, height: 28, borderRadius: 5,
+                background: 'var(--bg-surface-3)',
+                border: '1px solid var(--border-light)',
+                cursor: 'pointer',
+                color: 'var(--gold-pale)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700, fontSize: '1rem',
+                fontWeight: 500, fontSize: '1rem',
               }}
             >
               +
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => onAdd(item)}
-            style={{
-              width: '100%', padding: '0.5625rem',
-              borderRadius: 8, border: '1px solid rgba(201,169,110,0.2)',
-              background: 'rgba(201,169,110,0.06)',
-              color: 'var(--gold)',
-              fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
-              transition: 'all 200ms',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--gold)';
-              e.currentTarget.style.color = '#0B0A08';
-              e.currentTarget.style.borderColor = 'var(--gold)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(201,169,110,0.06)';
-              e.currentTarget.style.color = 'var(--gold)';
-              e.currentTarget.style.borderColor = 'rgba(201,169,110,0.2)';
-            }}
-          >
-            + Add to Cart
-          </button>
+<button
+              onClick={() => onAdd(item)}
+              style={{
+                width: '100%', padding: '0.5625rem',
+                borderRadius: 5, border: '1px solid var(--border-medium)',
+                background: 'var(--bg-surface-2)',
+                color: 'var(--gold-pale)',
+                fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.04em',
+                cursor: 'pointer',
+                transition: 'all 200ms',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--bg-surface-3)';
+                e.currentTarget.style.borderColor = 'rgba(184,164,122,0.45)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--bg-surface-2)';
+                e.currentTarget.style.borderColor = 'var(--border-medium)';
+              }}
+            >
+              Add to Order
+            </button>
         )}
       </div>
     </div>

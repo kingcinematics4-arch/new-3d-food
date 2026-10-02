@@ -287,14 +287,17 @@ export default function DishCard({
               Uncategorised
             </span>
           )}
+          {/* Veg / non-veg marker — outlined square, monochrome */}
           <span
             title={item.is_veg ? 'Vegetarian' : 'Non-vegetarian'}
+            aria-label={item.is_veg ? 'Vegetarian' : 'Non-vegetarian'}
             style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
+              width: 8,
+              height: 8,
+              borderRadius: 2,
               flexShrink: 0,
-              background: item.is_veg ? 'rgba(100,210,150,0.75)' : 'rgba(200,80,80,0.7)',
+              border: `1px solid ${item.is_veg ? 'var(--gold-dim)' : 'var(--text-dimmed)'}`,
+              background: item.is_veg ? 'transparent' : 'var(--text-dimmed)',
             }}
           />
         </div>
@@ -417,8 +420,9 @@ export default function DishCard({
             cursor: 'pointer',
             fontSize: '0.6875rem',
             fontWeight: 500,
-            letterSpacing: '0.04em',
-            color: item.is_available ? 'var(--text-muted)' : 'rgba(200,80,80,0.8)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: item.is_available ? 'var(--text-muted)' : 'var(--text-dimmed)',
           }}
         >
           <span
@@ -426,7 +430,8 @@ export default function DishCard({
               width: 6,
               height: 6,
               borderRadius: '50%',
-              background: item.is_available ? 'rgba(100,210,150,0.8)' : 'rgba(200,80,80,0.8)',
+              background: item.is_available ? 'var(--gold)' : 'transparent',
+              border: item.is_available ? 'none' : '1px solid var(--text-dimmed)',
             }}
           />
           {item.is_available ? 'Available' : 'Sold Out'}

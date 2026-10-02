@@ -264,39 +264,31 @@ export default function LoginPage() {
 
           {/* Error */}
           {error && (
-            <div
-              className="mb-6 px-4 py-3 rounded-lg"
-              style={{
-                background: 'rgba(200,80,80,0.06)',
-                border: '1px solid rgba(200,80,80,0.2)',
-                color: '#FCA5A5',
-                fontSize: '0.875rem',
-              }}
-            >
-              <p>{error}</p>
+            <div className="d3-note d3-note-danger" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+              <span>{error}</span>
               {emailUnconfirmed && (
                 <button
                   type="button"
                   onClick={handleResendConfirmation}
                   disabled={resending || resendCooldown > 0}
                   style={{
-                    marginTop: '0.625rem',
+                    marginTop: '0.25rem',
                     background: 'none',
                     border: 'none',
                     padding: 0,
+                    alignSelf: 'flex-start',
                     color: 'var(--gold)',
                     fontSize: '0.8125rem',
                     textDecoration: 'underline',
                     textUnderlineOffset: 3,
                     cursor: resending || resendCooldown > 0 ? 'not-allowed' : 'pointer',
-                    display: 'block',
                   }}
                 >
                   {resending
                     ? 'Sending confirmation link...'
                     : resendCooldown > 0
                     ? `Please wait ${resendCooldown}s before requesting another link`
-                    : 'Resend confirmation email to this address →'}
+                    : 'Resend confirmation email to this address'}
                 </button>
               )}
             </div>
@@ -304,17 +296,9 @@ export default function LoginPage() {
 
           {/* Resend Success Status */}
           {resendStatus && (
-            <div
-              className="mb-6 px-4 py-3 rounded-lg flex items-center gap-2"
-              style={{
-                background: 'rgba(100,210,150,0.06)',
-                border: '1px solid rgba(100,210,150,0.2)',
-                color: '#86EFAC',
-                fontSize: '0.875rem',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
-                <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <div className="d3-note d3-note-accent">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
+                <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span>{resendStatus}</span>
             </div>

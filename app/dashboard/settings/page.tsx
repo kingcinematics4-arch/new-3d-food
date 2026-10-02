@@ -3,9 +3,81 @@
 import React, { useState, useEffect } from 'react';
 import { useHotel } from '@/lib/useHotel';
 
+type FormData = {
+  hotel_id: string;
+  name: string;
+  owner_name: string;
+  email: string;
+  phone: string;
+  city: string;
+  address: string;
+  logo_url: string;
+  primary_color: string;
+  welcome_text: string;
+  custom_domain: string;
+  currency: string;
+  tax_rate: number;
+  service_charge: number;
+};
+
+/* ============================================================
+   FORM SECTION
+   ============================================================ */
+function Section({
+  index,
+  title,
+  note,
+  aside,
+  children,
+}: {
+  index: string;
+  title: string;
+  note?: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="d3-panel p-6 sm:p-7">
+      <div
+        className="flex flex-wrap items-baseline justify-between gap-3"
+        style={{ paddingBottom: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-warm)' }}
+      >
+        <div className="flex items-baseline gap-3">
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.8125rem',
+              color: 'var(--gold-dim)',
+              letterSpacing: '0.08em',
+            }}
+          >
+            {index}
+          </span>
+          <h2 className="d3-panel-title">{title}</h2>
+        </div>
+        {aside}
+      </div>
+      {note && (
+        <p
+          style={{
+            margin: '0 0 1.5rem',
+            fontSize: '0.8125rem',
+            lineHeight: 1.7,
+            color: 'var(--text-muted)',
+            maxWidth: '60ch',
+          }}
+        >
+          {note}
+        </p>
+      )}
+      {children}
+    </section>
+  );
+}
+
 export default function SettingsPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     hotel_id: '',
     name: '',
     owner_name: '',
@@ -14,8 +86,8 @@ export default function SettingsPage() {
     city: '',
     address: '',
     logo_url: '',
-    primary_color: '#f59e0b',
-    welcome_text: 'Experience our delicious menu in interactive 3D!',
+    primary_color: '#B8A47A',
+    welcome_text: '',
     custom_domain: '',
     currency: 'USD ($)',
     tax_rate: 8.875,
@@ -38,7 +110,7 @@ export default function SettingsPage() {
         city: hotel.city || '',
         address: hotel.address || '',
         logo_url: hotel.logo_url || '',
-        primary_color: hotel.primary_color || '#f59e0b',
+        primary_color: hotel.primary_color || '#B8A47A',
         welcome_text: hotel.welcome_text || '',
         custom_domain: hotel.custom_domain || '',
         currency: hotel.currency || 'USD ($)',
@@ -47,6 +119,9 @@ export default function SettingsPage() {
       }));
     }
   }, [hotel]);
+
+  const set = <K extends keyof FormData>(key: K, value: FormData[K]) =>
+    setFormData((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,282 +148,319 @@ export default function SettingsPage() {
     }
   };
 
+  const menuPath = formData.name
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/menu/${formData.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')}`
+    : 'Generated after you save your restaurant name';
+
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Restaurant Settings & Custom Branding</h1>
-        <p className="text-gray-400 text-sm">
-          Manage your restaurant profile, custom domain setup, branding accent colors, and tax rules.
+    <div className="flex flex-col gap-8" style={{ maxWidth: 940 }}>
+      {/* ================= Page header ================= */}
+      <header>
+        <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
+          Restaurant Profile
+        </span>
+        <h1
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(2rem, 4vw, 2.75rem)',
+            fontWeight: 500,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.025em',
+            lineHeight: 1.1,
+            margin: '0.5rem 0 0',
+          }}
+        >
+          Your Establishment
+        </h1>
+        <p
+          style={{
+            margin: '0.5rem 0 0',
+            fontSize: '0.875rem',
+            lineHeight: 1.6,
+            color: 'var(--text-muted)',
+            maxWidth: '58ch',
+          }}
+        >
+          The details that appear on your guest menu, your receipts and your QR standees.
         </p>
-      </div>
+      </header>
 
       {savedSuccess && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm">
-          ✓ Restaurant profile & branding settings updated successfully!
+        <div className="d3-note d3-note-accent">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
+            <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span>Profile and branding saved.</span>
         </div>
       )}
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-          {error}
+        <div className="d3-note d3-note-danger">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.1" />
+            <path d="M7 4.5V7.5M7 9.5V9.51" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+          <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Section 1: Basic Hotel Profile */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
-          <h2 className="text-lg font-bold text-white border-b border-gray-800 pb-3 flex items-center space-x-2">
-            <span>🏨</span>
-            <span>Restaurant Profile Information</span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Restaurant Name
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Owner / Manager Name
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.owner_name}
-                onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Contact Email
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Phone Number
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Street Address
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                City
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Section 2: Custom Branding & Theme Accent */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
-          <h2 className="text-lg font-bold text-white border-b border-gray-800 pb-3 flex items-center space-x-2">
-            <span>🎨</span>
-            <span>Custom Branding & Theme Styling</span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Theme Accent Color
-              </label>
-              <div className="flex items-center space-x-3 bg-gray-800 p-2 rounded-xl border border-gray-700">
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* ---------- Identity ---------- */}
+        <Section
+          index="01"
+          title="Identity"
+          note="How your restaurant is named and addressed across the menu and standees."
+        >
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="d3-label" htmlFor="hotel-name">
+                  Restaurant Name
+                </label>
                 <input
-                  type="color"
-                  value={formData.primary_color}
-                  onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                  className="w-8 h-8 rounded border-none cursor-pointer bg-transparent"
+                  id="hotel-name"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => set('name', e.target.value)}
+                  className="d3-input"
                 />
-                <span className="text-xs font-mono text-gray-300">{formData.primary_color}</span>
+              </div>
+              <div>
+                <label className="d3-label" htmlFor="owner-name">
+                  Owner / Manager
+                </label>
+                <input
+                  id="owner-name"
+                  type="text"
+                  required
+                  value={formData.owner_name}
+                  onChange={(e) => set('owner_name', e.target.value)}
+                  className="d3-input"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="d3-label" htmlFor="hotel-email">
+                  Contact Email
+                </label>
+                <input
+                  id="hotel-email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => set('email', e.target.value)}
+                  className="d3-input"
+                />
+              </div>
+              <div>
+                <label className="d3-label" htmlFor="hotel-phone">
+                  Phone
+                </label>
+                <input
+                  id="hotel-phone"
+                  type="text"
+                  required
+                  value={formData.phone}
+                  onChange={(e) => set('phone', e.target.value)}
+                  className="d3-input"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <label className="d3-label" htmlFor="hotel-address">
+                  Street Address
+                </label>
+                <input
+                  id="hotel-address"
+                  type="text"
+                  required
+                  value={formData.address}
+                  onChange={(e) => set('address', e.target.value)}
+                  className="d3-input"
+                />
+              </div>
+              <div>
+                <label className="d3-label" htmlFor="hotel-city">
+                  City
+                </label>
+                <input
+                  id="hotel-city"
+                  type="text"
+                  required
+                  value={formData.city}
+                  onChange={(e) => set('city', e.target.value)}
+                  className="d3-input"
+                />
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* ---------- Branding ---------- */}
+        <Section
+          index="02"
+          title="Branding"
+          note="The single accent tone used for prices, rules and calls to action on your guest menu."
+        >
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <span className="d3-label">Accent Colour</span>
+                <div className="d3-swatch">
+                  <input
+                    type="color"
+                    value={formData.primary_color}
+                    onChange={(e) => set('primary_color', e.target.value)}
+                    aria-label="Brand accent colour"
+                  />
+                  <code>{formData.primary_color}</code>
+                </div>
+              </div>
+              <div>
+                <label className="d3-label" htmlFor="logo-url">
+                  Logo Image URL
+                </label>
+                <input
+                  id="logo-url"
+                  type="text"
+                  value={formData.logo_url}
+                  onChange={(e) => set('logo_url', e.target.value)}
+                  placeholder="https://…"
+                  className="d3-input"
+                />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Logo Image URL (Optional)
+              <label className="d3-label" htmlFor="welcome-text">
+                Welcome Banner
               </label>
               <input
+                id="welcome-text"
                 type="text"
-                value={formData.logo_url}
-                onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                placeholder="https://domain.com/logo.png"
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
+                value={formData.welcome_text}
+                onChange={(e) => set('welcome_text', e.target.value)}
+                className="d3-input"
               />
             </div>
           </div>
+        </Section>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-              Customer Welcome Banner Text
-            </label>
-            <input
-              type="text"
-              value={formData.welcome_text}
-              onChange={(e) => setFormData({ ...formData, welcome_text: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Section 3: Custom Domain Setup Placeholder */}
-        <div className="bg-gray-900 border border-amber-500/30 rounded-2xl p-6 space-y-4 shadow-xl">
-          <h2 className="text-lg font-bold text-white border-b border-gray-800 pb-3 flex items-center justify-between">
-            <span className="flex items-center space-x-2">
-              <span>🌐</span>
-              <span>Custom Domain Setup (Vercel Integration)</span>
-            </span>
-            <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold">
-              Ready for Domain Connection
-            </span>
-          </h2>
-
-          <div className="space-y-3">
+        {/* ---------- Domain ---------- */}
+        <Section
+          index="03"
+          title="Domain"
+          aside={<span className="d3-chip">Optional</span>}
+        >
+          <div style={{ display: 'grid', gap: 16 }}>
             <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Current Vercel Deployment URL
-              </label>
-                 <input
-                type="text"
-                disabled
-                value={formData.name ? `${window.location.origin}/menu/${formData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}` : 'Generate a link after saving'}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800/50 border border-gray-700 text-amber-300 font-mono text-xs cursor-not-allowed"
-              />
+              <span className="d3-label">Current Menu Address</span>
+              <input type="text" disabled value={menuPath} className="d3-input" style={{ opacity: 0.6 }} />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Custom Domain (Connect when purchased)
+              <label className="d3-label" htmlFor="custom-domain">
+                Custom Domain
               </label>
               <input
+                id="custom-domain"
                 type="text"
                 value={formData.custom_domain}
-                onChange={(e) => setFormData({ ...formData, custom_domain: e.target.value })}
-                placeholder="e.g. menu.grandbistro.com or grandbistro-menu.com"
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
+                onChange={(e) => set('custom_domain', e.target.value)}
+                placeholder="menu.yourrestaurant.com"
+                className="d3-input"
               />
             </div>
 
-            {/* DNS Instructions Box */}
-            <div className="p-4 rounded-xl bg-gray-950 border border-gray-800 space-y-2 text-xs text-gray-400">
-              <p className="font-bold text-amber-400 uppercase text-[11px] tracking-wider">
-                💡 DNS CNAME Configuration Instructions (When domain is purchased):
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-gray-300">
-                <li>Type: <strong className="text-white">CNAME</strong></li>
-                <li>Host: <strong className="text-white">menu</strong> (or <strong className="text-white">@</strong> for root domain)</li>
-                <li>Value / Points To: <strong className="text-white font-mono">cname.vercel-dns.com</strong></li>
-              </ul>
-              <p className="text-[11px] text-gray-500 pt-1">
-                Note: You can add your domain here anytime later without affecting current development.
-              </p>
+            <div className="d3-note">
+              <span>
+                <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>DNS, once purchased.</strong>{' '}
+                Point a <strong style={{ color: 'var(--text-secondary)' }}>CNAME</strong> record for{' '}
+                <strong style={{ color: 'var(--text-secondary)' }}>menu</strong> (or{' '}
+                <strong style={{ color: 'var(--text-secondary)' }}>@</strong> for the root) to{' '}
+                <code style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+                  cname.vercel-dns.com
+                </code>
+                . You can add the domain later without interrupting service.
+              </span>
             </div>
           </div>
-        </div>
+        </Section>
 
-        {/* Section 4: Taxes & Currency */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
-          <h2 className="text-lg font-bold text-white border-b border-gray-800 pb-3 flex items-center space-x-2">
-            <span>💵</span>
-            <span>Taxes & Service Charge Rules</span>
-          </h2>
-
+        {/* ---------- Commerce ---------- */}
+        <Section
+          index="04"
+          title="Commerce"
+          note="Currency and the percentages added to a guest's bill at checkout."
+        >
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+              <label className="d3-label" htmlFor="currency">
                 Currency
               </label>
               <input
+                id="currency"
                 type="text"
                 value={formData.currency}
-                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
+                onChange={(e) => set('currency', e.target.value)}
+                className="d3-input"
               />
             </div>
-
             <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Sales Tax Rate (%)
+              <label className="d3-label" htmlFor="tax-rate">
+                Sales Tax (%)
               </label>
               <input
+                id="tax-rate"
                 type="number"
                 step="0.01"
                 value={formData.tax_rate}
-                onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
+                onChange={(e) => set('tax_rate', parseFloat(e.target.value) || 0)}
+                className="d3-input"
               />
             </div>
-
             <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+              <label className="d3-label" htmlFor="service-charge">
                 Service Charge (%)
               </label>
               <input
+                id="service-charge"
                 type="number"
                 step="0.1"
                 value={formData.service_charge}
-                onChange={(e) => setFormData({ ...formData, service_charge: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:border-amber-400 focus:outline-none"
+                onChange={(e) => set('service_charge', parseFloat(e.target.value) || 0)}
+                className="d3-input"
               />
             </div>
           </div>
-        </div>
+        </Section>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-extrabold text-sm shadow-xl shadow-amber-500/20 transition transform active:scale-98 disabled:opacity-50"
+        {/* ---------- Save ---------- */}
+        <div
+          className="flex flex-wrap items-center justify-between gap-4"
+          style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border-warm)' }}
         >
-          {loading ? 'Saving Changes...' : 'Save Restaurant Settings & Branding'}
-        </button>
+          <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
+            Changes apply to your guest menu immediately after saving.
+          </p>
+          <button type="submit" className="d3-btn-primary" disabled={loading}>
+            {loading ? 'Saving…' : 'Save Profile'}
+          </button>
+        </div>
       </form>
+
+      {hotelLoading && (
+        <p style={{ color: 'var(--text-dimmed)', fontSize: '0.75rem' }}>
+          Loading your profile…
+        </p>
+      )}
     </div>
   );
 }

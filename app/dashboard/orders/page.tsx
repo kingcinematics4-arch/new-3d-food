@@ -1,22 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useHotel, useOrders, Order } from '@/lib/useHotel';
 
+/* Statuses read as one monochrome family — only the newest
+   order carries the champagne accent. */
+const STATUS_CLASS: Record<string, string> = {
+  PLACED: 'd3-status-placed',
+  ACCEPTED: 'd3-status-accepted',
+  PREPARING: 'd3-status-preparing',
+  READY: 'd3-status-ready',
+  COMPLETED: 'd3-status-completed',
+  CANCELLED: 'd3-status-cancelled',
+};
+
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, React.CSSProperties> = {
-    PLACED:    { background: 'rgba(201,169,110,0.1)', border: '1px solid rgba(201,169,110,0.25)', color: 'var(--gold)' },
-    ACCEPTED:  { background: 'rgba(100,160,255,0.08)', border: '1px solid rgba(100,160,255,0.2)', color: '#A0C4FF' },
-    PREPARING: { background: 'rgba(160,120,255,0.08)', border: '1px solid rgba(160,120,255,0.2)', color: '#C4B5FD' },
-    READY:     { background: 'rgba(100,210,150,0.08)', border: '1px solid rgba(100,210,150,0.2)', color: '#86EFAC' },
-    COMPLETED: { background: 'rgba(100,100,100,0.08)', border: '1px solid rgba(100,100,100,0.2)', color: '#9CA3AF' },
-    CANCELLED: { background: 'rgba(200,80,80,0.06)',  border: '1px solid rgba(200,80,80,0.2)',   color: '#FCA5A5' },
-  };
   return (
-    <span
-      className="d3-badge"
-      style={{ ...(styles[status] || styles.CANCELLED), padding: '0.2rem 0.625rem', fontSize: '0.5625rem' }}
-    >
+    <span className={`d3-badge ${STATUS_CLASS[status] || STATUS_CLASS.CANCELLED}`}>
       {status}
     </span>
   );
@@ -77,86 +77,83 @@ export default function LiveOrdersPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-[1200px] mx-auto">
+    <div className="flex flex-col gap-8" style={{ maxWidth: 1180 }}>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <header
+        className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5"
+      >
         <div>
-          <h2
+          <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
+            Service
+          </span>
+          <h1
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: '1.75rem',
+              fontSize: 'clamp(2rem, 4vw, 2.75rem)',
               fontWeight: 500,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.2,
-              marginBottom: '0.25rem',
+              letterSpacing: '-0.025em',
+              lineHeight: 1.1,
+              margin: '0.5rem 0 0',
             }}
           >
             Live Orders
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            Real-time order stream for kitchen staff and servers.
+          </h1>
+          <p
+            style={{
+              margin: '0.5rem 0 0',
+              fontSize: '0.875rem',
+              lineHeight: 1.6,
+              color: 'var(--text-muted)',
+              maxWidth: '54ch',
+            }}
+          >
+            The real-time order stream for your kitchen and floor staff.
           </p>
         </div>
 
-        {/* Summary pills */}
-        <div className="flex items-center gap-2">
+        {/* Service counters */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           {[
-            { label: 'Placed', count: orders.filter((o: Order) => o.status === 'PLACED').length, color: 'var(--gold)', bg: 'rgba(201,169,110,0.08)', border: 'rgba(201,169,110,0.2)' },
-            { label: 'Cooking', count: orders.filter((o: Order) => ['ACCEPTED','PREPARING'].includes(o.status)).length, color: '#C4B5FD', bg: 'rgba(160,120,255,0.08)', border: 'rgba(160,120,255,0.2)' },
-            { label: 'Ready', count: orders.filter((o: Order) => o.status === 'READY').length, color: '#86EFAC', bg: 'rgba(100,210,150,0.08)', border: 'rgba(100,210,150,0.2)' },
-          ].map((pill) => (
-            <div
-              key={pill.label}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '0.375rem 0.875rem',
-                borderRadius: 100,
-                background: pill.bg,
-                border: `1px solid ${pill.border}`,
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: pill.color, display: 'inline-block' }} />
-              <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: pill.color }}>
-                {pill.count} {pill.label}
+            { label: 'New', count: orders.filter((o: Order) => o.status === 'PLACED').length },
+            { label: 'In Kitchen', count: orders.filter((o: Order) => ['ACCEPTED','PREPARING'].includes(o.status)).length },
+            { label: 'Ready', count: orders.filter((o: Order) => o.status === 'READY').length },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <span className="d3-figure" style={{ display: 'block', fontSize: '1.5rem' }}>
+                {stat.count}
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 5,
+                  fontSize: '0.5625rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-dimmed)',
+                }}
+              >
+                {stat.label}
               </span>
             </div>
           ))}
         </div>
-      </div>
+      </header>
 
       {/* Tab filter */}
-      <div
-        className="flex gap-1 p-1 overflow-x-auto"
-        style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 10,
-          width: 'fit-content',
-        }}
-      >
+      <div className="d3-segment" role="group" aria-label="Filter orders by status">
         {TABS.map((tab) => {
           const count = orders.filter((o: Order) => tab === 'all' ? true : o.status === tab.toUpperCase()).length;
           const isActive = activeTab === tab;
           return (
             <button
               key={tab}
+              type="button"
+              className="d3-segment-item"
+              data-active={isActive}
               onClick={() => setActiveTab(tab)}
-              style={{
-                padding: '0.4375rem 0.875rem',
-                borderRadius: 7,
-                fontSize: '0.6875rem',
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                border: 'none',
-                whiteSpace: 'nowrap',
-                background: isActive ? 'var(--gold)' : 'transparent',
-                color: isActive ? '#0B0A08' : 'var(--text-muted)',
-                transition: 'all 200ms',
-              }}
             >
               {tab} ({count})
             </button>
@@ -166,74 +163,67 @@ export default function LiveOrdersPage() {
 
       {/* Orders Grid */}
       {filtered.length === 0 ? (
-        <div
-          className="flex flex-col items-center justify-center py-24 gap-4"
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 12,
-          }}
-        >
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ color: 'var(--text-dimmed)', opacity: 0.5 }}>
-            <rect x="4" y="4" width="32" height="32" rx="6" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M12 16H28M12 22H22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <div className="d3-empty">
+          <svg width="38" height="38" viewBox="0 0 40 40" fill="none" style={{ opacity: 0.45 }} aria-hidden="true">
+            <rect x="6" y="9" width="28" height="22" rx="3" stroke="currentColor" strokeWidth="1.1" />
+            <path d="M13 17H27M13 22H21" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
           </svg>
-          <div className="text-center">
-            <p style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 4 }}>No {activeTab} orders</p>
-            <p style={{ color: 'var(--text-dimmed)', fontSize: '0.875rem' }}>
-              Place a test order via{' '}
-              <a href={menuHref} target="_blank" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>
-                /menu/{hotelSlug || 'your-hotel'}
-              </a>
-            </p>
-          </div>
+          <h3 className="d3-empty-title">No {activeTab} orders</h3>
+          <p className="d3-empty-body">
+            Nothing in this state right now. Place a test order from{' '}
+            <a href={menuHref} target="_blank" style={{ color: 'var(--gold)' }}>
+              /menu/{hotelSlug || 'your-restaurant'}
+            </a>{' '}
+            to see it appear here.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((order: Order) => {
             const minsAgo = getMinutesAgo(order.created_at);
             const isNew = order.status === 'PLACED';
             const orderItems = getOrderItems(order);
             return (
-              <div
+              <article
                 key={order.id}
-                style={{
-                  background: 'var(--bg-surface)',
-                  border: `1px solid ${isNew ? 'rgba(201,169,110,0.3)' : 'var(--border-subtle)'}`,
-                  borderRadius: 12,
-                  padding: '1.25rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem',
-                  boxShadow: isNew ? '0 0 0 1px rgba(201,169,110,0.08), 0 4px 24px rgba(0,0,0,0.3)' : 'none',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
+                className="d3-panel p-5 flex flex-col gap-4"
+                style={
+                  isNew
+                    ? {
+                        borderColor: 'rgba(184,164,122,0.28)',
+                        background: 'var(--bg-surface-2)',
+                      }
+                    : undefined
+                }
               >
-                {/* New order pulse indicator */}
-                {isNew && (
-                  <div
-                    className="absolute top-0 right-0 left-0 h-0.5"
-                    style={{ background: 'linear-gradient(to right, transparent, var(--gold), transparent)' }}
-                  />
-                )}
-
                 {/* Order Header */}
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                        Table {order.table_number}
-                      </span>
-                      <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: 'monospace' }}>
-                        #{order.id.slice(0, 8).toUpperCase()}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{order.customer_name || 'Guest'}</p>
+                    <span
+                      className="d3-figure"
+                      style={{ display: 'block', fontSize: '1.125rem' }}
+                    >
+                      Table {order.table_number}
+                    </span>
+                    <span
+                      style={{
+                        display: 'block',
+                        marginTop: 4,
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                        fontSize: '0.625rem',
+                        letterSpacing: '0.06em',
+                        color: 'var(--text-dimmed)',
+                      }}
+                    >
+                      #{order.id.slice(0, 8).toUpperCase()}
+                    </span>
+                    <p style={{ margin: '0.375rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {order.customer_name || 'Guest'}
+                    </p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
                     <StatusBadge status={order.status} />
-                    <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>⏱ {minsAgo}m ago</span>
+                    <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
                   </div>
                 </div>
 
@@ -278,95 +268,85 @@ export default function LiveOrdersPage() {
                 {order.notes && (
                   <div
                     style={{
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: 6,
-                      background: 'rgba(201,169,110,0.04)',
-                      border: '1px solid rgba(201,169,110,0.1)',
+                      padding: '0.625rem 0.75rem',
+                      borderRadius: 5,
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-warm)',
                       fontSize: '0.75rem',
-                      color: 'var(--gold)',
+                      lineHeight: 1.6,
+                      color: 'var(--text-secondary)',
                     }}
                   >
-                    <strong>Chef note:</strong> {order.notes}
+                    <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Chef note:</strong>{' '}
+                    {order.notes}
                   </div>
                 )}
 
                 <div
                   className="flex items-center justify-between"
-                  style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}
+                  style={{ borderTop: '1px solid var(--border-warm)', paddingTop: '0.875rem' }}
                 >
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>
+                  <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
                     {order.payment_method} · {order.payment_status}
                   </span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', color: 'var(--gold)', fontWeight: 500 }}>
+                  <span className="d3-figure" style={{ fontSize: '1.125rem', color: 'var(--gold)' }}>
                     ${order.total_amount.toFixed(2)}
                   </span>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-8" style={{ gap: 8 }}>
                   {order.status === 'PLACED' && (
                     <button
+                      type="button"
                       onClick={() => handleUpdateStatus(order.id, 'accepted')}
                       className="d3-btn-primary"
-                      style={{ flex: 1, justifyContent: 'center', padding: '0.625rem', fontSize: '0.75rem' }}
+                      style={{ flex: 1 }}
                     >
                       Accept Order
                     </button>
                   )}
                   {order.status === 'ACCEPTED' && (
                     <button
+                      type="button"
                       onClick={() => handleUpdateStatus(order.id, 'preparing')}
-                      style={{
-                        flex: 1, padding: '0.625rem', fontSize: '0.75rem', fontWeight: 600,
-                        borderRadius: 100, cursor: 'pointer', border: 'none',
-                        background: 'rgba(160,120,255,0.15)',
-                        color: '#C4B5FD', transition: 'all 200ms',
-                      }}
+                      className="d3-btn-quiet"
+                      style={{ flex: 1 }}
                     >
                       Start Preparing
                     </button>
                   )}
                   {order.status === 'PREPARING' && (
                     <button
+                      type="button"
                       onClick={() => handleUpdateStatus(order.id, 'ready')}
-                      style={{
-                        flex: 1, padding: '0.625rem', fontSize: '0.75rem', fontWeight: 600,
-                        borderRadius: 100, cursor: 'pointer', border: 'none',
-                        background: 'rgba(100,210,150,0.12)',
-                        color: '#86EFAC', transition: 'all 200ms',
-                      }}
+                      className="d3-btn-quiet"
+                      style={{ flex: 1 }}
                     >
                       Mark Ready
                     </button>
                   )}
                   {order.status === 'READY' && (
                     <button
+                      type="button"
                       onClick={() => handleUpdateStatus(order.id, 'completed')}
-                      style={{
-                        flex: 1, padding: '0.625rem', fontSize: '0.75rem', fontWeight: 600,
-                        borderRadius: 100, cursor: 'pointer', border: '1px solid var(--border-medium)',
-                        background: 'transparent', color: 'var(--text-secondary)', transition: 'all 200ms',
-                      }}
+                      className="d3-btn-quiet"
+                      style={{ flex: 1 }}
                     >
                       Complete
                     </button>
                   )}
                   {!['COMPLETED', 'CANCELLED'].includes(order.status) && (
                     <button
+                      type="button"
                       onClick={() => handleUpdateStatus(order.id, 'cancelled')}
-                      style={{
-                        padding: '0.625rem 0.875rem', fontSize: '0.6875rem', fontWeight: 600,
-                        borderRadius: 100, cursor: 'pointer',
-                        background: 'rgba(200,80,80,0.06)',
-                        border: '1px solid rgba(200,80,80,0.15)',
-                        color: '#FCA5A5', transition: 'all 200ms',
-                      }}
+                      className="d3-btn-inline d3-btn-danger"
                     >
                       Cancel
                     </button>
                   )}
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>

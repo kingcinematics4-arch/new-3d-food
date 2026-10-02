@@ -153,9 +153,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
         style={{
-          width: 240,
-          background: 'var(--bg-surface)',
-          borderRight: '1px solid var(--border-subtle)',
+          width: 248,
+          background: 'var(--bg-secondary)',
+          borderRight: '1px solid var(--border-warm)',
           flexShrink: 0,
         }}
       >
@@ -188,7 +188,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Nav */}
-          <nav className="px-3 py-4 flex flex-col gap-0.5">
+          <nav className="px-3 py-5 flex flex-col gap-0.5">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -197,22 +197,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
                   style={{
+                    position: 'relative',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.75rem',
-                    padding: '0.625rem 0.875rem',
-                    borderRadius: 8,
+                    padding: '0.5rem 0.875rem',
+                    borderRadius: 5,
                     fontSize: '0.8125rem',
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? 'var(--gold)' : 'var(--text-muted)',
-                    background: isActive ? 'rgba(201,169,110,0.08)' : 'transparent',
-                    border: isActive ? '1px solid rgba(201,169,110,0.12)' : '1px solid transparent',
-                    transition: 'all 200ms',
+                    fontWeight: isActive ? 500 : 400,
+                    color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                    background: 'transparent',
+                    border: '1px solid transparent',
+                    transition: 'color 200ms, background 200ms',
                     textDecoration: 'none',
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.background = 'rgba(255,248,235,0.04)';
+                      e.currentTarget.style.background = 'rgba(243,239,231,0.03)';
                       e.currentTarget.style.color = 'var(--text-primary)';
                     }
                   }}
@@ -223,20 +224,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     }
                   }}
                 >
-                  <span style={{ opacity: isActive ? 1 : 0.6, flexShrink: 0 }}>
+                  {/* Champagne active indicator */}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      left: -12,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: 2,
+                      height: isActive ? 18 : 0,
+                      background: 'var(--gold)',
+                      transition: 'height 200ms',
+                    }}
+                  />
+                  <span style={{ opacity: isActive ? 1 : 0.55, flexShrink: 0, color: isActive ? 'var(--gold)' : 'inherit' }}>
                     {navIcons[item.label]}
                   </span>
                   <span>{item.label}</span>
                   {item.label === 'Live Orders' && (
-                    <span
-                      style={{
-                        marginLeft: 'auto',
-                        width: 8, height: 8,
-                        borderRadius: '50%',
-                        background: 'var(--gold)',
-                        animation: 'pulseGold 2s ease-in-out infinite',
-                      }}
-                    />
+                    <span className="d3-live-dot" style={{ marginLeft: 'auto' }} />
                   )}
                 </Link>
               );
@@ -338,9 +345,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               width: '100%', textAlign: 'left',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(200,80,80,0.06)';
-              e.currentTarget.style.color = '#FCA5A5';
-              e.currentTarget.style.borderColor = 'rgba(200,80,80,0.15)';
+              e.currentTarget.style.background = 'rgba(196,102,88,0.06)';
+              e.currentTarget.style.color = '#D9A79E';
+              e.currentTarget.style.borderColor = 'rgba(196,102,88,0.18)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'none';
@@ -361,11 +368,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
         <header
-          className="flex items-center justify-between px-6 flex-shrink-0"
+          className="flex items-center justify-between px-8 flex-shrink-0"
           style={{
-            height: 60,
-            background: 'var(--bg-surface)',
-            borderBottom: '1px solid var(--border-subtle)',
+            height: 64,
+            background: 'var(--bg-secondary)',
+            borderBottom: '1px solid var(--border-warm)',
           }}
         >
           {/* Left — Mobile hamburger + Page title */}
@@ -373,38 +380,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <button
               className="md:hidden"
               onClick={() => setSidebarOpen(true)}
+              aria-label="Open navigation"
               style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', padding: 4 }}
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M2 4H16M2 9H16M2 14H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </button>
-            <div>
-              <h1
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.9375rem',
-                  fontWeight: 600,
-                  color: 'var(--text-primary)',
-                  lineHeight: 1.2,
-                }}
-              >
-                {currentPage}
-              </h1>
-            </div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.125rem',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                letterSpacing: '-0.015em',
+                lineHeight: 1.2,
+              }}
+            >
+              {currentPage}
+            </h1>
           </div>
 
           {/* Right — Status + Actions */}
           <div className="flex items-center gap-3">
-            <span className="d3-badge" style={{
-              fontSize: '0.5625rem',
-              background: 'rgba(100,210,150,0.08)',
-              border: '1px solid rgba(100,210,150,0.2)',
-              color: '#86EFAC',
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#86EFAC', animation: 'pulseGold 2s ease-in-out infinite' }} />
-              LIVE
+            <span className="d3-badge d3-badge-gold">
+              <span className="d3-live-dot" />
+              Live
             </span>
             {hotelSlug && (
               <Link
@@ -413,7 +414,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="d3-btn-ghost"
                 style={{ padding: '0.4375rem 1rem', fontSize: '0.75rem' }}
               >
-                View Menu ↗
+                View Menu
               </Link>
             )}
           </div>
@@ -422,7 +423,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Page Content */}
         <main
           className="flex-1 overflow-y-auto"
-          style={{ padding: '2rem', background: 'var(--bg-primary)' }}
+          style={{ padding: '2.75rem 2rem', background: 'var(--bg-primary)' }}
         >
           {children}
         </main>

@@ -221,36 +221,27 @@ export default function SignupPage() {
 
           {/* Check your email state */}
           {awaitingConfirmation && (
-            <div
-              className="mb-6 px-4 py-4 rounded-lg space-y-2"
-              style={{
-                background: 'rgba(201,169,110,0.06)',
-                border: '1px solid rgba(201,169,110,0.25)',
-                color: 'var(--text-secondary)',
-                fontSize: '0.875rem',
-              }}
-            >
-              <div className="flex items-center gap-2" style={{ color: 'var(--gold)', fontWeight: 600 }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+            <div className="d3-note d3-note-accent" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+              <div className="flex items-center gap-2" style={{ color: 'var(--gold)', fontWeight: 500 }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }} aria-hidden="true">
                   <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
                   <path d="M1.5 3.5L7 8L12.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                 </svg>
                 <span>Check your email</span>
               </div>
-              <p>
+              <p style={{ margin: 0 }}>
                 Your restaurant was created. We sent a confirmation link to{' '}
-                <strong style={{ color: 'var(--text-primary)' }}>{formData.email}</strong>. Open it to
+                <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{formData.email}</strong>. Open it to
                 activate your account, then sign in.
               </p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>
                 The link expires after a limited time. If it has expired, request a new one from the
                 sign-in screen — we only send a new email when you ask for it.
               </p>
               <Link
                 href="/login"
                 style={{
-                  display: 'inline-block',
-                  marginTop: '0.25rem',
+                  alignSelf: 'flex-start',
                   color: 'var(--gold)',
                   textDecoration: 'underline',
                   textUnderlineOffset: 3,
@@ -263,34 +254,22 @@ export default function SignupPage() {
 
           {/* Success */}
           {success && (
-            <div
-              className="mb-6 px-4 py-3 rounded-lg flex items-center gap-3"
-              style={{
-                background: 'rgba(100,210,150,0.06)',
-                border: '1px solid rgba(100,210,150,0.2)',
-                color: '#86EFAC',
-                fontSize: '0.875rem',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
-                <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <div className="d3-note d3-note-accent">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
+                <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Restaurant created! Redirecting to dashboard...
+              <span>Restaurant created. Taking you to the dashboard…</span>
             </div>
           )}
 
           {/* Error */}
           {error && (
-            <div
-              className="mb-6 px-4 py-3 rounded-lg"
-              style={{
-                background: 'rgba(200,80,80,0.06)',
-                border: '1px solid rgba(200,80,80,0.2)',
-                color: '#FCA5A5',
-                fontSize: '0.875rem',
-              }}
-            >
-              {error}
+            <div className="d3-note d3-note-danger">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.1" />
+                <path d="M7 4.5V7.5M7 9.5V9.51" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 

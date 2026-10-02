@@ -14,34 +14,35 @@
    CSS CUSTOM PROPERTIES (DESIGN TOKENS)
    ============================================ */
 :root {
-  /* Backgrounds */
-  --bg-primary:   #0B0A08;
-  --bg-secondary: #11100D;
-  --bg-tertiary:  #15130F;
-  --bg-surface:   #171511;
-  --bg-surface-2: #1C1914;
-  --bg-surface-3: #211E19;
-  --bg-elevated:  #261F17;
+  /* Backgrounds — near-black through deep charcoal */
+  --bg-primary:   #0B0B0A;
+  --bg-secondary: #121210;
+  --bg-tertiary:  #171613;
+  --bg-surface:   #171613;
+  --bg-surface-2: #1D1B17;
+  --bg-surface-3: #232019;
+  --bg-elevated:  #26231D;
 
-  /* Gold Accent Palette */
-  --gold:         #C9A96E;
-  --gold-bright:  #D4B483;
-  --gold-dim:     #7A6340;
-  --gold-pale:    #E8D5B0;
-  --gold-deep:    #B8935A;
+  /* Champagne accent — used sparingly, never as a fill */
+  --gold:         #B8A47A;
+  --gold-bright:  #CDB98F;
+  --gold-dim:     #6E6350;
+  --gold-pale:    #D9CBAB;
+  --gold-deep:    #9A8760;
 
-  /* Typography */
-  --text-primary:   #F5F0E8;
-  --text-secondary: #C8BCA8;
-  --text-muted:     #8A7F72;
-  --text-dimmed:    #5C5248;
-  --text-gold:      #C9A96E;
+  /* Typography — warm ivory */
+  --text-primary:   #F3EFE7;
+  --text-secondary: #C2BCB0;
+  --text-muted:     #9B968C;
+  --text-dimmed:    #6B675F;
+  --text-gold:      #B8A47A;
 
-  /* Borders */
-  --border-subtle:  rgba(201,169,110,0.08);
-  --border-light:   rgba(201,169,110,0.15);
-  --border-medium:  rgba(201,169,110,0.25);
-  --border-warm:    rgba(255,248,235,0.06);
+  /* Borders — thin, warm, barely there */
+  --border-subtle:  rgba(184,164,122,0.10);
+  --border-light:   rgba(184,164,122,0.18);
+  --border-medium:  rgba(184,164,122,0.28);
+  --border-warm:    rgba(243,239,231,0.08);
+  --border-solid:   #2A2823;
 
   /* Spacing Rhythm */
   --section-padding-y: 7rem;
@@ -187,50 +188,57 @@ body {
    BUTTONS
    ============================================ */
 
-/* Primary CTA — champagne gold */
+/* Primary CTA — charcoal body, champagne hairline, champagne type */
 .d3-btn-primary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.75rem;
-  background-color: var(--gold);
-  color: #0B0A08;
+  padding: 0.75rem 1.625rem;
+  background-color: var(--bg-surface-2);
+  color: var(--gold-pale);
   font-family: var(--font-body);
   font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  border: none;
-  border-radius: 100px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--border-medium);
+  border-radius: 6px;
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
   white-space: nowrap;
   text-decoration: none;
 }
 
 .d3-btn-primary:hover {
-  background-color: var(--gold-bright);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(201,169,110,0.25);
+  background-color: var(--bg-surface-3);
+  border-color: rgba(184,164,122,0.5);
+  color: var(--gold-bright);
 }
 
 .d3-btn-primary:active {
-  transform: translateY(0);
+  background-color: var(--bg-elevated);
 }
 
-/* Ghost / outline button */
+.d3-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Ghost / outline button — hairline only */
 .d3-btn-ghost {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.75rem;
+  padding: 0.75rem 1.625rem;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-family: var(--font-body);
   font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  border: 1px solid var(--border-light);
-  border-radius: 100px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-warm);
+  border-radius: 6px;
   cursor: pointer;
   transition: all var(--transition-base);
   white-space: nowrap;
@@ -238,9 +246,9 @@ body {
 }
 
 .d3-btn-ghost:hover {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(201,169,110,0.04);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+  background: rgba(243,239,231,0.03);
 }
 
 /* Text button */
@@ -268,12 +276,13 @@ body {
 .d3-btn-sm {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.375rem;
-  padding: 0.5rem 1.25rem;
+  padding: 0.5rem 1.125rem;
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  border-radius: 100px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  border-radius: 5px;
   cursor: pointer;
   transition: all var(--transition-base);
   white-space: nowrap;
@@ -422,28 +431,27 @@ body {
 
 .d3-card {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  transition: all var(--transition-smooth);
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
+  transition: border-color var(--transition-smooth), background-color var(--transition-smooth);
 }
 
 .d3-card:hover {
   border-color: var(--border-light);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,169,110,0.08);
+  background-color: var(--bg-surface-2);
 }
 
 .d3-card-elevated {
   background-color: var(--bg-surface-2);
   border: 1px solid var(--border-warm);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 /* Dish card — restrained hover, photography is the focus */
 .d3-dish-card {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -461,15 +469,200 @@ body {
 }
 
 /* ============================================
+   EDITORIAL PANELS
+   Near-flat charcoal planes with hairline
+   edges. Used across dashboard screens.
+   ============================================ */
+
+.d3-panel {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
+}
+
+.d3-panel-quiet {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
+}
+
+/* Section heading inside a panel */
+.d3-panel-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+/* Serif figure used for metrics */
+.d3-figure {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+/* Fine rule between stacked content */
+.d3-rule {
+  height: 1px;
+  background: var(--border-warm);
+  width: 100%;
+}
+
+/* Segmented control — hairline container, champagne marker */
+.d3-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-warm);
+  border-radius: 6px;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.d3-segment-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.375rem 0.875rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--transition-base), background var(--transition-base), border-color var(--transition-base);
+}
+.d3-segment-item:hover {
+  color: var(--text-primary);
+}
+.d3-segment-item[data-active='true'] {
+  color: var(--gold-pale);
+  background: var(--bg-surface-2);
+  border-color: var(--border-light);
+}
+
+/* Option grid (layout / theme pickers) */
+.d3-option {
+  padding: 0.75rem 0.875rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-warm);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+.d3-option:hover {
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+.d3-option[data-active='true'] {
+  color: var(--gold-pale);
+  border-color: var(--border-medium);
+  background: var(--bg-surface-2);
+}
+
+/* Inline notice — neutral, no colour coding */
+.d3-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0.875rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-warm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.d3-note-accent {
+  border-color: var(--border-light);
+  background: rgba(184,164,122,0.05);
+  color: var(--text-primary);
+}
+.d3-note-danger {
+  border-color: rgba(196,102,88,0.28);
+  background: rgba(196,102,88,0.06);
+  color: #E7B4AC;
+}
+
+/* Swatch row for colour pickers */
+.d3-swatch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.4375rem 0.625rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-warm);
+  background: var(--bg-secondary);
+}
+.d3-swatch input[type='color'] {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+.d3-swatch code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* Empty state */
+.d3-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 4.5rem 1.5rem;
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
+  color: var(--text-dimmed);
+}
+.d3-empty-title {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  margin-top: 0.75rem;
+}
+.d3-empty-body {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  max-width: 44ch;
+}
+
+/* ============================================
    FORM ELEMENTS
    ============================================ */
 
 .d3-input {
   width: 100%;
-  padding: 0.875rem 1rem;
-  background-color: var(--bg-surface-2);
+  padding: 0.75rem 0.875rem;
+  background-color: var(--bg-secondary);
   border: 1px solid var(--border-warm);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 0.875rem;
@@ -521,40 +714,53 @@ body {
 }
 
 /* ============================================
-   BADGES & PILLS
+   BADGES
+   Monochrome by default. Champagne marks
+   only the single most urgent state.
    ============================================ */
 
 .d3-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 100px;
-  font-size: 0.6875rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.625rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .d3-badge-gold {
-  background: rgba(201,169,110,0.1);
-  border: 1px solid rgba(201,169,110,0.2);
+  background: rgba(184,164,122,0.10);
+  border: 1px solid rgba(184,164,122,0.22);
   color: var(--gold);
 }
 
 .d3-badge-warm {
-  background: rgba(255,248,235,0.05);
-  border: 1px solid rgba(255,248,235,0.1);
+  background: rgba(243,239,231,0.04);
+  border: 1px solid var(--border-warm);
   color: var(--text-secondary);
 }
 
-/* Status badges */
-.d3-status-placed   { background: rgba(201,169,110,0.1); border: 1px solid rgba(201,169,110,0.25); color: var(--gold); }
-.d3-status-accepted { background: rgba(100,160,255,0.08); border: 1px solid rgba(100,160,255,0.2); color: #A0C4FF; }
-.d3-status-preparing{ background: rgba(160,120,255,0.08); border: 1px solid rgba(160,120,255,0.2); color: #C4B5FD; }
-.d3-status-ready    { background: rgba(100,210,150,0.08); border: 1px solid rgba(100,210,150,0.2); color: #86EFAC; }
-.d3-status-completed{ background: rgba(100,100,100,0.08); border: 1px solid rgba(100,100,100,0.2); color: #9CA3AF; }
-.d3-status-cancelled{ background: rgba(200,80,80,0.08);  border: 1px solid rgba(200,80,80,0.2);  color: #FCA5A5; }
+/* Status badges — a single champagne highlight, everything else quiet */
+.d3-status-placed   { background: rgba(184,164,122,0.12); border: 1px solid rgba(184,164,122,0.34); color: var(--gold-pale); }
+.d3-status-accepted { background: rgba(243,239,231,0.05); border: 1px solid var(--border-warm); color: var(--text-primary); }
+.d3-status-preparing{ background: rgba(243,239,231,0.04); border: 1px solid var(--border-warm); color: var(--text-secondary); }
+.d3-status-ready    { background: rgba(243,239,231,0.06); border: 1px solid var(--border-medium); color: var(--text-primary); }
+.d3-status-completed{ background: transparent; border: 1px solid var(--border-warm); color: var(--text-dimmed); }
+.d3-status-cancelled{ background: rgba(196,102,88,0.05); border: 1px solid rgba(196,102,88,0.24); color: #D9A79E; }
+
+/* Live marker — champagne, softly breathing */
+.d3-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: inline-block;
+  animation: goldPulse 3s ease-in-out infinite;
+}
 
 /* ============================================
    SECTION DIVIDERS
@@ -648,13 +854,13 @@ body {
 
 .d3-bg-grid {
   background-image: 
-    linear-gradient(rgba(201,169,110,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201,169,110,0.03) 1px, transparent 1px);
+    linear-gradient(rgba(184,164,122,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184,164,122,0.03) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
 .d3-bg-dots {
-  background-image: radial-gradient(circle, rgba(201,169,110,0.05) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(184,164,122,0.05) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -662,20 +868,13 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  background: radial-gradient(circle, rgba(201,169,110,0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(184,164,122,0.10) 0%, transparent 70%);
   pointer-events: none;
 }
 
 /* ============================================
-   GOLD TEXT GRADIENT
+   TEXT UTILITIES
    ============================================ */
-.text-gold-gradient {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-pale) 50%, var(--gold-deep) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .text-gold {
   color: var(--gold);
 }

@@ -1,11 +1,43 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useHotel, useHotelCustomization } from '@/lib/useHotel';
+
+/* ============================================================
+   MENU DESIGN STUDIO
+   Left  — the design controls, set like a print studio
+   Right — the live guest-facing menu, rendered as an actual
+           luxury restaurant menu would look on a phone
+   ============================================================ */
+
+const MENU_STYLES = [
+  { id: 'cards', label: 'Cards', note: 'Photograph-led, generous spacing' },
+  { id: 'grid', label: 'Grid', note: 'Denser, two-up on small screens' },
+  { id: 'list', label: 'List', note: 'Text-forward editorial index' },
+];
+
+const CARD_STYLES = [
+  { id: 'minimal', label: 'Minimal', note: 'Hairline frame, no fill' },
+  { id: 'bordered', label: 'Bordered', note: 'Champagne edge, stronger frame' },
+  { id: 'glassmorphic', label: 'Soft', note: 'Frosted charcoal veil' },
+];
+
+const TYPOGRAPHY = [
+  { value: 'Inter', label: 'Modern Sans' },
+  { value: 'Outfit', label: 'Contemporary' },
+  { value: 'Playfair Display', label: 'Editorial Serif' },
+  { value: 'Roboto', label: 'Neutral Grotesk' },
+];
 
 export default function CustomizeMenuPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { customization, loading: customizationLoading, saveCustomization, setCustomization } = useHotelCustomization(hotel?.id || null);
+  const {
+    customization,
+    loading: customizationLoading,
+    saveCustomization,
+    setCustomization,
+  } = useHotelCustomization(hotel?.id || null);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const hotelSlug = hotel?.slug || '';
@@ -19,243 +51,540 @@ export default function CustomizeMenuPage() {
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
+  const patch = (next: Partial<typeof customization>) =>
+    setCustomization({ ...customization, ...next });
+
   if (hotelLoading || customizationLoading) {
-    return <p className="text-sm text-gray-400">Loading customization settings…</p>;
+    return (
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+        Loading the design studio…
+      </p>
+    );
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex flex-col gap-10" style={{ maxWidth: 1180 }}>
+      {/* ================= Page header ================= */}
+      <header
+        className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-white">Menu Design & Theme Customizer</h1>
-          <p className="text-gray-400 text-sm">
-            Customize the look and feel of your customer-facing digital 3D menu in real time.
+          <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
+            Menu Design
+          </span>
+          <h1
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(2rem, 4vw, 2.75rem)',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.025em',
+              lineHeight: 1.1,
+              margin: '0.5rem 0 0',
+            }}
+          >
+            Design Studio
+          </h1>
+          <p
+            style={{
+              margin: '0.5rem 0 0',
+              fontSize: '0.875rem',
+              lineHeight: 1.6,
+              color: 'var(--text-muted)',
+              maxWidth: '54ch',
+            }}
+          >
+            Art-direct the guest-facing menu — palette, typography and layout. Every
+            change is reflected in the preview beside you before it is published.
           </p>
         </div>
-        <a
-          href={menuHref}
-          target="_blank"
-          className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-amber-400 font-bold text-xs border border-amber-500/30 flex items-center space-x-2"
-        >
-          <span>👁 Preview Customer Menu</span>
-          <span>↗</span>
-        </a>
-      </div>
+
+        {hotelSlug && (
+          <Link
+            href={menuHref}
+            target="_blank"
+            className="d3-btn-ghost"
+            style={{ flexShrink: 0 }}
+          >
+            Open Live Menu
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path
+                d="M2.5 9.5L9.5 2.5M4.5 2.5H9.5V7.5"
+                stroke="currentColor"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+        )}
+      </header>
 
       {savedSuccess && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold">
-          ✓ Menu Design saved! Open /menu/{hotelSlug} to see live changes.
+        <div className="d3-note d3-note-accent">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
+            <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span>
+            Design published. Your guest menu at{' '}
+            <span style={{ color: 'var(--gold)' }}>/menu/{hotelSlug || 'your-restaurant'}</span>{' '}
+            now reflects these settings.
+          </span>
         </div>
       )}
 
-      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Controls Column */}
-        <div className="lg:col-span-7 bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5 shadow-xl">
-          <h2 className="text-lg font-bold text-white border-b border-gray-800 pb-3">
-            Visual & Layout Settings
-          </h2>
+      {/* ================= Two-column studio ================= */}
+      <form
+        onSubmit={handleSave}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+      >
+        {/* ---------- Controls ---------- */}
+        <div className="lg:col-span-7 flex flex-col gap-8">
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Primary Accent Color
-              </label>
-              <div className="flex items-center space-x-2 bg-gray-800 p-2 rounded-xl border border-gray-700">
-                <input
-                  type="color"
-                  value={customization.primary_color}
-                  onChange={(e) => setCustomization({ ...customization, primary_color: e.target.value })}
-                  className="w-8 h-8 rounded cursor-pointer bg-transparent border-none"
-                />
-                <span className="text-xs font-mono text-gray-300">{customization.primary_color}</span>
+          {/* Palette */}
+          <section className="d3-panel p-6 sm:p-7">
+            <div className="flex items-baseline justify-between gap-4 pb-4 mb-5" style={{ borderBottom: '1px solid var(--border-warm)' }}>
+              <h2 className="d3-panel-title">Palette</h2>
+              <span className="d3-eyebrow" style={{ fontSize: '0.5rem', color: 'var(--text-dimmed)' }}>
+                01
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="d3-label" htmlFor="primary-color">
+                  Primary Accent
+                </label>
+                <div className="d3-swatch">
+                  <input
+                    id="primary-color"
+                    type="color"
+                    value={customization.primary_color}
+                    onChange={(e) => patch({ primary_color: e.target.value })}
+                    aria-label="Primary accent colour"
+                  />
+                  <code>{customization.primary_color}</code>
+                </div>
+              </div>
+
+              <div>
+                <label className="d3-label" htmlFor="secondary-color">
+                  Secondary Accent
+                </label>
+                <div className="d3-swatch">
+                  <input
+                    id="secondary-color"
+                    type="color"
+                    value={customization.secondary_color}
+                    onChange={(e) => patch({ secondary_color: e.target.value })}
+                    aria-label="Secondary accent colour"
+                  />
+                  <code>{customization.secondary_color}</code>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Secondary Accent Color
-              </label>
-              <div className="flex items-center space-x-2 bg-gray-800 p-2 rounded-xl border border-gray-700">
-                <input
-                  type="color"
-                  value={customization.secondary_color}
-                  onChange={(e) => setCustomization({ ...customization, secondary_color: e.target.value })}
-                  className="w-8 h-8 rounded cursor-pointer bg-transparent border-none"
-                />
-                <span className="text-xs font-mono text-gray-300">{customization.secondary_color}</span>
+            <div className="d3-rule mt-6 mb-5" />
+
+            <label className="d3-label" htmlFor="base-mode">
+              Base Theme
+            </label>
+            <div className="d3-segment" id="base-mode" role="group" aria-label="Base theme mode">
+              {[
+                { id: true, label: 'Dark' },
+                { id: false, label: 'Light' },
+              ].map((mode) => (
+                <button
+                  key={String(mode.id)}
+                  type="button"
+                  className="d3-segment-item"
+                  data-active={customization.dark_mode === mode.id}
+                  onClick={() => patch({ dark_mode: mode.id as boolean })}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Layout */}
+          <section className="d3-panel p-6 sm:p-7">
+            <div className="flex items-baseline justify-between gap-4 pb-4 mb-5" style={{ borderBottom: '1px solid var(--border-warm)' }}>
+              <h2 className="d3-panel-title">Layout &amp; Surfaces</h2>
+              <span className="d3-eyebrow" style={{ fontSize: '0.5rem', color: 'var(--text-dimmed)' }}>
+                02
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-6">
+              <div>
+                <span className="d3-label">Menu Layout</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {MENU_STYLES.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className="d3-option"
+                      data-active={customization.menu_style === opt.id}
+                      aria-pressed={customization.menu_style === opt.id}
+                      onClick={() => patch({ menu_style: opt.id as any })}
+                    >
+                      <span style={{ display: 'block', color: 'inherit' }}>{opt.label}</span>
+                      <span style={{ display: 'block', fontSize: '0.6875rem', color: 'var(--text-dimmed)', marginTop: 3, fontWeight: 400 }}>
+                        {opt.note}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <span className="d3-label">Card Surface</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {CARD_STYLES.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className="d3-option"
+                      data-active={customization.card_style === opt.id}
+                      aria-pressed={customization.card_style === opt.id}
+                      onClick={() => patch({ card_style: opt.id as any })}
+                    >
+                      <span style={{ display: 'block', color: 'inherit' }}>{opt.label}</span>
+                      <span style={{ display: 'block', fontSize: '0.6875rem', color: 'var(--text-dimmed)', marginTop: 3, fontWeight: 400 }}>
+                        {opt.note}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="d3-label" htmlFor="typography">
+                  Typography
+                </label>
+                <select
+                  id="typography"
+                  value={customization.typography}
+                  onChange={(e) => patch({ typography: e.target.value as any })}
+                  className="d3-input"
+                >
+                  {TYPOGRAPHY.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label} — {t.value}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-              Menu Layout Style
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'cards', label: '🎴 3D Cards' },
-                { id: 'grid', label: '🔳 Grid View' },
-                { id: 'list', label: '☰ Compact List' },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setCustomization({ ...customization, menu_style: item.id as any })}
-                  className={`py-2.5 rounded-xl text-xs font-bold border transition ${
-                    customization.menu_style === item.id
-                      ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                      : 'bg-gray-800 border-gray-700 text-gray-400'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-              Card Visual Theme
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'glassmorphic', label: '✨ Glassmorphism' },
-                { id: 'minimal', label: '☁ Minimal' },
-                { id: 'bordered', label: '🔲 Bordered' },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setCustomization({ ...customization, card_style: item.id as any })}
-                  className={`py-2.5 rounded-xl text-xs font-bold border transition ${
-                    customization.card_style === item.id
-                      ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                      : 'bg-gray-800 border-gray-700 text-gray-400'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Typography
-              </label>
-              <select
-                value={customization.typography}
-                onChange={(e) => setCustomization({ ...customization, typography: e.target.value as any })}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs"
-              >
-                <option value="Inter">Modern (Inter)</option>
-                <option value="Outfit">Trendy (Outfit)</option>
-                <option value="Playfair Display">Elegant Serif (Playfair)</option>
-                <option value="Roboto">Clean (Roboto)</option>
-              </select>
+          {/* Copy */}
+          <section className="d3-panel p-6 sm:p-7">
+            <div className="flex items-baseline justify-between gap-4 pb-4 mb-5" style={{ borderBottom: '1px solid var(--border-warm)' }}>
+              <h2 className="d3-panel-title">Guest Copy</h2>
+              <span className="d3-eyebrow" style={{ fontSize: '0.5rem', color: 'var(--text-dimmed)' }}>
+                03
+              </span>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-                Base Theme Mode
-              </label>
-              <button
-                type="button"
-                onClick={() => setCustomization({ ...customization, dark_mode: !customization.dark_mode })}
-                className="w-full py-2.5 px-4 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs font-bold flex items-center justify-between"
-              >
-                <span>{customization.dark_mode ? '🌙 Dark Mode' : '☀️ Light Mode'}</span>
-                <span className="text-[10px] text-amber-400">Toggle</span>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
-              Welcome Banner Text
+            <label className="d3-label" htmlFor="welcome-banner">
+              Welcome Banner
             </label>
             <input
+              id="welcome-banner"
               type="text"
               value={customization.welcome_banner}
-              onChange={(e) => setCustomization({ ...customization, welcome_banner: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs focus:border-amber-400 focus:outline-none"
+              onChange={(e) => patch({ welcome_banner: e.target.value })}
+              placeholder="A seasonal menu, composed daily"
+              className="d3-input"
             />
-          </div>
 
-          <button
-            type="submit"
-            className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-extrabold text-sm shadow-xl shadow-amber-500/20"
-          >
-            Save & Publish Theme Customization
-          </button>
+            <div style={{ marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="d3-btn-primary">
+                Publish Design
+              </button>
+            </div>
+          </section>
         </div>
 
-        {/* Live Customer Card Preview */}
-        <div className="lg:col-span-5 bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-white border-b border-gray-800 pb-3">
-              Live Phone Preview
-            </h3>
-
-            <div
-              className={`mt-4 p-4 rounded-2xl border space-y-3 transition ${
-                customization.dark_mode
-                  ? 'bg-gray-950 text-white border-gray-800'
-                  : 'bg-gray-100 text-gray-900 border-gray-300'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-black text-xs"
-                  style={{ backgroundColor: customization.primary_color }}
-                >
-                  3D
-                </div>
-                <div>
-                  <p className="font-bold text-xs">{hotelName}</p>
-                  <p className="text-[10px] opacity-70">Table #1</p>
-                </div>
-              </div>
-
-              <div
-                className="p-3 rounded-xl text-xs text-white"
-                style={{ backgroundColor: customization.primary_color }}
-              >
-                <p className="font-semibold">{customization.welcome_banner}</p>
-              </div>
-
-              {/* Sample Card */}
-              <div
-                className={`p-3 rounded-xl border space-y-2 ${
-                  customization.card_style === 'glassmorphic'
-                    ? 'bg-gray-900/60 backdrop-blur border-gray-700'
-                    : customization.card_style === 'minimal'
-                    ? 'bg-gray-900 border-none shadow'
-                    : 'bg-gray-900 border-amber-500/40'
-                }`}
-              >
-                <div className="h-28 bg-gray-800 rounded-lg flex items-center justify-center text-3xl">
-                  🍔
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-white">Signature Dish</span>
-                  <span style={{ color: customization.primary_color }} className="font-extrabold">
-                    $22.50
-                  </span>
-                </div>
-              </div>
+        {/* ---------- Live guest menu preview ---------- */}
+        <div className="lg:col-span-5 lg:sticky lg:top-0">
+          <div className="flex items-center justify-between gap-4 pb-4 mb-5" style={{ borderBottom: '1px solid var(--border-warm)' }}>
+            <div>
+              <span className="d3-eyebrow" style={{ fontSize: '0.5rem', color: 'var(--text-dimmed)' }}>
+                Preview
+              </span>
+              <h2 className="d3-panel-title" style={{ fontSize: '1.125rem', marginTop: 4 }}>
+                As your guests see it
+              </h2>
             </div>
+            <span className="d3-chip">Unsaved draft</span>
           </div>
 
-          <div className="text-center pt-2">
-            <p className="text-xs text-gray-400">
-              Style: <strong>{customization.menu_style}</strong> • Font: <strong>{customization.typography}</strong>
-            </p>
-          </div>
+          <MenuPreview
+            hotelName={hotelName}
+            primary={customization.primary_color}
+            secondary={customization.secondary_color}
+            typography={customization.typography}
+            welcome={customization.welcome_banner}
+            menuStyle={customization.menu_style}
+            cardStyle={customization.card_style}
+            darkMode={customization.dark_mode}
+          />
+
+          <p
+            style={{
+              marginTop: '1.25rem',
+              fontSize: '0.6875rem',
+              lineHeight: 1.7,
+              color: 'var(--text-dimmed)',
+            }}
+          >
+            Layout {customization.menu_style} · Surface {customization.card_style} · Type{' '}
+            {customization.typography}
+          </p>
         </div>
       </form>
+    </div>
+  );
+}
+
+/* ============================================================
+   LIVE PREVIEW — an actual luxury restaurant digital menu
+   ============================================================ */
+
+function MenuPreview({
+  hotelName,
+  primary,
+  secondary,
+  typography,
+  welcome,
+  menuStyle,
+  cardStyle,
+  darkMode,
+}: {
+  hotelName: string;
+  primary: string;
+  secondary: string;
+  typography: string;
+  welcome: string;
+  menuStyle: string;
+  cardStyle: string;
+  darkMode: boolean;
+}) {
+  const pageBg = darkMode ? '#0B0B0A' : '#F4F1EA';
+  const pageInk = darkMode ? '#F3EFE7' : '#14140F';
+  const pageMuted = darkMode ? '#9B968C' : '#6B675F';
+  const pageLine = darkMode ? 'rgba(243,239,231,0.10)' : 'rgba(20,20,15,0.12)';
+
+  const serif = typography === 'Playfair Display';
+  const face = serif
+    ? "'Playfair Display', Georgia, serif"
+    : `'${typography}', 'Inter', system-ui, sans-serif`;
+
+  const cardSurface =
+    cardStyle === 'glassmorphic'
+      ? darkMode
+        ? 'rgba(243,239,231,0.045)'
+        : 'rgba(255,255,255,0.7)'
+      : cardStyle === 'bordered'
+      ? 'transparent'
+      : 'transparent';
+
+  const cardBorder =
+    cardStyle === 'bordered' ? primary : cardStyle === 'glassmorphic' ? pageLine : pageLine;
+
+  const columns = menuStyle === 'grid' ? '1fr 1fr' : menuStyle === 'list' ? '1fr' : '1fr';
+
+  return (
+    <div
+      style={{
+        borderRadius: 10,
+        border: `1px solid ${pageLine}`,
+        background: pageBg,
+        overflow: 'hidden',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.45)',
+      }}
+    >
+      {/* Masthead */}
+      <div
+        style={{
+          padding: '1.75rem 1.5rem 1.5rem',
+          borderBottom: `1px solid ${pageLine}`,
+          textAlign: 'center',
+        }}
+      >
+        <p
+          style={{
+            fontSize: '0.5rem',
+            letterSpacing: '0.28em',
+            textTransform: 'uppercase',
+            color: primary,
+            margin: 0,
+          }}
+        >
+          Est. Menu
+        </p>
+        <h3
+          style={{
+            fontFamily: face,
+            fontSize: '1.5rem',
+            fontWeight: serif ? 500 : 300,
+            letterSpacing: serif ? '-0.01em' : '0.14em',
+            textTransform: serif ? 'none' : 'uppercase',
+            color: pageInk,
+            margin: '0.5rem 0 0',
+            lineHeight: 1.2,
+          }}
+        >
+          {hotelName}
+        </h3>
+        <p
+          style={{
+            fontSize: '0.6875rem',
+            lineHeight: 1.7,
+            color: pageMuted,
+            margin: '0.625rem 0 0',
+            maxWidth: '30ch',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
+          {welcome}
+        </p>
+      </div>
+
+      {/* Section label */}
+      <div style={{ padding: '1.125rem 1.5rem 0' }}>
+        <p
+          style={{
+            fontSize: '0.5rem',
+            letterSpacing: '0.24em',
+            textTransform: 'uppercase',
+            color: pageMuted,
+            margin: 0,
+            paddingBottom: 10,
+            borderBottom: `1px solid ${pageLine}`,
+          }}
+        >
+          From the Kitchen
+        </p>
+      </div>
+
+      {/* Dishes */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: columns,
+          gap: menuStyle === 'list' ? 0 : 14,
+          padding: menuStyle === 'list' ? '0 1.5rem 1.5rem' : '1.25rem 1.5rem 1.75rem',
+        }}
+      >
+        {[
+          { name: 'Charred Sea Bass', note: 'Beetroot, citrus oil', price: '32' },
+          { name: 'Truffle Risotto', note: 'Aged parmesan, chive', price: '26' },
+        ].map((dish, i) => {
+          const isList = menuStyle === 'list';
+
+          return (
+            <div
+              key={dish.name}
+              style={
+                isList
+                  ? { padding: '1rem 0', borderTop: `1px solid ${pageLine}` }
+                  : {
+                      padding: '0.875rem',
+                      borderRadius: cardStyle === 'minimal' ? 2 : 6,
+                      border: `1px solid ${cardBorder}`,
+                      background: cardSurface,
+                    }
+              }
+            >
+              {!isList && (
+                <div
+                  style={{
+                    aspectRatio: menuStyle === 'grid' ? '1 / 1' : '16 / 10',
+                    borderRadius: 3,
+                    border: `1px solid ${pageLine}`,
+                    background: darkMode ? 'rgba(243,239,231,0.03)' : 'rgba(20,20,15,0.04)',
+                    marginBottom: '0.875rem',
+                  }}
+                />
+              )}
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+              <span
+                style={{
+                  fontFamily: face,
+                  fontSize: '0.9375rem',
+                  color: pageInk,
+                  letterSpacing: serif ? '-0.005em' : '0.01em',
+                }}
+              >
+                {dish.name}
+              </span>
+              <span
+                style={{
+                  fontFamily: face,
+                  fontSize: '0.9375rem',
+                  color: primary,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {dish.price}
+              </span>
+            </div>
+            <p
+              style={{
+                fontSize: '0.6875rem',
+                color: pageMuted,
+                margin: '0.375rem 0 0',
+                lineHeight: 1.6,
+              }}
+            >
+              {dish.note}
+            </p>
+            {isList && (
+              <div
+                style={{
+                  marginTop: 10,
+                  height: 1,
+                  width: 28,
+                  background: i === 0 ? primary : secondary,
+                  opacity: 0.6,
+                }}
+              />
+            )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer note */}
+      <div
+        style={{
+          padding: '1rem 1.5rem',
+          borderTop: `1px solid ${pageLine}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        <span style={{ fontSize: '0.5625rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: pageMuted }}>
+          Powered by Dine3D
+        </span>
+        <span
+          style={{
+            fontSize: '0.5625rem',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: primary,
+          }}
+        >
+          Table 1
+        </span>
+      </div>
     </div>
   );
 }

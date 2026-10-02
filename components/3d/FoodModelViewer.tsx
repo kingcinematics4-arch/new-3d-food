@@ -46,53 +46,18 @@ function GltfModel({ url }: { url: string }) {
   return <primitive object={scene.clone()} scale={1.5} />;
 }
 
-// Stylish fallback 3D procedural food plate visualization
-function FallbackPlate() {
+// Neutral placeholder shown when a real model cannot be loaded.
+// It deliberately depicts nothing: Dine3D never fabricates a dish.
+function ModelUnavailable() {
   return (
-    <group position={[0, -0.2, 0]}>
-      {/* Plate Base */}
-      <mesh position={[0, 0, 0]} receiveShadow>
-        <cylinderGeometry args={[1.6, 1.2, 0.15, 32]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.1} metalness={0.1} />
+    <group position={[0, -0.1, 0]}>
+      <mesh receiveShadow>
+        <cylinderGeometry args={[1.5, 1.5, 0.06, 48]} />
+        <meshStandardMaterial color="#1D1B17" roughness={0.85} metalness={0.1} />
       </mesh>
-      {/* Plate Rim */}
-      <mesh position={[0, 0.08, 0]} receiveShadow>
-        <cylinderGeometry args={[1.7, 1.6, 0.04, 32]} />
-        <meshStandardMaterial color="#f8fafc" roughness={0.2} />
-      </mesh>
-      {/* Gourmet Food Burger Layer 1 (Bun Bottom) */}
-      <mesh position={[0, 0.25, 0]} castShadow>
-        <cylinderGeometry args={[0.9, 0.9, 0.2, 32]} />
-        <meshStandardMaterial color="#d97706" roughness={0.5} />
-      </mesh>
-      {/* Pattie */}
-      <mesh position={[0, 0.4, 0]} castShadow>
-        <cylinderGeometry args={[0.95, 0.95, 0.18, 32]} />
-        <meshStandardMaterial color="#451a03" roughness={0.8} />
-      </mesh>
-      {/* Cheese Melt */}
-      <mesh position={[0, 0.52, 0]} castShadow>
-        <boxGeometry args={[1.4, 0.04, 1.4]} />
-        <meshStandardMaterial color="#f59e0b" roughness={0.3} />
-      </mesh>
-      {/* Lettuce */}
-      <mesh position={[0, 0.58, 0]} castShadow>
-        <cylinderGeometry args={[1.05, 1.0, 0.06, 16]} />
-        <meshStandardMaterial color="#16a34a" roughness={0.6} />
-      </mesh>
-      {/* Tomato Slices */}
-      <mesh position={[0.3, 0.65, 0.2]} castShadow>
-        <cylinderGeometry args={[0.35, 0.35, 0.05, 16]} />
-        <meshStandardMaterial color="#dc2626" roughness={0.3} />
-      </mesh>
-      <mesh position={[-0.3, 0.65, -0.2]} castShadow>
-        <cylinderGeometry args={[0.35, 0.35, 0.05, 16]} />
-        <meshStandardMaterial color="#dc2626" roughness={0.3} />
-      </mesh>
-      {/* Bun Top */}
-      <mesh position={[0, 0.9, 0]} castShadow>
-        <sphereGeometry args={[0.92, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#d97706" roughness={0.4} />
+      <mesh position={[0, 0.05, 0]}>
+        <torusGeometry args={[1.5, 0.015, 12, 64]} />
+        <meshStandardMaterial color="#B8A47A" roughness={0.4} metalness={0.6} />
       </mesh>
     </group>
   );
@@ -191,13 +156,13 @@ export default function FoodModelViewer({
             <Center>
               {modelUrlGlb && !hasError ? (
                 <ThreeErrorBoundary
-                  fallback={<FallbackPlate />}
+                  fallback={<ModelUnavailable />}
                   onError={() => setHasError(true)}
                 >
                   <GltfModel url={modelUrlGlb} />
                 </ThreeErrorBoundary>
               ) : (
-                <FallbackPlate />
+                <ModelUnavailable />
               )}
             </Center>
           </Float>

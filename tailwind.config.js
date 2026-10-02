@@ -9,29 +9,28 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Dine3D Design System
-        // Backgrounds
-        'dine-black':   '#0B0A08',
-        'dine-black-2': '#11100D',
-        'dine-black-3': '#15130F',
-        'dine-surface': '#171511',
-        'dine-surface-2': '#1C1914',
-        'dine-surface-3': '#211E19',
-        // Gold accent palette
-        'dine-gold':    '#C9A96E',
-        'dine-gold-2':  '#B8935A',
-        'dine-gold-3':  '#D4B483',
-        'dine-gold-dim': '#7A6340',
-        'dine-gold-pale': '#E8D5B0',
+        // Dine3D Design System — near-black, warm ivory, muted champagne
+        'dine-black':   '#0B0B0A',
+        'dine-black-2': '#121210',
+        'dine-black-3': '#171613',
+        'dine-surface': '#171613',
+        'dine-surface-2': '#1D1B17',
+        'dine-surface-3': '#232019',
+        // Champagne accent
+        'dine-gold':    '#B8A47A',
+        'dine-gold-2':  '#9A8760',
+        'dine-gold-3':  '#CDB98F',
+        'dine-gold-dim': '#6E6350',
+        'dine-gold-pale': '#D9CBAB',
         // Text
-        'dine-ivory':   '#F5F0E8',
-        'dine-cream':   '#E8DFD0',
-        'dine-warm-gray': '#9A9080',
-        'dine-muted':   '#6B6258',
+        'dine-ivory':   '#F3EFE7',
+        'dine-cream':   '#C2BCB0',
+        'dine-warm-gray': '#9B968C',
+        'dine-muted':   '#6B675F',
         // Borders
-        'dine-border':  '#2A2520',
-        'dine-border-2': '#352F28',
-        'dine-border-gold': '#3A3020',
+        'dine-border':  '#2A2823',
+        'dine-border-2': '#34312A',
+        'dine-border-gold': '#3A342A',
       },
       fontFamily: {
         serif: ['var(--font-cormorant)', 'Cormorant Garamond', 'Georgia', 'serif'],
