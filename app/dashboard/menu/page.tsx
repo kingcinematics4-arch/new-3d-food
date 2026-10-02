@@ -357,9 +357,9 @@ export default function MenuManagementPage() {
       ) : hasNoDishesAtAll ? (
         /* ---------- Empty state ---------- */
         <EmptyPanel
-          title="No dishes yet"
-          body="Add your first dish to start building your digital menu."
-          actionLabel="Add Dish"
+          title="No menu items yet"
+          body="Add your first menu item and it appears on your guest menu straight away."
+          actionLabel="Add your first menu item"
           onAction={openCreate}
         />
       ) : filteredItems.length === 0 ? (

@@ -281,7 +281,7 @@ export default function SignupPage() {
                 <input
                   type="text" name="hotel_name" required
                   value={formData.hotel_name} onChange={handleChange}
-                  placeholder="Grand Palace Bistro"
+                  placeholder="Your restaurant name"
                   className="d3-input"
                 />
               </div>
@@ -290,7 +290,7 @@ export default function SignupPage() {
                 <input
                   type="text" name="owner_name" required
                   value={formData.owner_name} onChange={handleChange}
-                  placeholder="Alex Morgan"
+                  placeholder="Your name"
                   className="d3-input"
                 />
               </div>
@@ -302,7 +302,7 @@ export default function SignupPage() {
               <input
                 type="email" name="email" required
                 value={formData.email} onChange={handleChange}
-                placeholder="owner@restaurant.com"
+                placeholder="you@example.com"
                 className="d3-input"
               />
             </div>
@@ -337,7 +337,7 @@ export default function SignupPage() {
                 <input
                   type="text" name="phone"
                   value={formData.phone} onChange={handleChange}
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+1 555 000 0000"
                   className="d3-input"
                 />
               </div>
@@ -346,7 +346,7 @@ export default function SignupPage() {
                 <input
                   type="text" name="city"
                   value={formData.city} onChange={handleChange}
-                  placeholder="New York"
+                  placeholder="Your city"
                   className="d3-input"
                 />
               </div>
@@ -358,7 +358,7 @@ export default function SignupPage() {
               <input
                 type="text" name="address"
                 value={formData.address} onChange={handleChange}
-                placeholder="123 Culinary Blvd, Suite 100"
+                placeholder="Street address"
                 className="d3-input"
               />
             </div>

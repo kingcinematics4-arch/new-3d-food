@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useHotel, useOrders, useMenuItems } from '@/lib/useHotel';
 import { Order } from '@/lib/useHotel';
+import { formatPrice } from '@/lib/menu';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -159,7 +160,7 @@ export default function AnalyticsDashboardPage() {
       }).length;
     });
     return [
-      { name: 'Revenue ($)', data: revData },
+      { name: 'Revenue', data: revData },
       { name: 'Orders Count', data: countData },
     ];
   }, [filteredOrders, dailyBuckets]);
@@ -344,7 +345,7 @@ export default function AnalyticsDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <Metric
           label="Total Revenue"
-          value={`$${totalRevenue.toFixed(2)}`}
+          value={formatPrice(totalRevenue, hotel?.currency)}
           note={
             totalOrdersCount > 0
               ? `${totalOrdersCount} orders in this period`
@@ -358,7 +359,7 @@ export default function AnalyticsDashboardPage() {
         />
         <Metric
           label="Average Order Value"
-          value={`$${aov.toFixed(2)}`}
+          value={formatPrice(aov, hotel?.currency)}
           note={
             totalOrdersCount > 0
               ? `Across ${totalOrdersCount} orders`
