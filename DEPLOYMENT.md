@@ -147,6 +147,49 @@ open `/admin`, and an admin session cannot open `/dashboard`.
 
 Changing either value invalidates all existing admin sessions.
 
+### Adding these to Vercel (required for the deployed app)
+
+`DINE3D_ADMIN_PASSWORD` works locally only because it lives in `.env.local`, which is gitignored.
+**Vercel does not read `.env.local`.** A local admin login tells you nothing about whether the
+deployed app is configured.
+
+If `/admin/login` on the deployed site shows *"Admin access is not configured…"*, the variable is
+missing from the deployed environment. The comparison stays server-side; nothing about the
+architecture changes.
+
+1. Open the **Vercel Dashboard** ? your project ? **Settings** ? **Environment Variables**.
+2. Add `DINE3D_ADMIN_PASSWORD` with the owner password. Use the **same value you use locally** if
+   you want one password across both.
+3. **Tick the `Production` environment checkbox.** This is the step that is most often missed: a
+   variable added only under `Preview` is absent from the production deployment, which then reports
+   itself as unconfigured. Tick `Preview` and `Development` too if you want admin to work on
+   preview deployments.
+4. Optionally add `DINE3D_ADMIN_SESSION_SECRET` as a long random string so the signing key can be
+   rotated without changing the password. Generate one with `openssl rand -base64 32`. If you set it
+   locally too, use the same value in both places.
+5. **Redeploy.** Vercel only applies new environment variables to a *new* deployment. Go to the
+   **Deployments** tab ? **?** on the current production deployment ? **Redeploy**. Pushing a new
+   commit works too.
+
+Never prefix these with `NEXT_PUBLIC_`. Next.js inlines any `NEXT_PUBLIC_*` variable into the
+client bundle at build time, which would publish the owner password to every visitor. The app reads
+`DINE3D_ADMIN_PASSWORD` from `process.env` on the server at request time, which is why a redeploy —
+not a cache clear — is what picks up a new value.
+
+To confirm the deployed app is configured without revealing anything, open
+`https://<your-domain>/api/admin/auth/session`: `"configured": true` means the variable reached the
+server. It returns booleans and an expiry only, never any secret.
+
+### Local vs production behaviour
+
+| | `DINE3D_ADMIN_PASSWORD` source | Cookie `secure` flag |
+| --- | --- | --- |
+| Local (`npm run dev`) | `.env.local` | `false` (plain HTTP on localhost) |
+| Vercel production | Vercel server environment variable | `true` (HTTPS only) |
+
+The cookie is always `httpOnly`, `sameSite=lax`, `path=/` and expires after 8 hours. On production
+it is additionally `secure`, so it is only ever transmitted over HTTPS.
+
 ### How access is protected
 
 1. `middleware.ts` verifies the HMAC signature and expiry of the `dine3d_admin_session` cookie (Edge-safe Web Crypto).
