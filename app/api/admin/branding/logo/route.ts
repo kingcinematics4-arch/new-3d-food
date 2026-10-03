@@ -20,6 +20,7 @@ import {
   formatBytes,
   getLogoReference,
   isManagedLogoUrl,
+  isMissingBrandingBucketError,
   setLogoUrl,
   sniffImageMime,
   uploadLogo,
@@ -127,9 +128,14 @@ export async function POST(request: Request) {
   try {
     stored = await uploadLogo(buffer, mimeType);
   } catch (error) {
+    // The bucket is missing infrastructure, not a bad request: answer 503 so the
+    // owner is told to apply the migration rather than to try a different file.
+    if (isMissingBrandingBucketError(error)) {
+      return fail((error as Error).message, 503);
+    }
+
     const message = error instanceof Error ? error.message : 'Upload failed.';
-    const missingBucket = /migration 005/i.test(message);
-    return fail(message, missingBucket ? 503 : 500);
+    return fail(message, 500);
   }
 
   try {

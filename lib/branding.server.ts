@@ -329,6 +329,37 @@ export interface StoredLogo {
   mimeType: LogoMimeType;
 }
 
+/**
+ * Thrown when the branding bucket is absent, which always means migration 005
+ * has not been applied to the project.
+ *
+ * A dedicated type rather than a formatted string, so the route can answer with
+ * the correct 503 status and an exact remediation. It is deliberately NOT
+ * swallowed or auto-created: provisioning storage from a request handler would
+ * hide a deployment step and let the migration system drift out of sync with
+ * the database.
+ */
+export class MissingBrandingBucketError extends Error {
+  readonly bucketId = BRANDING_BUCKET;
+  readonly migrationFile = 'supabase/migrations/005_branding_storage.sql';
+
+  constructor() {
+    super(
+      `Storage bucket "${BRANDING_BUCKET}" does not exist in this Supabase project. ` +
+        `Apply ${'supabase/migrations/005_branding_storage.sql'} in the Supabase SQL Editor ` +
+        `(Dashboard -> SQL Editor -> paste the file -> Run), then confirm with ` +
+        `supabase/verify_branding_storage.sql. The migration is safe to re-run. ` +
+        `Until then the site keeps using the bundled logo at public/images/dine3d-logo.jpg.`
+    );
+    this.name = 'MissingBrandingBucketError';
+  }
+}
+
+/** True when an error means the branding bucket has not been provisioned. */
+export function isMissingBrandingBucketError(error: unknown): boolean {
+  return error instanceof MissingBrandingBucketError;
+}
+
 /** Uploads validated bytes and returns the public URL for them. */
 export async function uploadLogo(buffer: Buffer, mime: LogoMimeType): Promise<StoredLogo> {
   assertSupabaseAdminConfigured();
@@ -345,11 +376,14 @@ export async function uploadLogo(buffer: Buffer, mime: LogoMimeType): Promise<St
   });
 
   if (error) {
-    throw new Error(
-      /bucket|not found/i.test(error.message)
-        ? `Storage bucket "${BRANDING_BUCKET}" does not exist. Has migration 005 been applied?`
-        : `Could not upload the logo: ${error.message}`
-    );
+    // Storage answers a missing bucket with "Bucket not found". That is an
+    // infrastructure gap, not a bad file, so it gets its own actionable
+    // message instead of being flattened into a generic upload failure.
+    if (/bucket not found|not found.*bucket/i.test(error.message)) {
+      throw new MissingBrandingBucketError();
+    }
+
+    throw new Error(`Could not upload the logo: ${error.message}`);
   }
 
   const { data } = supabaseAdmin.storage.from(BRANDING_BUCKET).getPublicUrl(objectPath);
