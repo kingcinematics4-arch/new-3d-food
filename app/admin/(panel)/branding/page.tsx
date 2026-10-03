@@ -4,9 +4,10 @@
 //
 // BRANDING
 //
-// The official Dine3D logo is a fixed asset and is never redrawn or replaced by
-// this panel. What can be changed here is where it points, its accessible
-// description, the favicon, the typographic pairing and the colour identity.
+// The logo itself is uploaded here and stored in Supabase Storage. It is used
+// exactly as supplied: never redrawn, never stretched, never substituted. What is
+// editable alongside it is its accessible description, the favicon, the
+// typographic pairing and the colour identity.
 //
 // The default palette is deliberately near-black with warm ivory type and a
 // muted champagne accent. No bright yellow, orange, blue or neon values are
@@ -14,7 +15,8 @@
 
 import React from 'react';
 import { useSiteContent } from '@/components/admin/SiteContentProvider';
-import Dine3DLogo, { LOGO_SRC } from '@/components/Dine3DLogo';
+import LogoUploader from '@/components/admin/LogoUploader';
+import Dine3DLogo from '@/components/Dine3DLogo';
 import {
   AdminPageHeader,
   AdminPanel,
@@ -22,9 +24,9 @@ import {
   AdminInput,
   AdminOptionRow,
   AdminColorField,
-  AdminNote,
 } from '@/components/admin/ui';
 import { TYPOGRAPHY_OPTIONS, BUTTON_STYLE_OPTIONS, ACCENT_PRESETS, BACKGROUND_PRESETS } from '@/lib/siteContent';
+import type { LogoReference } from '@/lib/branding';
 
 export default function AdminBrandingPage() {
   const { draft, update, loading } = useSiteContent();
@@ -32,6 +34,25 @@ export default function AdminBrandingPage() {
 
   const set = <K extends keyof typeof branding>(key: K, value: (typeof branding)[K]) =>
     update((current) => ({ ...current, branding: { ...current.branding, [key]: value } }));
+
+  /**
+   * The upload route writes branding.logoUrl itself, in both the draft and the
+   * published document. Mirroring the returned reference into the local draft
+   * keeps this editor's own fields honest without marking the document dirty and
+   * asking the owner to save a change they did not make.
+   */
+  const syncFromServer = (logo: LogoReference) => {
+    update((current) => ({
+      ...current,
+      branding: {
+        ...current.branding,
+        logoUrl: logo.logoUrl,
+        logoWidth: logo.logoWidth,
+        logoHeight: logo.logoHeight,
+        logoAlt: logo.logoAlt,
+      },
+    }));
+  };
 
   if (loading) {
     return (
@@ -49,16 +70,17 @@ export default function AdminBrandingPage() {
       <AdminPageHeader
         eyebrow="BRANDING"
         title="Brand identity"
-        description="Typography and colour for the public website. The Dine3D logo itself is a fixed asset and is never altered by this panel."
+        description="Upload the Dine3D logo, then set the typographic pairing and colour identity for the public website."
       />
 
       <div className="flex flex-col gap-6">
         {/* ---------------------------------------------- LOGO */}
         <AdminPanel title="Logo">
-          <div className="flex flex-col gap-5">
+          <LogoUploader onLogoChanged={syncFromServer} />
+
             <div className="flex flex-wrap gap-6">
               {/* Live preview of the actual asset, unmodified. Always on a dark surface:
-                  the asset is an opaque gold-on-black JPEG, so placing it on a
+                  the bundled asset is an opaque gold-on-black JPEG, so placing it on a
                   light background would show a black rectangle. */}
               <div
                 className="flex items-center justify-center"
@@ -87,27 +109,9 @@ export default function AdminBrandingPage() {
               </div>
             </div>
 
-            <AdminNote>
-              This is the official Dine3D logo file, displayed exactly as supplied. It is never
-              redrawn, stretched or substituted. If you need a different asset, replace{' '}
-              <code>public/images/dine3d-logo.jpg</code> and redeploy.
-            </AdminNote>
-
-            <AdminField
-              label="Logo image path"
-              hint="Leave as-is to use the shipped asset. Only change this if you have moved the file."
-            >
-              <AdminInput
-                value={branding.logoUrl}
-                onChange={(v) => set('logoUrl', v)}
-                placeholder={LOGO_SRC}
-              />
-            </AdminField>
-
             <AdminField label="Logo description" hint="Read aloud by screen readers.">
               <AdminInput value={branding.logoAlt} onChange={(v) => set('logoAlt', v)} placeholder="Dine3D" />
             </AdminField>
-          </div>
         </AdminPanel>
 
         {/* ---------------------------------------------- FAVICON */}
