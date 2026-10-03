@@ -71,25 +71,33 @@ export function isAdminConfigured(): boolean {
  * Key used to sign session tokens.
  *
  * Prefers a dedicated `DINE3D_ADMIN_SESSION_SECRET` so the signing key can be
- * rotated independently of the password. When that is unset the password
- * itself is hashed to derive the key, which keeps the panel usable out of the
- * box; both are server-only values.
+ * rotated independently of the password. When that is unset the password itself
+ * is hashed to derive the key, which keeps the panel usable out of the box;
+ * both are server-only values.
+ *
+ * Returns null whenever no usable material exists, so an unconfigured
+ * deployment can never mint or accept a session. It fails safe by construction:
+ * a blank password yields no key even if a session secret happens to be set to
+ * whitespace, and a blank session secret falls through to the password rather
+ * than being treated as a valid key.
  */
 async function getSigningKey(): Promise<CryptoKey | null> {
+  const importKey = (material: string) =>
+    crypto.subtle.importKey(
+      'raw',
+      encoder.encode(material),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign', 'verify']
+    );
+
   const explicit = process.env.DINE3D_ADMIN_SESSION_SECRET?.trim();
-  const material = explicit && explicit.length > 0 ? explicit : `dine3d-admin::${getAdminPassword()}`;
+  if (explicit && explicit.length > 0) return importKey(explicit);
 
-  if (explicit === undefined && getAdminPassword().trim().length === 0) {
-    return null;
-  }
+  const password = getAdminPassword();
+  if (password.trim().length === 0) return null;
 
-  return crypto.subtle.importKey(
-    'raw',
-    encoder.encode(material),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify']
-  );
+  return importKey(`dine3d-admin::${password}`);
 }
 
 /* ============================================================
