@@ -10,6 +10,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Footer, Branding } from '@/lib/siteContent';
+import Dine3DLogo, { LOGO_SRC, LOGO_INTRINSIC } from '@/components/Dine3DLogo';
 
 export default function HomeFooter({ footer, branding }: { footer: Footer; branding: Branding }) {
   if (!footer.enabled) return null;
@@ -105,15 +106,20 @@ export default function HomeFooter({ footer, branding }: { footer: Footer; brand
           >
             {/* Brand column */}
             <div className="flex flex-col gap-5" style={{ gridColumn: columns.length ? 'span 2' : undefined }}>
-              {/* Official logo asset, unmodified */}
-              <Image
-                src={branding.logoUrl || '/images/dine3d-logo.jpg'}
-                alt={branding.logoAlt || 'Dine3D'}
-                width={160}
-                height={40}
-                className="object-contain object-left"
-                style={{ height: 40, width: 'auto' }}
-              />
+              {/* Official logo. Falls back to the single source asset; the owner can
+                  point branding.logoUrl elsewhere from the admin panel. */}
+              {branding.logoUrl && branding.logoUrl !== LOGO_SRC ? (
+                <Image
+                  src={branding.logoUrl}
+                  alt={branding.logoAlt || 'Dine3D'}
+                  width={LOGO_INTRINSIC.width}
+                  height={LOGO_INTRINSIC.height}
+                  className="object-contain object-left"
+                  style={{ width: 'auto', height: 'auto', maxWidth: 148, maxHeight: 46 }}
+                />
+              ) : (
+                <Dine3DLogo size="md" href={null} alt={branding.logoAlt || 'Dine3D'} />
+              )}
 
               {footer.tagline ? (
                 <p

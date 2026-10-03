@@ -26,6 +26,7 @@ import {
 } from '@/components/admin/ui';
 import { SECTION_LABELS } from '@/lib/siteContent';
 import type { EditorialSection, SiteContent } from '@/lib/siteContent';
+import Dine3DLogo, { LOGO_SRC } from '@/components/Dine3DLogo';
 
 interface MediaEntry {
   id: string;
@@ -158,14 +159,7 @@ export default function AdminMediaPage() {
                 borderRadius: 8,
               }}
             >
-              <Image
-                src="/images/dine3d-logo.jpg"
-                alt="Dine3D logo"
-                width={180}
-                height={45}
-                className="object-contain object-left"
-                style={{ height: 45, width: 'auto' }}
-              />
+              <Dine3DLogo size="lg" href={null} />
               <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
                 public/images/dine3d-logo.jpg
               </span>
@@ -176,7 +170,7 @@ export default function AdminMediaPage() {
                 <AdminInput
                   value={draft.branding.logoUrl}
                   onChange={(v) => setBranding('logoUrl', v)}
-                  placeholder="/images/dine3d-logo.jpg"
+                  placeholder={LOGO_SRC}
                 />
               </AdminField>
               <AdminField label="Logo description" hint="Read aloud by screen readers.">

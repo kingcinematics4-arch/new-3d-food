@@ -13,8 +13,8 @@
 // offered as presets.
 
 import React from 'react';
-import Image from 'next/image';
 import { useSiteContent } from '@/components/admin/SiteContentProvider';
+import Dine3DLogo, { LOGO_SRC } from '@/components/Dine3DLogo';
 import {
   AdminPageHeader,
   AdminPanel,
@@ -57,44 +57,33 @@ export default function AdminBrandingPage() {
         <AdminPanel title="Logo">
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap gap-6">
-              {/* Live preview of the actual asset, unmodified */}
+              {/* Live preview of the actual asset, unmodified. Always on a dark surface:
+                  the asset is an opaque gold-on-black JPEG, so placing it on a
+                  light background would show a black rectangle. */}
               <div
                 className="flex items-center justify-center"
                 style={{
                   minWidth: 220,
-                  padding: '1.25rem 1.75rem',
+                  padding: '1.5rem 2rem',
                   background: 'var(--bg-secondary)',
                   border: '1px solid var(--border-warm)',
                   borderRadius: 8,
                 }}
               >
-                <Image
-                  src="/images/dine3d-logo.jpg"
-                  alt="Dine3D logo"
-                  width={160}
-                  height={40}
-                  className="object-contain"
-                  style={{ height: 40, width: 'auto' }}
-                />
+                <Dine3DLogo size="lg" href={null} />
               </div>
 
               <div
                 className="flex items-center justify-center"
                 style={{
                   minWidth: 220,
-                  padding: '1.25rem 1.75rem',
-                  background: '#F3EFE7',
+                  padding: '1.5rem 2rem',
+                  background: '#0B0B0A',
+                  border: '1px solid var(--border-warm)',
                   borderRadius: 8,
                 }}
               >
-                <Image
-                  src="/images/dine3d-logo.jpg"
-                  alt="Dine3D logo on light background"
-                  width={160}
-                  height={40}
-                  className="object-contain"
-                  style={{ height: 40, width: 'auto' }}
-                />
+                <Dine3DLogo size="lg" href={null} />
               </div>
             </div>
 
@@ -111,7 +100,7 @@ export default function AdminBrandingPage() {
               <AdminInput
                 value={branding.logoUrl}
                 onChange={(v) => set('logoUrl', v)}
-                placeholder="/images/dine3d-logo.jpg"
+                placeholder={LOGO_SRC}
               />
             </AdminField>
 

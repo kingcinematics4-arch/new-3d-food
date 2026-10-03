@@ -10,7 +10,7 @@
 // address does not exist and offers real navigation.
 
 import Link from 'next/link';
-import Image from 'next/image';
+import Dine3DLogo from '@/components/Dine3DLogo';
 
 const DESTINATIONS = [
   { href: '/', label: 'Home', description: 'The Dine3D product' },
@@ -28,15 +28,7 @@ export default function NotFound() {
     >
       <div className="d3-container" style={{ padding: '6rem 2rem' }}>
         <div className="flex flex-col items-center text-center gap-8" style={{ maxWidth: 620, margin: '0 auto' }}>
-          <Image
-            src="/images/dine3d-logo.jpg"
-            alt="Dine3D"
-            width={150}
-            height={38}
-            priority
-            className="object-contain"
-            style={{ height: 38, width: 'auto' }}
-          />
+          <Dine3DLogo size="lg" href="/" priority />
 
           <div className="flex flex-col gap-4">
             <span

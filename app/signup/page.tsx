@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabaseClient';
+import Dine3DLogo from '@/components/Dine3DLogo';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -121,17 +122,9 @@ export default function SignupPage() {
           }}
         />
 
-        {/* Logo */}
-        <div className="relative z-10 flex items-center gap-2.5">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-            <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="none" stroke="#C9A96E" strokeWidth="1.2" />
-            <line x1="13" y1="1" x2="13" y2="25" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-            <line x1="2" y1="7" x2="24" y2="19" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-            <line x1="24" y1="7" x2="2" y2="19" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-          </svg>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-            Dine<span style={{ color: 'var(--gold)' }}>3D</span>
-          </span>
+        {/* Logo — official Dine3D asset, used as supplied */}
+        <div className="relative z-10">
+          <Dine3DLogo size="md" href="/" priority />
         </div>
 
         {/* Headline */}
@@ -184,14 +177,9 @@ export default function SignupPage() {
       {/* Right — Sign Up Form */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-16 overflow-y-auto">
 
-        {/* Mobile logo */}
-        <div className="lg:hidden flex items-center gap-2 mb-10">
-          <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
-            <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="none" stroke="#C9A96E" strokeWidth="1.2" />
-          </svg>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500 }}>
-            Dine<span style={{ color: 'var(--gold)' }}>3D</span>
-          </span>
+        {/* Mobile logo — official Dine3D asset, used as supplied */}
+        <div className="lg:hidden mb-10">
+          <Dine3DLogo size="sm" href="/" priority />
         </div>
 
         <div style={{ width: '100%', maxWidth: 440 }}>

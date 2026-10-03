@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Dine3DWordmark } from './Dine3DLogo';
-import Image from 'next/image';
+import Dine3DLogo from './Dine3DLogo';
 
 const navLinks = [
   { label: 'Features', href: '/#features' },
@@ -48,21 +47,10 @@ export default function Navbar() {
 
             {/* Left — Logo. The official Dine3D logo asset, used exactly as
                 supplied: never redrawn, recreated or substituted. */}
-            <Link
-              href="/"
-              className="flex items-center flex-shrink-0"
-              style={{ textDecoration: 'none' }}
-            >
-              <Image
-                src="/images/dine3d-logo.jpg"
-                alt="Dine3D"
-                width={132}
-                height={33}
-                priority
-                className="object-contain object-left"
-                style={{ height: 33, width: 'auto' }}
-              />
-            </Link>
+            {/* Official Dine3D logo asset, used exactly as supplied */}
+            <div className="flex-shrink-0">
+              <Dine3DLogo size="md" href="/" priority />
+            </div>
 
             {/* Center — Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-8">

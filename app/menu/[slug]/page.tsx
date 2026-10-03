@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'reac
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { formatPrice } from '@/lib/menu';
+import Dine3DLogo from '@/components/Dine3DLogo';
 
 // Lazy-load 3D viewer
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
@@ -817,6 +818,8 @@ function MenuContent({ slug }: { slug: string }) {
           style={{ maxWidth: 720, margin: '0 auto' }}
         >
           <div className="flex items-center gap-2.5">
+            {/* When the restaurant has uploaded no logo, fall back to the
+                official Dine3D asset rather than any redrawn mark. */}
             {hotel.logo_url?.trim() ? (
               <img
                 src={hotel.logo_url}
@@ -824,10 +827,7 @@ function MenuContent({ slug }: { slug: string }) {
                 style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 4 }}
               />
             ) : (
-              <svg width="20" height="20" viewBox="0 0 26 26" fill="none">
-                <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="none" stroke="#C9A96E" strokeWidth="1.2" />
-                <line x1="13" y1="1" x2="13" y2="25" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-              </svg>
+              <Dine3DLogo size="xs" href={null} />
             )}
             <div>
               <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.2 }}>
