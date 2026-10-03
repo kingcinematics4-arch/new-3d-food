@@ -46,33 +46,22 @@ export default function Navbar() {
         <div className="d3-container">
           <div className="flex items-center justify-between h-[70px]">
 
-            {/* Left — Logo */}
+            {/* Left — Logo. The official Dine3D logo asset, used exactly as
+                supplied: never redrawn, recreated or substituted. */}
             <Link
               href="/"
-              className="flex items-center gap-2.5 flex-shrink-0"
+              className="flex items-center flex-shrink-0"
               style={{ textDecoration: 'none' }}
             >
-              <div className="flex items-center gap-2">
-                {/* Dine3D geometric mark */}
-                <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="none" stroke="#C9A96E" strokeWidth="1.2" />
-                  <line x1="13" y1="1" x2="13" y2="25" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-                  <line x1="2" y1="7" x2="24" y2="19" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-                  <line x1="24" y1="7" x2="2" y2="19" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-                </svg>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '1.25rem',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    color: 'var(--text-primary)',
-                    lineHeight: 1,
-                  }}
-                >
-                  Dine<span style={{ color: 'var(--gold)' }}>3D</span>
-                </span>
-              </div>
+              <Image
+                src="/images/dine3d-logo.jpg"
+                alt="Dine3D"
+                width={132}
+                height={33}
+                priority
+                className="object-contain object-left"
+                style={{ height: 33, width: 'auto' }}
+              />
             </Link>
 
             {/* Center — Desktop Nav Links */}
