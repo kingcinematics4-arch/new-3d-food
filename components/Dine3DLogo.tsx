@@ -16,9 +16,11 @@
 // dashboard and guest menu all follow one uploaded file. Nothing here is
 // hardcoded to a path any more.
 //
-// `public/images/dine3d-logo.jpg` remains the FALLBACK: it is what renders
+// `public/images/dine3d-logo.png` remains the FALLBACK: it is what renders
 // before anything has been uploaded, and what "Remove Logo" reverts to, so the
-// site is never left without a logo.
+// site is never left without a logo. That file is the official artwork cropped
+// to its own content on a transparent background, so it sits directly on the
+// page with no black box and no dead margin around it.
 //
 // DESIGN RULES ENFORCED HERE
 // --------------------------
@@ -26,15 +28,19 @@
 //    substituted.
 // 2. Aspect ratio is never modified. The REAL pixel dimensions of the current
 //    file are handed to next/image so the browser reserves the correct box
-//    before the image loads, and the rendered size is constrained with
-//    max-width/max-height only. `width` and `height` are never both forced, so
-//    the image can never be stretched or squashed. This holds for an uploaded
-//    logo of any shape, not just the fallback's.
-// 3. The fallback asset is an opaque JPEG with a baked-in near-black background
-//    and a gold mark, so it is always placed on a dark surface where that
-//    background blends into the page. It is never dropped onto a light
-//    background, which would show a black rectangle.
-// 4. Sharpness: the intrinsic size is declared large and the image is downscaled
+//    before the image loads, and the rendered size is driven entirely by CSS:
+//    one dimension is fixed and `width: auto` lets the other follow the
+//    artwork's own ratio. `height` and `width` are therefore never both
+//    forced, so the image can never be stretched or squashed. This holds for an
+//    uploaded logo of any shape, not just the fallback's.
+// 3. Rendered size is expressed as a CSS custom property (`--d3-logo-h`) on the
+//    wrapper, never as an inline pixel value. That is what allows a surface to
+//    override it responsively — the navbar logo, for instance, shrinks on small
+//    screens — without this component knowing anything about viewports.
+// 4. The fallback is transparent, so it is safe on any surface. It is still
+//    kept on the dark palette where it was designed to sit, because that is
+//    where its champagne and cream artwork was chosen for.
+// 5. Sharpness: the intrinsic size is declared large and the image is downscaled
 //    by the browser / Next image optimiser, so it stays crisp on both desktop and
 //    mobile. `priority` is opt-in for above-the-fold use.
 
@@ -56,19 +62,6 @@ export const LOGO_INTRINSIC = {
 };
 
 export type Dine3DLogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-
-/**
- * Rendered bounding boxes. The image is fitted inside these with its aspect
- * ratio intact, so a box that does not match the asset simply leaves margin
- * rather than stretching the artwork.
- */
-const SIZES: Record<Dine3DLogoSize, { maxWidth: number; maxHeight: number }> = {
-  xs: { maxWidth: 46, maxHeight: 24 },
-  sm: { maxWidth: 108, maxHeight: 34 },
-  md: { maxWidth: 148, maxHeight: 46 },
-  lg: { maxWidth: 196, maxHeight: 60 },
-  xl: { maxWidth: 264, maxHeight: 80 },
-};
 
 interface Dine3DLogoProps {
   size?: Dine3DLogoSize;
@@ -101,7 +94,7 @@ export default function Dine3DLogo({
   previewHeight,
 }: Dine3DLogoProps) {
   const { logo } = useBrandLogo();
-  const box = SIZES[size];
+  const sizeClass = `d3-logo--${size}`;
 
   const isPreviewing = Boolean(previewSrc);
   const source = isPreviewing ? (previewSrc as string) : logo.logoUrl;
@@ -119,20 +112,18 @@ export default function Dine3DLogo({
       width={width}
       height={height}
       priority={priority}
-      className={`object-contain object-left ${className}`}
-      style={{
-        width: 'auto',
-        height: 'auto',
-        maxWidth: `${box.maxWidth}px`,
-        maxHeight: `${box.maxHeight}px`,
-      }}
+      className="d3-logo__img"
     />
   );
 
-  if (!href) return image;
+  const classes = `d3-logo ${sizeClass}${className ? ` ${className}` : ''}`;
+
+  if (!href) {
+    return <span className={classes}>{image}</span>;
+  }
 
   return (
-    <Link href={href} className="inline-flex items-center" style={{ textDecoration: 'none' }}>
+    <Link href={href} className={classes}>
       {image}
     </Link>
   );

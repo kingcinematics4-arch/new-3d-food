@@ -10,6 +10,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Hero } from '@/lib/siteContent';
+import Dine3DLogo from '@/components/Dine3DLogo';
 import HeroViewer from './HeroViewer';
 
 export default function HomeHero({ hero }: { hero: Hero }) {
@@ -24,7 +25,7 @@ export default function HomeHero({ hero }: { hero: Hero }) {
   return (
     <section
       className="relative min-h-screen flex items-center overflow-hidden"
-      style={{ background: 'var(--bg-primary)', paddingTop: '70px' }}
+      style={{ background: 'var(--bg-primary)', paddingTop: 'var(--d3-nav-h)' }}
     >
       {/* Optional owner-supplied hero image */}
       {hero.imageUrl ? (
@@ -79,9 +80,16 @@ export default function HomeHero({ hero }: { hero: Hero }) {
       )}
 
       <div className="d3-container relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center min-h-[calc(100vh-70px)] py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center min-h-[calc(100vh-var(--d3-nav-h))] py-20">
           {/* -------------------------------------------- LEFT: TEXT */}
           <div className="flex flex-col gap-8">
+            {/* Brand anchor. The exact logo, small and quiet, so the left column
+                carries the Dine3D identity without the headline losing the
+                page. */}
+            <div className={mounted ? 'animate-fade-up' : 'opacity-0'}>
+              <Dine3DLogo size="sm" href={null} className="d3-logo--anchor" />
+            </div>
+
             {hero.showEyebrow && hero.eyebrow ? (
               <div className={mounted ? 'animate-fade-up' : 'opacity-0'}>
                 <span className="d3-badge d3-badge-gold">

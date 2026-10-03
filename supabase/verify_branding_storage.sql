@@ -48,8 +48,9 @@ select table_name
    and table_name = 'site_content';
 
 -- (5) The singleton row itself. branding->>'logoUrl' is the current logo
---     reference: either the bundled '/images/dine3d-logo.jpg' fallback or a
---     Supabase Storage public URL.
+--     reference: either the bundled '/images/dine3d-logo.png' fallback or a
+--     Supabase Storage public URL. A row still holding the pre-crop
+--     '/images/dine3d-logo.jpg' path is resolved forward at read time.
 select id,
        branding ->> 'logoUrl'   as logo_url,
        branding ->> 'logoWidth'  as logo_width,

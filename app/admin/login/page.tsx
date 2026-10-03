@@ -11,6 +11,7 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { isAdminConfigured } from '@/lib/adminAuth';
 import { getAdminSession } from '@/lib/adminSession.server';
+import BrandedLoader from '@/components/branding/BrandedLoader';
 import AdminLoginForm from './AdminLoginForm';
 
 export const metadata: Metadata = {
@@ -35,7 +36,7 @@ export default async function AdminLoginPage() {
     >
       <div className="w-full" style={{ maxWidth: 400 }}>
         {/* useSearchParams needs a boundary so the shell can stream. */}
-        <Suspense fallback={<div style={{ minHeight: 320 }} />}>
+        <Suspense fallback={<BrandedLoader label="Signing in" minHeight={320} />}>
           <AdminLoginForm configured={configured} />
         </Suspense>
       </div>

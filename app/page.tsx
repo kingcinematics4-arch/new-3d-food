@@ -24,6 +24,7 @@ import HomeHowItWorks from '@/components/site/HomeHowItWorks';
 import HomePricing from '@/components/site/HomePricing';
 import HomeFaq from '@/components/site/HomeFaq';
 import HomeFooter from '@/components/site/HomeFooter';
+import BrandDivider from '@/components/site/BrandDivider';
 import EditorialSection from '@/components/site/EditorialSection';
 
 // Always read the current published document; never serve a stale build.
@@ -47,6 +48,9 @@ export default async function PublicHomePage() {
 
       <main className="flex-1">
         {content.hero.enabled ? <HomeHero hero={content.hero} /> : null}
+
+        {/* One branded breath between the hero and the page content. */}
+        {content.hero.enabled ? <BrandDivider /> : null}
 
         <EditorialSection
           id="about"

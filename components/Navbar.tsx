@@ -43,13 +43,14 @@ export default function Navbar() {
         }}
       >
         <div className="d3-container">
-          <div className="flex items-center justify-between h-[70px]">
+          <div className="d3-nav__inner">
 
             {/* Left — Logo. The official Dine3D logo asset, used exactly as
-                supplied: never redrawn, recreated or substituted. */}
-            {/* Official Dine3D logo asset, used exactly as supplied */}
+                supplied: never redrawn, recreated or substituted. Its size comes
+                from the `d3-logo--nav` tokens, so it stays generous on desktop
+                and steps down on a phone without touching the links. */}
             <div className="flex-shrink-0">
-              <Dine3DLogo size="md" href="/" priority />
+              <Dine3DLogo size="md" href="/" priority className="d3-logo--nav" />
             </div>
 
             {/* Center — Desktop Nav Links */}
@@ -143,7 +144,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div
           className="md:hidden fixed inset-0 z-[99]"
-          style={{ background: 'var(--bg-primary)', paddingTop: '70px' }}
+          style={{ background: 'var(--bg-primary)', paddingTop: 'var(--d3-nav-h)' }}
         >
           <div className="d3-container py-8 flex flex-col gap-6">
             {navLinks.map((link, i) => (

@@ -122,7 +122,7 @@ const brandingSchema = z.object({
    * Supabase Storage and writes the resulting public URL here. Left at the
    * shipped asset path when nothing has been uploaded.
    */
-  logoUrl: z.string().trim().max(300).default('/images/dine3d-logo.jpg'),
+  logoUrl: z.string().trim().max(300).default('/images/dine3d-logo.png'),
   logoAlt: optionalText(120),
   /**
    * Intrinsic pixel size of the current logo, measured in the browser when the
@@ -130,11 +130,11 @@ const brandingSchema = z.object({
    * lets a logo of ANY shape reserve the correct box before it loads, so an
    * uploaded logo never causes layout shift or gets stretched to fit.
    *
-   * Defaults are the shipped asset's real size (1376x768), which is correct for
+   * Defaults are the shipped asset's real size (930x258), which is correct for
    * the fallback and is replaced the moment a file is uploaded.
    */
-  logoWidth: z.number().int().min(1).max(20000).default(1376),
-  logoHeight: z.number().int().min(1).max(20000).default(768),
+  logoWidth: z.number().int().min(1).max(20000).default(930),
+  logoHeight: z.number().int().min(1).max(20000).default(258),
   faviconUrl: safePath(300),
   typography: z.enum(['editorial', 'modern', 'classic']).default('editorial'),
   accentColor: hexColor.default('#B8A47A'),
@@ -415,10 +415,10 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
   version: 1,
 
   branding: {
-    logoUrl: '/images/dine3d-logo.jpg',
+    logoUrl: '/images/dine3d-logo.png',
     logoAlt: 'Dine3D',
-    logoWidth: 1376,
-    logoHeight: 768,
+    logoWidth: 930,
+    logoHeight: 258,
     faviconUrl: '',
     typography: 'editorial',
     accentColor: '#B8A47A',
