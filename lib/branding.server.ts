@@ -33,6 +33,7 @@ import {
   FALLBACK_LOGO_URL,
   LOGO_MIME_TYPES,
   MAX_LOGO_BYTES,
+  resolveBundledLogoUrl,
   type LogoMimeType,
   type LogoReference,
 } from './branding';
@@ -107,14 +108,26 @@ function objectPathFromUrl(url: string): string | null {
 }
 
 function toReference(branding: Branding): LogoReference {
-  const logoUrl = branding.logoUrl?.trim() || FALLBACK_LOGO_URL;
+  const logoUrl = resolveBundledLogoUrl(branding.logoUrl);
+
+  // The bundled asset is not owner-supplied, so its dimensions are the file's
+  // real dimensions and never whatever an older row happens to hold. Without
+  // this, a row written before the asset was cropped would reserve the box of
+  // the file that no longer exists.
+  const isBundled = logoUrl === FALLBACK_LOGO_URL;
 
   const dimensions = {
     // The schema already clamps these to sane integers, but an uploaded file's
     // measurements are owner-supplied, so never hand a nonsensical size to
     // next/image.
-    width: clampDimension(branding.logoWidth, FALLBACK_LOGO_REFERENCE.logoWidth),
-    height: clampDimension(branding.logoHeight, FALLBACK_LOGO_REFERENCE.logoHeight),
+    width: clampDimension(
+      isBundled ? FALLBACK_LOGO_REFERENCE.logoWidth : branding.logoWidth,
+      FALLBACK_LOGO_REFERENCE.logoWidth
+    ),
+    height: clampDimension(
+      isBundled ? FALLBACK_LOGO_REFERENCE.logoHeight : branding.logoHeight,
+      FALLBACK_LOGO_REFERENCE.logoHeight
+    ),
   };
 
   if (!isManagedLogoUrl(logoUrl)) {
@@ -349,7 +362,7 @@ export class MissingBrandingBucketError extends Error {
         `Apply ${'supabase/migrations/005_branding_storage.sql'} in the Supabase SQL Editor ` +
         `(Dashboard -> SQL Editor -> paste the file -> Run), then confirm with ` +
         `supabase/verify_branding_storage.sql. The migration is safe to re-run. ` +
-        `Until then the site keeps using the bundled logo at public/images/dine3d-logo.jpg.`
+        `Until then the site keeps using the bundled logo at public/images/dine3d-logo.png.`
     );
     this.name = 'MissingBrandingBucketError';
   }

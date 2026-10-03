@@ -57,6 +57,10 @@
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 350ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Fixed navbar height. Everything that clears the bar reads this one token,
+     so the logo can grow without any surface ending up underneath it. */
+  --d3-nav-h: 78px;
 }
 
 /* ============================================
@@ -749,6 +753,138 @@ body {
   border-bottom-color: var(--border-warm);
 }
 
+/* The navbar's own height, so every surface that has to clear the fixed bar
+   (hero, mobile overlay) stays in step with it from one token. */
+.d3-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--d3-nav-h);
+}
+
+/* ============================================
+   BRAND MARK
+   The official Dine3D artwork, used as supplied.
+
+   Sizing is driven entirely by two custom properties so a single image rule
+   serves every surface: `--d3-logo-h` fixes the HEIGHT and `width: auto` lets
+   the width follow the artwork's own ratio, which is what guarantees the mark
+   is never stretched or squashed. `--d3-logo-maxw` only ever caps an
+   unusually wide mark.
+   ============================================ */
+
+.d3-logo {
+  --d3-logo-h: 54px;
+  --d3-logo-maxw: 220px;
+
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.d3-logo__img {
+  display: block;
+  height: var(--d3-logo-h);
+  width: auto;
+  max-width: var(--d3-logo-maxw);
+  object-fit: contain;
+}
+
+.d3-logo--xs { --d3-logo-h: 24px; --d3-logo-maxw: 110px; }
+.d3-logo--sm { --d3-logo-h: 34px; --d3-logo-maxw: 150px; }
+.d3-logo--md { --d3-logo-h: 54px; --d3-logo-maxw: 220px; }
+.d3-logo--lg { --d3-logo-h: 72px; --d3-logo-maxw: 290px; }
+.d3-logo--xl { --d3-logo-h: 96px; --d3-logo-maxw: 380px; }
+
+/* ---- Navbar: the brand's first impression ----
+   54px on desktop, tapering down on small screens so the mark stays clearly
+   readable without ever crowding the navigation links or the menu button. */
+.d3-logo--nav {
+  --d3-logo-h: 54px;
+  --d3-logo-maxw: 220px;
+
+  animation: d3LogoReveal 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The reveal animates the wrapper while hover animates the image, so the two
+   transforms never fight over the same property. */
+.d3-logo--nav .d3-logo__img {
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.d3-logo--nav:hover .d3-logo__img,
+.d3-logo--nav:focus-visible .d3-logo__img {
+  transform: scale(1.03);
+}
+
+/* ---- Hero: a quiet brand anchor, never a second headline ---- */
+.d3-logo--anchor {
+  --d3-logo-h: 30px;
+  --d3-logo-maxw: 128px;
+  opacity: 0.92;
+}
+
+/* ---- Section divider: the faintest possible brand presence ---- */
+.d3-logo--divider {
+  --d3-logo-h: 22px;
+  --d3-logo-maxw: 96px;
+}
+
+/* ---- Loading state ---- */
+.d3-logo--loader {
+  --d3-logo-h: 44px;
+  --d3-logo-maxw: 190px;
+  animation: d3LogoPulse 2200ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes d3LogoReveal {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes d3LogoFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes d3LogoPulse {
+  0%, 100% { opacity: 0.42; }
+  50%      { opacity: 0.95; }
+}
+
+/* ============================================
+   BRANDED DIVIDER
+   One quiet moment of brand between two major sections. Revealed on scroll by
+   a single IntersectionObserver in BrandDivider; transform and opacity only.
+   ============================================ */
+
+.d3-brand-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 3.5rem 0;
+  opacity: 0;
+  transform: translateY(10px) scale(0.94);
+  transition:
+    opacity 820ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 820ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.d3-brand-divider[data-visible='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+.d3-brand-divider__rule {
+  flex: 1 1 auto;
+  height: 1px;
+  max-width: 120px;
+  background: linear-gradient(to right, transparent, var(--border-light), transparent);
+}
+
 /* ============================================
    BADGES
    Monochrome by default. Champagne marks
@@ -956,14 +1092,54 @@ img {
 }
 
 /* ============================================
+   REDUCED MOTION
+   The brand mark still resolves, it just stops moving. Every brand animation
+   degrades to a plain opacity fade so the mark is never left half-revealed,
+   and no logo is ever hidden behind an animation the visitor declined.
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .d3-logo--nav {
+    animation: d3LogoFade 420ms ease-out both;
+  }
+
+  .d3-logo--nav .d3-logo__img {
+    transition: none;
+  }
+
+  .d3-logo--nav:hover .d3-logo__img,
+  .d3-logo--nav:focus-visible .d3-logo__img {
+    transform: none;
+  }
+
+  .d3-logo--loader {
+    animation: none;
+    opacity: 0.8;
+  }
+
+  .d3-brand-divider {
+    transform: none;
+    transition: opacity 420ms ease-out;
+  }
+}
+
+/* ============================================
    RESPONSIVE UTILS
    ============================================ */
 @media (max-width: 768px) {
   :root {
     --section-padding-y: 4rem;
+    --d3-nav-h: 64px;
   }
   
   .d3-display-xl {
     font-size: clamp(2.5rem, 10vw, 3.5rem);
+  }
+
+  /* Still clearly the Dine3D mark, just proportioned so the links and the
+     menu button keep their room on a phone. */
+  .d3-logo--nav {
+    --d3-logo-h: 34px;
+    --d3-logo-maxw: 150px;
   }
 }

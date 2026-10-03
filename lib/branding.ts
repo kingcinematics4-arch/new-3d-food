@@ -12,7 +12,33 @@
    ============================================================ */
 
 /** The asset that ships with the repo, used whenever no logo has been uploaded. */
-export const FALLBACK_LOGO_URL = '/images/dine3d-logo.jpg';
+export const FALLBACK_LOGO_URL = '/images/dine3d-logo.png';
+
+/**
+ * Bundled paths used by earlier revisions of this file.
+ *
+ * `dine3d-logo.jpg` was the same artwork on an opaque near-black canvas that
+ * carried ~65% empty margin on every side, which made the mark render tiny
+ * inside its own black rectangle. The asset is now cropped to the artwork and
+ * transparent, so it lives at a new path. Rows written before that change still
+ * hold the old string, so it is mapped forward rather than left to 404.
+ */
+export const LEGACY_FALLBACK_LOGO_URLS = ['/images/dine3d-logo.jpg'];
+
+/**
+ * Points any reference at the current bundled asset.
+ *
+ * A path that is neither the current nor a known legacy bundled path is left
+ * untouched, so an uploaded logo and any other owner-supplied URL are never
+ * rewritten.
+ */
+export function resolveBundledLogoUrl(url: string | null | undefined): string {
+  const trimmed = url?.trim();
+  if (!trimmed) return FALLBACK_LOGO_URL;
+  if (trimmed === FALLBACK_LOGO_URL) return FALLBACK_LOGO_URL;
+  if (LEGACY_FALLBACK_LOGO_URLS.includes(trimmed)) return FALLBACK_LOGO_URL;
+  return trimmed;
+}
 
 /**
  * 2 MiB. Mirrored by `file_size_limit` on the `dine3d-branding` bucket, so an
@@ -54,8 +80,15 @@ export interface LogoReference {
   hasCustomLogo: boolean;
 }
 
-/** Real dimensions of `public/images/dine3d-logo.jpg`. */
-export const FALLBACK_LOGO_SIZE = { width: 1376, height: 768 } as const;
+/**
+ * Real dimensions of `public/images/dine3d-logo.png`.
+ *
+ * The file is the official mark cropped to its own artwork with a transparent
+ * background, at 300 DPI. Declaring the true size is what lets the browser
+ * reserve the correct box before the image loads, so the logo never shifts or
+ * reflows the navbar as it arrives.
+ */
+export const FALLBACK_LOGO_SIZE = { width: 930, height: 258 } as const;
 
 export const FALLBACK_LOGO_REFERENCE: LogoReference = {
   logoUrl: FALLBACK_LOGO_URL,
