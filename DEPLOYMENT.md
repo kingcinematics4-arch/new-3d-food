@@ -15,6 +15,7 @@ This full-stack **3D Digital Food Menu & Restaurant Ordering SaaS** is built wit
 3. Go to the **SQL Editor** in your Supabase project dashboard:
    - Open and run the contents of [`supabase/migrations/001_initial.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/001_initial.sql) to create all database tables (safe to re-run).
    - Open and run the contents of [`supabase/migrations/002_auth_identity_and_menu_fields.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/002_auth_identity_and_menu_fields.sql) to add the auth-identity, menu and review fields (safe to re-run).
+   - Open and run the contents of [`supabase/migrations/004_admin_site_content.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/004_admin_site_content.sql) to add the Dine3D admin website content store and the admin session revocation marker (safe to re-run). **Required for the `/admin` panel to save or publish.** Until it is applied, `/admin` still loads and the public website still works; only saving and publishing report that the migration is missing.
    - Open and run the contents of [`supabase/policies.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/policies.sql) to enable multi-tenant Row Level Security (RLS).
 
 ---
@@ -127,3 +128,44 @@ When you purchase a custom domain later:
   - Profile & Branding Settings: [`/dashboard/settings`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/app/dashboard/settings/page.tsx)
 - **Public Customer 3D Menu**: [`/menu/[slug]?table=X`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/app/menu/%5Bslug%5D/page.tsx)
 - **Live Order Status Tracking**: [`/order-status/[orderId]`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/app/order-status/%5BorderId%5D/page.tsx)
+---
+
+## ?? Dine3D Owner Admin Panel (`/admin`)
+
+A separate admin surface for controlling the **public Dine3D website**. It is completely
+independent of the Supabase authentication used by restaurant owners: no Supabase session can
+open `/admin`, and an admin session cannot open `/dashboard`.
+
+### Environment variables (server-side only — never prefix with `NEXT_PUBLIC_`)
+
+| Variable | Purpose |
+| --- | --- |
+| `DINE3D_ADMIN_PASSWORD` | Owner password for `/admin`. Compared on the server only; the browser never receives or evaluates it. While unset, `/admin` stays locked and shows a setup notice. |
+| `DINE3D_ADMIN_SESSION_SECRET` | Optional. Signs the session cookie with HMAC-SHA256 so the key can be rotated without changing the password. If omitted, the key is derived from `DINE3D_ADMIN_PASSWORD`. |
+
+Changing either value invalidates all existing admin sessions.
+
+### How access is protected
+
+1. `middleware.ts` verifies the HMAC signature and expiry of the `dine3d_admin_session` cookie (Edge-safe Web Crypto).
+2. `app/admin/(panel)/layout.tsx` calls `requireAdminPage()` on the server, so an unauthenticated request is redirected before any admin markup is produced.
+3. Every `/api/admin/*` route calls `requireAdminApi()` and returns 401 otherwise.
+4. Logout writes a revocation timestamp, so session tokens issued at or before that moment stay invalid even if a copy of the cookie was captured beforehand.
+
+Failed logins are rate limited per client (`lib/adminThrottle.ts`) to slow password guessing.
+
+### Required migration
+
+Run `supabase/migrations/004_admin_site_content.sql`. It adds two RLS-enabled, policy-free tables
+(`site_content` and `admin_session_state`) that only the server-side service role can reach. It
+does not modify any restaurant table.
+
+### Draft vs published
+
+Edits are saved as a draft. The public `/` page renders only the published document, so nothing
+becomes visible to visitors until **Publish Changes** is pressed.
+
+### Build note
+
+`next dev` writes to `.next-dev` and `next build` writes to `.next`. Running a production
+build while the dev server is up can no longer corrupt the dev server's route manifests.

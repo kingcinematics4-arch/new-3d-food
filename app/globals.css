@@ -512,7 +512,43 @@ body {
   width: 100%;
 }
 
-/* Segmented control — hairline container, champagne marker */
+/* ============================================
+   BRANDING VARIANTS
+   Applied to the public site root by the
+   accent/background/button choices saved in
+   the Dine3D admin panel. The rules only
+   recolour the existing treatments — the
+   champagne/ivory identity is preserved.
+   ============================================ */
+
+/* Solid: filled accent, near-black type */
+.d3-btn-variant-solid .d3-btn-primary {
+  background-color: var(--gold);
+  color: #0B0B0A;
+  border-color: var(--gold);
+}
+.d3-btn-variant-solid .d3-btn-primary:hover {
+  background-color: var(--gold-bright);
+  border-color: var(--gold-bright);
+  color: #0B0B0A;
+}
+
+/* Ghost: hairline only, quieter than outline */
+.d3-btn-variant-ghost .d3-btn-primary {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-warm);
+}
+.d3-btn-variant-ghost .d3-btn-primary:hover {
+  background: rgba(243, 239, 231, 0.03);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+/* ============================================
+   SEGMENTED CONTROL
+   Hairline container, champagne marker
+   ============================================ */
 .d3-segment {
   display: inline-flex;
   align-items: center;
