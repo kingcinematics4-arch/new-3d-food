@@ -6,15 +6,17 @@
 //
 // The asset library for the public website, grouped by purpose.
 //
-// This panel manages REFERENCES, not uploads: it lists the official logo and
-// every image path currently used across the hero, sections, feature cards and
-// the footer. Actual file storage stays where it already lives (the project's
-// public folder, or a Supabase Storage bucket); the panel records which asset
-// belongs where so nothing is duplicated or replaced by a lookalike.
+// The Dine3D logo is the one asset that is uploaded rather than referenced: it
+// goes to Supabase Storage through the guarded admin route and is shown here as
+// the current source. Everything else in this panel is a REFERENCE — a path to
+// an image that lives in the project's public folder or an existing bucket. The
+// panel records which asset belongs where so nothing is duplicated or replaced
+// by a lookalike.
 
 import React from 'react';
 import Image from 'next/image';
 import { useSiteContent } from '@/components/admin/SiteContentProvider';
+import LogoUploader from '@/components/admin/LogoUploader';
 import {
   AdminPageHeader,
   AdminPanel,
@@ -26,7 +28,7 @@ import {
 } from '@/components/admin/ui';
 import { SECTION_LABELS } from '@/lib/siteContent';
 import type { EditorialSection, SiteContent } from '@/lib/siteContent';
-import Dine3DLogo, { LOGO_SRC } from '@/components/Dine3DLogo';
+import type { LogoReference } from '@/lib/branding';
 
 interface MediaEntry {
   id: string;
@@ -40,7 +42,7 @@ interface MediaEntry {
 export default function AdminMediaPage() {
   const { draft, update, loading } = useSiteContent();
 
-  const setBranding = (key: 'logoUrl' | 'logoAlt' | 'faviconUrl', value: string) =>
+  const setBranding = (key: 'logoAlt' | 'faviconUrl', value: string) =>
     update((current) => ({ ...current, branding: { ...current.branding, [key]: value } }));
 
   const setEditorial = (key: keyof SiteContent, field: keyof EditorialSection, value: string) =>
@@ -71,14 +73,28 @@ export default function AdminMediaPage() {
     );
   }
 
+  /** Mirrors what the upload route wrote, so the reference list below stays true. */
+  const syncLogo = (logo: LogoReference) => {
+    update((current) => ({
+      ...current,
+      branding: {
+        ...current.branding,
+        logoUrl: logo.logoUrl,
+        logoWidth: logo.logoWidth,
+        logoHeight: logo.logoHeight,
+        logoAlt: logo.logoAlt,
+      },
+    }));
+  };
+
   const logoEntries: MediaEntry[] = [
     {
       id: 'brand-logo',
       label: 'Primary logo',
       group: 'Branding',
+      // Managed by the uploader above, not typed in by hand.
       value: draft.branding.logoUrl,
-      editable: true,
-      onChange: (v) => setBranding('logoUrl', v),
+      editable: false,
     },
     {
       id: 'brand-favicon',
@@ -147,33 +163,16 @@ export default function AdminMediaPage() {
         {/* ------------------------------------------------ LOGO */}
         <AdminPanel
           title="Logo"
-          description="The official Dine3D mark. Fixed asset — used as supplied, never redrawn."
+          description="The official Dine3D mark. Uploaded to Supabase Storage and used as supplied — never redrawn or stretched."
         >
-          <div className="flex flex-wrap gap-6">
-            <div
-              className="flex flex-col gap-3"
-              style={{
-                padding: '1.5rem',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-warm)',
-                borderRadius: 8,
-              }}
-            >
-              <Dine3DLogo size="lg" href={null} />
-              <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
-                public/images/dine3d-logo.jpg
-              </span>
-            </div>
+          <LogoUploader onLogoChanged={syncLogo} />
 
+          <div className="flex flex-wrap gap-6" style={{ marginTop: '1.75rem' }}>
             <div className="flex flex-1 flex-col gap-4" style={{ minWidth: 260 }}>
-              <AdminField label="Logo path used on the site">
-                <AdminInput
-                  value={draft.branding.logoUrl}
-                  onChange={(v) => setBranding('logoUrl', v)}
-                  placeholder={LOGO_SRC}
-                />
-              </AdminField>
-              <AdminField label="Logo description" hint="Read aloud by screen readers.">
+              <AdminField
+                label="Logo description"
+                hint="Read aloud by screen readers."
+              >
                 <AdminInput
                   value={draft.branding.logoAlt}
                   onChange={(v) => setBranding('logoAlt', v)}
