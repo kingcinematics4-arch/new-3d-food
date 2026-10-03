@@ -12,8 +12,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import Dine3DLogo from '@/components/Dine3DLogo';
 import { AdminSaveBar } from './SiteContentProvider';
 
 const NAV_ITEMS = [
@@ -61,16 +61,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         }}
       >
         <div className="px-6" style={{ padding: '1.75rem 0 1.5rem' }}>
-          {/* Official Dine3D logo — used as-is, never redrawn */}
-          <Image
-            src="/images/dine3d-logo.jpg"
-            alt="Dine3D"
-            width={140}
-            height={35}
-            priority
-            className="object-contain object-left"
-            style={{ height: 35, width: 'auto' }}
-          />
+          {/* Official Dine3D logo asset, used exactly as supplied */}
+          <Dine3DLogo size="md" href="/" priority />
           <span
             className="d3-eyebrow block"
             style={{ color: 'var(--gold-dim)', marginTop: '0.75rem', fontSize: '0.5625rem' }}

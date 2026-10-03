@@ -1,11 +1,18 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/authContext';
+import { LOGO_SRC } from '@/components/Dine3DLogo';
 
 export const metadata: Metadata = {
   title: 'Dine3D — See It. Experience It. Dine It.',
   description: 'Turn your restaurant menu into an interactive 3D dining experience. Scan a QR code, explore dishes in 3D, and understand your meal before ordering.',
   keywords: 'restaurant 3D menu, AR food menu, interactive dining, QR code menu, 3D food visualization, restaurant technology',
+  // Favicon is the official Dine3D logo asset — the same file used everywhere else.
+  icons: {
+    icon: [{ url: LOGO_SRC, type: 'image/jpeg' }],
+    shortcut: [{ url: LOGO_SRC, type: 'image/jpeg' }],
+    apple: [{ url: LOGO_SRC, type: 'image/jpeg' }],
+  },
   openGraph: {
     title: 'Dine3D — Premium 3D Restaurant Menu Platform',
     description: 'Turn your restaurant menu into an interactive 3D dining experience.',

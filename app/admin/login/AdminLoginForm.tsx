@@ -10,7 +10,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
+import Dine3DLogo from '@/components/Dine3DLogo';
 
 export default function AdminLoginForm({ configured }: { configured: boolean }) {
   const router = useRouter();
@@ -62,16 +62,8 @@ export default function AdminLoginForm({ configured }: { configured: boolean }) 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-center gap-4 text-center">
-        {/* Official Dine3D logo, used verbatim */}
-        <Image
-          src="/images/dine3d-logo.jpg"
-          alt="Dine3D"
-          width={168}
-          height={42}
-          priority
-          className="object-contain"
-          style={{ height: 42, width: 'auto' }}
-        />
+        {/* Official Dine3D logo asset, used exactly as supplied */}
+        <Dine3DLogo size="md" href="/" priority />
 
         <div className="flex flex-col gap-2">
           <span className="d3-eyebrow" style={{ color: 'var(--gold-dim)' }}>

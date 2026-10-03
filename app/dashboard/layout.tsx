@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useHotel } from '@/lib/useHotel';
 import { useAuth } from '@/lib/authContext';
+import Dine3DLogo from '@/components/Dine3DLogo';
 
 // Nav item icons (SVG inline for quality)
 const navIcons: Record<string, React.ReactNode> = {
@@ -159,30 +160,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           flexShrink: 0,
         }}
       >
-        {/* Brand */}
+        {/* Brand — official Dine3D asset, used as supplied */}
         <div>
           <div
-            className="flex items-center gap-2.5 px-5 py-5"
+            className="flex items-center gap-3 px-5 py-5"
             style={{ borderBottom: '1px solid var(--border-subtle)' }}
           >
-            <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
-              <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="none" stroke="#C9A96E" strokeWidth="1.2" />
-              <line x1="13" y1="1" x2="13" y2="25" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-              <line x1="2" y1="7" x2="24" y2="19" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-              <line x1="24" y1="7" x2="2" y2="19" stroke="#C9A96E" strokeWidth="0.8" strokeOpacity="0.5" />
-            </svg>
+            <Dine3DLogo size="xs" href="/" priority />
             <div className="flex flex-col min-w-0">
-              <span
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1rem',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                  lineHeight: 1.2,
-                }}
-              >
-                Dine<span style={{ color: 'var(--gold)' }}>3D</span>
-              </span>
               {brandSubtitle}
             </div>
           </div>
