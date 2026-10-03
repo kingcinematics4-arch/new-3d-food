@@ -4,7 +4,7 @@ This full-stack **3D Digital Food Menu & Restaurant Ordering SaaS** is built wit
 
 ---
 
-## 🛠️ Step 1: Set Up Your Supabase Project
+## 🛠︝ Step 1: Set Up Your Supabase Project
 
 1. Go to [Supabase Dashboard](https://database.new) and create a new project.
 2. Under **Project Settings -> API**, copy:
@@ -16,6 +16,8 @@ This full-stack **3D Digital Food Menu & Restaurant Ordering SaaS** is built wit
    - Open and run the contents of [`supabase/migrations/001_initial.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/001_initial.sql) to create all database tables (safe to re-run).
    - Open and run the contents of [`supabase/migrations/002_auth_identity_and_menu_fields.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/002_auth_identity_and_menu_fields.sql) to add the auth-identity, menu and review fields (safe to re-run).
    - Open and run the contents of [`supabase/migrations/004_admin_site_content.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/004_admin_site_content.sql) to add the Dine3D admin website content store and the admin session revocation marker (safe to re-run). **Required for the `/admin` panel to save or publish.** Until it is applied, `/admin` still loads and the public website still works; only saving and publishing report that the migration is missing.
+   - Open and run the contents of [`supabase/migrations/005_branding_storage.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/005_branding_storage.sql) to create the public read-only `dine3d-branding` storage bucket (safe to re-run). **Required for the logo upload in `/admin/branding` and `/admin/media`.** Until it is applied the site keeps showing the bundled `public/images/dine3d-logo.jpg`, and uploading reports `Storage bucket "dine3d-branding" does not exist`. Depends on 004, so run it after 004.
+   - Open and run [`supabase/verify_branding_storage.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/verify_branding_storage.sql) to confirm the bucket exists, is public, and has no write policies (read-only; safe to run any time).
    - Open and run the contents of [`supabase/policies.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/policies.sql) to enable multi-tenant Row Level Security (RLS).
 
 ---
@@ -41,7 +43,7 @@ Visit `http://localhost:3000` to view the SaaS landing page, register a test res
 
 ---
 
-## 🌐 Step 3: Deploy to Vercel
+## 🌝 Step 3: Deploy to Vercel
 
 1. Push this project repository to your GitHub account.
 2. Go to [Vercel Dashboard](https://vercel.com/new) and select **Import Repository**.
@@ -64,7 +66,7 @@ Visit `http://localhost:3000` to view the SaaS landing page, register a test res
 
 ---
 
-## 🔐 Step 4: Configure Supabase Authentication Redirect URLs
+## 🔝 Step 4: Configure Supabase Authentication Redirect URLs
 
 In your [Supabase Project Dashboard](https://supabase.com/dashboard):
 1. Navigate to **Authentication** ➔ **URL Configuration**.
@@ -100,7 +102,7 @@ User clicks "Confirm Email"
 
 ---
 
-## 🏷️ Step 5: Connecting a Custom Domain (Optional Later)
+## 🝷︝ Step 5: Connecting a Custom Domain (Optional Later)
 
 When you purchase a custom domain later:
 
