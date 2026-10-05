@@ -97,13 +97,6 @@ export default function AdminPricingPage() {
             />
             <div className="d3-rule" />
             <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-              <AdminField label="Small label">
-                <AdminInput
-                  value={pricing.eyebrow}
-                  onChange={(v) => setSection('eyebrow', v)}
-                  placeholder="PRICING"
-                />
-              </AdminField>
               <AdminField label="Heading">
                 <AdminInput
                   value={pricing.heading}

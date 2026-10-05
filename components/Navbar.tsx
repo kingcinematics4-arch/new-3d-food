@@ -173,12 +173,6 @@ export default function Navbar() {
                 Get Started →
               </Link>
             </div>
-            <p
-              className="d3-eyebrow text-center mt-4"
-              style={{ color: 'var(--text-dimmed)' }}
-            >
-              SEE IT. EXPERIENCE IT. DINE IT.
-            </p>
           </div>
         </div>
       )}

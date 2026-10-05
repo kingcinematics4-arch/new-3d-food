@@ -39,8 +39,6 @@ export default function HomeFooter({ footer, branding }: { footer: Footer; brand
           />
 
           <div className="d3-container relative z-10 text-center flex flex-col items-center gap-8">
-            <span className="d3-eyebrow">READY TO BEGIN</span>
-
             <h2 className="d3-display-lg" style={{ maxWidth: 600 }}>
               {footer.closingHeading}
               {footer.closingAccent ? (
@@ -155,19 +153,13 @@ export default function HomeFooter({ footer, branding }: { footer: Footer; brand
           </div>
 
           <div
-            className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
+            className="pt-8"
             style={{ borderTop: '1px solid var(--border-subtle)' }}
           >
             <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>
               {footer.copyrightText?.includes('©')
                 ? footer.copyrightText
                 : `© ${currentYear} ${footer.copyrightText || 'Dine3D. All rights reserved.'}`}
-            </p>
-            <p
-              className="d3-eyebrow"
-              style={{ color: 'var(--text-dimmed)', fontSize: '0.5rem', letterSpacing: '0.15em' }}
-            >
-              PREMIUM 3D RESTAURANT TECHNOLOGY
             </p>
           </div>
         </div>

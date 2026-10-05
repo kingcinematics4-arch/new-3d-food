@@ -18,10 +18,9 @@ export default function HomeFeatures({ features }: { features: Features }) {
       <div className="d3-divider" />
 
       <div className="d3-container">
-        {(features.heading || features.eyebrow) && (
-          <div className="text-center mb-20" style={{ maxWidth: 560, margin: '0 auto 5rem' }}>
-            {features.eyebrow ? <span className="d3-eyebrow block mb-4">{features.eyebrow}</span> : null}
-            <h2 className="d3-display-md" style={{ marginBottom: '1.25rem' }}>
+        {features.heading || features.body ? (
+          <div className="text-center" style={{ maxWidth: 560, margin: '0 auto 5rem' }}>
+            <h2 className="d3-display-md" style={{ marginBottom: features.body ? '1.25rem' : 0 }}>
               {features.heading}
               {features.headingAccent ? (
                 <>
@@ -34,7 +33,7 @@ export default function HomeFeatures({ features }: { features: Features }) {
             </h2>
             {features.body ? <p className="d3-body">{features.body}</p> : null}
           </div>
-        )}
+        ) : null}
 
         {items.length === 0 ? (
           <div className="flex flex-col items-center gap-2 text-center" style={{ padding: '4rem 0' }}>
@@ -80,15 +79,6 @@ export default function HomeFeatures({ features }: { features: Features }) {
                 >
                   <FeatureIcon name={item.icon} />
                 </div>
-
-                {item.eyebrow ? (
-                  <span
-                    className="d3-eyebrow block mb-3"
-                    style={{ color: 'var(--gold-dim)', fontSize: '0.5625rem' }}
-                  >
-                    {item.eyebrow}
-                  </span>
-                ) : null}
 
                 {item.title ? (
                   <h3

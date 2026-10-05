@@ -53,7 +53,6 @@ import {
 } from '@/lib/logoLayers';
 import {
   ambientOpacity,
-  captionFor,
   clamp01,
   ghostFrame,
   hintOpacity,
@@ -83,8 +82,6 @@ export default function CinematicLogoSequence() {
       travel = Math.max(1, section.offsetHeight - window.innerHeight);
       origin = section.getBoundingClientRect().top + window.scrollY;
     };
-
-    let caption = '';
 
     const apply = (progress: number) => {
       const p = clamp01(progress);
@@ -120,13 +117,6 @@ export default function CinematicLogoSequence() {
 
       const rail = nodes.current.rail;
       if (rail) rail.style.transform = `scaleY(${p.toFixed(4)})`;
-
-      const next = captionFor(p);
-      if (next !== caption) {
-        caption = next;
-        const el = section.querySelector<HTMLElement>('[data-cine-caption]');
-        if (el) el.textContent = caption;
-      }
     };
 
     let frame = 0;
@@ -229,12 +219,7 @@ export default function CinematicLogoSequence() {
             visitor there is more to come and roughly how much is left. */}
         <div className="d3-cine__rail" aria-hidden="true">
           <span className="d3-cine__railFill" ref={register('rail')} />
-          {[0.3, 0.5, 0.7, 0.94].map((at) => (
-            <span key={at} className="d3-cine__railTick" style={{ top: `${at * 100}%` }} />
-          ))}
         </div>
-
-        <p className="d3-cine__caption" data-cine-caption aria-hidden="true" />
 
         <div className="d3-cine__hint" ref={register('hint')} aria-hidden="true">
           <span>Scroll</span>

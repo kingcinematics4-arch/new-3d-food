@@ -31,7 +31,6 @@ import {
   BEATS,
   CLOCHE_OPEN,
   LAYER_ORDER,
-  captionFor,
   clamp01,
   layerFrame,
   span,
@@ -209,11 +208,6 @@ for (const id of LAYER_ORDER) {
   }
 }
 check(monotonic, 'no layer fades in, out and in again while assembling');
-
-// The caption must be a pure function too, and must never leak markup.
-const captions = new Set();
-for (let i = 0; i <= 100; i++) captions.add(captionFor(i / 100));
-check(captions.size > 0, 'the caption resolves to a small set of states', `${captions.size} distinct`);
 
 // Clamping: out-of-range scroll (rubber-banding on iOS) must not throw or invert.
 check(clamp01(-5) === 0 && clamp01(5) === 1, 'progress is clamped to 0-1');

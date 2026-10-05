@@ -58,7 +58,6 @@ export default function AdminFeaturesPage() {
         id: createItemId('feat'),
         enabled: true,
         icon: 'cube',
-        eyebrow: '',
         title: '',
         description: '',
         imageUrl: '',
@@ -102,13 +101,6 @@ export default function AdminFeaturesPage() {
             />
             <div className="d3-rule" />
             <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-              <AdminField label="Small label">
-                <AdminInput
-                  value={features.eyebrow}
-                  onChange={(v) => setSection('eyebrow', v)}
-                  placeholder="CAPABILITIES"
-                />
-              </AdminField>
               <AdminField label="Heading">
                 <AdminInput
                   value={features.heading}
@@ -228,14 +220,6 @@ export default function AdminFeaturesPage() {
                           value={item.title}
                           onChange={(v) => setItem(item.id, { title: v })}
                           placeholder="Feature title"
-                        />
-                      </AdminField>
-
-                      <AdminField label="Small label">
-                        <AdminInput
-                          value={item.eyebrow}
-                          onChange={(v) => setItem(item.id, { eyebrow: v })}
-                          placeholder="Optional"
                         />
                       </AdminField>
 

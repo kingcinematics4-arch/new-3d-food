@@ -784,12 +784,41 @@ body {
   text-decoration: none;
 }
 
+/* The crop window a padded logo is presented through. Only rendered when the
+   file's visible bounds have actually been measured — an uncropped logo keeps
+   its original plain layout and is not constrained by this at all.
+
+   It is sized on whichever axis runs out first: a wide mark claims the full
+   width allowance and a tall mark the full height. `width` resolves first and
+   `height: auto` then follows the ratio passed in by the component, so the two
+   can never disagree and the logo can never be stretched. */
+.d3-logo__frame {
+  position: relative;
+  display: block;
+  aspect-ratio: var(--d3-logo-ar);
+  width: min(calc(var(--d3-logo-h) * var(--d3-logo-ar)), var(--d3-logo-maxw));
+  height: auto;
+  overflow: hidden;
+}
+
 .d3-logo__img {
   display: block;
   height: var(--d3-logo-h);
   width: auto;
   max-width: var(--d3-logo-maxw);
   object-fit: contain;
+}
+
+/* Inside the frame the image is not laid out at all: it is the full source file
+   positioned so that its visible logo fills the frame exactly. Both dimensions
+   are set together and proportionally, so the scale on each axis is identical
+   and the artwork is never distorted. */
+.d3-logo__img--cropped {
+  position: absolute;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  object-fit: fill;
 }
 
 .d3-logo--xs { --d3-logo-h: 24px; --d3-logo-maxw: 110px; }
@@ -799,23 +828,36 @@ body {
 .d3-logo--xl { --d3-logo-h: 96px; --d3-logo-maxw: 380px; }
 
 /* ---- Navbar: the brand's first impression ----
-   54px on desktop, tapering down on small screens so the mark stays clearly
-   readable without ever crowding the navigation links or the menu button. */
+   The height is what the mark is measured against, so a padded upload fills the
+   whole of it instead of a fraction. It stays inside the 78px bar with room to
+   spare, and tapers down on small screens so the mark remains clearly readable
+   without ever crowding the navigation links or the menu button. */
 .d3-logo--nav {
-  --d3-logo-h: 54px;
+  --d3-logo-h: 62px;
   --d3-logo-maxw: 220px;
 
   animation: d3LogoReveal 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* The reveal animates the wrapper while hover animates the image, so the two
-   transforms never fight over the same property. */
+/* The reveal animates the wrapper while hover animates the logo box, so the two
+   transforms never fight over the same property.
+
+   Hover zooms the FRAME for a cropped logo and the IMAGE for an uncropped one.
+   It must not zoom a cropped image in place: that image is the entire source
+   file, so scaling it about its own centre would slide the mark out of its crop
+   window instead of growing it. */
+.d3-logo--nav .d3-logo__frame {
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .d3-logo--nav .d3-logo__img {
   transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.d3-logo--nav:hover .d3-logo__img,
-.d3-logo--nav:focus-visible .d3-logo__img {
+.d3-logo--nav:hover .d3-logo__frame,
+.d3-logo--nav:focus-visible .d3-logo__frame,
+.d3-logo--nav:hover .d3-logo__img:not(.d3-logo__img--cropped),
+.d3-logo--nav:focus-visible .d3-logo__img:not(.d3-logo__img--cropped) {
   transform: scale(1.03);
 }
 
@@ -1035,32 +1077,6 @@ body {
   transform: scaleY(0);
   transform-origin: 50% 0%;
   background: linear-gradient(to bottom, var(--gold-dim), var(--gold));
-}
-
-.d3-cine__railTick {
-  position: absolute;
-  left: -3px;
-  width: 7px;
-  height: 1px;
-  background: var(--border-light);
-}
-
-/* One quiet word for the beat in progress. */
-.d3-cine__caption {
-  position: absolute;
-  left: 50%;
-  bottom: clamp(18px, 4vh, 38px);
-  transform: translateX(-50%);
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: 0.5625rem;
-  font-weight: 500;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--text-dimmed);
-  white-space: nowrap;
-  z-index: 2;
-  pointer-events: none;
 }
 
 /* Retires as soon as the visitor scrolls. */
@@ -1374,10 +1390,6 @@ img {
 
   /* The rail only makes sense while there is scrolling left to do. */
   .d3-cine__rail {
-    display: none;
-  }
-
-  .d3-cine__caption {
     display: none;
   }
 }

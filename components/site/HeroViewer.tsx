@@ -2,20 +2,17 @@
 
 // components/site/HeroViewer.tsx
 //
-// Client-only wrapper around the WebGL 3D viewer.
+// Client-only entry point for the hero's 3D dish demonstration.
 //
-// Isolated in its own client component so the surrounding hero can stay a
-// Server Component. `ssr: false` is required because react-three-fiber touches
-// WebGL during render.
+// The scene itself lives in HeroDishScene, which is loaded dynamically with
+// `ssr: false` because react-three-fiber touches WebGL during render and has no
+// server-side equivalent. Isolating that here keeps the rest of the hero free to
+// be a normal component.
 
 import dynamic from 'next/dynamic';
 
-const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
+const HeroDishScene = dynamic(() => import('./HeroDishScene'), { ssr: false });
 
-export default function HeroViewer({ height = 420 }: { height?: number }) {
-  return (
-    <div style={{ height }}>
-      <FoodModelViewer className="h-full w-full" />
-    </div>
-  );
+export default function HeroViewer() {
+  return <HeroDishScene />;
 }
