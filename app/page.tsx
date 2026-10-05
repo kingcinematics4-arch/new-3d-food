@@ -18,7 +18,6 @@ import { getPublishedSiteContent } from '@/lib/siteContent.server';
 import { brandingButtonClass, brandingToCssVars } from '@/lib/siteBranding';
 import { SECTION_LABELS } from '@/lib/siteContent';
 
-import CinematicLogoSequence from '@/components/site/CinematicLogoSequence';
 import HomeHero from '@/components/site/HomeHero';
 import HomeFeatures from '@/components/site/HomeFeatures';
 import HomeHowItWorks from '@/components/site/HomeHowItWorks';
@@ -48,11 +47,9 @@ export default async function PublicHomePage() {
       <Navbar />
 
       <main className="flex-1">
-        {/* The brand sequence. Scroll position builds the logo and opens the
-            cloche, and the page then carries on into the hero below, so the
-            headline lands on a visitor who has just watched the meal revealed. */}
-        <CinematicLogoSequence />
-
+        {/* The page opens on the hero itself. There is no introductory
+            animation in front of it and no scroll distance spent before the
+            headline arrives. */}
         {content.hero.enabled ? <HomeHero hero={content.hero} /> : null}
 
         {/* One branded breath between the hero and the page content. */}
