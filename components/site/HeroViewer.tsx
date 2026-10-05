@@ -13,6 +13,6 @@ import dynamic from 'next/dynamic';
 
 const HeroDishScene = dynamic(() => import('./HeroDishScene'), { ssr: false });
 
-export default function HeroViewer() {
-  return <HeroDishScene />;
+export default function HeroViewer({ modelUrlGlb }: { modelUrlGlb?: string | null }) {
+  return <HeroDishScene modelUrl={modelUrlGlb} />;
 }

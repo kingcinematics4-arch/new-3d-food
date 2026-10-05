@@ -164,6 +164,21 @@ const heroSchema = z.object({
   secondaryCtaHref: safePath(300),
   imageUrl: safePath(300),
   imageAlt: optionalText(160),
+  /**
+   * The uploaded GLB rendered in the hero's 3D viewer.
+   *
+   * Empty means "nothing uploaded yet", and the viewer falls back to the bundled
+   * demonstration dish so the hero is never blank. Written by the admin upload
+   * route (POST /api/admin/hero-model) rather than typed by hand, and cleared by
+   * the matching DELETE.
+   */
+  modelUrlGlb: safePath(400),
+  /**
+   * Display name of the uploaded model, shown in the admin panel so the owner can
+   * tell which dish is live without inspecting a storage URL. Never rendered on
+   * the public site.
+   */
+  modelName: optionalText(120),
 });
 export type Hero = z.infer<typeof heroSchema>;
 
@@ -422,6 +437,8 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
     secondaryCtaHref: '/#how-it-works',
     imageUrl: '',
     imageAlt: '',
+    modelUrlGlb: '',
+    modelName: '',
   },
 
   about: { ...emptyEditorial },
