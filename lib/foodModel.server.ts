@@ -223,9 +223,13 @@ export function sniffModelMime(buffer: Buffer): ModelMimeType | null {
   // A Node Buffer is a Uint8Array, so the exact same header parser the browser
   // uses can be reused. `validateGlbBuffer` additionally enforces the declared
   // version and total length, which is what catches a truncated file.
-  const result = validateGlbBuffer(
-    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
-  );
+  //
+  // buffer.buffer is typed as ArrayBufferLike (= ArrayBuffer | SharedArrayBuffer).
+  // validateGlbBuffer requires a plain ArrayBuffer, so we copy the bytes into a
+  // fresh standalone ArrayBuffer rather than slicing the underlying one.
+  const ab = new ArrayBuffer(buffer.byteLength);
+  new Uint8Array(ab).set(new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength));
+  const result = validateGlbBuffer(ab);
 
   return result.ok ? MODEL_MIME_TYPES[0] : null;
 }
@@ -270,7 +274,7 @@ export class MissingFoodModelBucketError extends Error {
 
   constructor() {
     super(
-      `The "${FOOD_MODEL_BUCKET}" storage bucket does not exist. Apply ${this.migrationFile} in the Supabase SQL editor, then upload the model again.`
+      `The "${FOOD_MODEL_BUCKET}" storage bucket does not exist. Apply supabase/migrations/006_food_model_storage.sql in the Supabase SQL editor, then upload the model again.`
     );
     this.name = 'MissingFoodModelBucketError';
   }

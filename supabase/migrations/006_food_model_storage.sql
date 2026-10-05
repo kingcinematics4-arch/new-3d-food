@@ -128,9 +128,10 @@ select id, public, file_size_limit, allowed_mime_types
  where id = 'dine3d-models';
 
 -- The stored hero model reference, or a NULL url when none has been uploaded.
+-- hero is a key inside the draft JSONB column, NOT a top-level column.
 select id,
-       hero ->> 'modelUrlGlb' as model_url_glb,
-       hero ->> 'modelName'  as model_name,
+       draft -> 'hero' ->> 'modelUrlGlb' as model_url_glb,
+       draft -> 'hero' ->> 'modelName'   as model_name,
        updated_at
   from public.site_content
  where id = 'main';

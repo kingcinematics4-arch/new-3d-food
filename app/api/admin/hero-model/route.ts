@@ -131,9 +131,15 @@ export async function POST(request: Request) {
   // the Content-Type the browser claimed. This also verifies the glTF version
   // and that the declared length matches, which is what catches a truncated or
   // corrupted export before it becomes a broken hero for every visitor.
-  const validated = validateGlbBuffer(
-    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+  //
+  // buffer.buffer is typed as ArrayBufferLike (= ArrayBuffer | SharedArrayBuffer),
+  // but validateGlbBuffer requires a plain ArrayBuffer. Copying the bytes into a
+  // fresh ArrayBuffer makes the type unambiguous without casts or @ts-ignore.
+  const glbArrayBuffer = new ArrayBuffer(buffer.byteLength);
+  new Uint8Array(glbArrayBuffer).set(
+    new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
   );
+  const validated = validateGlbBuffer(glbArrayBuffer);
 
   if (!validated.ok) {
     return fail(validated.error, statusForReason(validated.reason));
