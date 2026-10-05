@@ -19,6 +19,10 @@ import {
   AdminToggle,
   AdminNote,
 } from '@/components/admin/ui';
+import dynamic from 'next/dynamic';
+import { useRef, useState } from 'react';
+
+const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 
 export default function AdminHeroPage() {
   const { draft, update, loading } = useSiteContent();
@@ -39,6 +43,47 @@ export default function AdminHeroPage() {
   }
 
   const hasContent = Boolean(hero.heading || hero.subheading || hero.ctaText);
+
+  // File upload logic
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show processing UI
+    setUploadStatus(`Uploading & Processing ${file.name}...`);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/admin/hero-model', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const payload = await response.json();
+        throw new Error(payload.error || 'Upload failed');
+      }
+      
+      const data = await response.json();
+      
+      // Update the draft with the real storage URL
+      set('modelUrlGlb', data.model.modelUrlGlb);
+      set('modelName', data.model.modelName);
+      setUploadStatus(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Please try again.';
+      setUploadStatus(`Upload failed: ${message}`);
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   return (
     <>
@@ -69,6 +114,86 @@ export default function AdminHeroPage() {
               onChange={(v) => set('showViewer', v)}
               label="Show the 3D model"
               description="The interactive dish preview beside the headline."
+            />
+          </div>
+        </AdminPanel>
+
+        <AdminPanel title="3D MODEL">
+          <div className="flex flex-col gap-5">
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+              Manage the interactive 3D food model shown in the hero section.
+            </p>
+
+            {hero.modelUrlGlb ? (
+              <div className="flex flex-col gap-4">
+                <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>Current model:</p>
+                <div 
+                  style={{ 
+                    border: '1px solid var(--border-subtle)', 
+                    borderRadius: 12, 
+                    overflow: 'hidden',
+                    background: 'var(--bg-surface-2)' 
+                  }}
+                >
+                  <FoodModelViewer 
+                    modelUrlGlb={hero.modelUrlGlb} 
+                    className="w-full h-64" 
+                    autoRotate={true}
+                  />
+                  <div className="p-4" style={{ background: 'var(--bg-surface-1)', borderTop: '1px solid var(--border-subtle)' }}>
+                    <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>{hero.modelName || 'Custom Model'}</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>GLB</p>
+                  </div>
+                </div>
+                <div>
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="d3-btn-secondary"
+                  >
+                    Replace 3D Model
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div 
+                style={{ 
+                  border: '1px dashed var(--border-subtle)', 
+                  borderRadius: 12, 
+                  padding: '2.5rem 1.5rem',
+                  textAlign: 'center',
+                  background: 'var(--bg-surface-1)'
+                }}
+                className="flex flex-col items-center justify-center gap-4"
+              >
+                <p style={{ fontWeight: 500, color: 'var(--text-primary)' }}>No 3D model uploaded yet.</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Upload a 3D food model to display it in the hero section.</p>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="d3-btn-primary"
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  + Upload 3D Model
+                </button>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)', marginTop: '1rem', lineHeight: 1.6 }}>
+                  <p>Supported: GLB • GLTF • OBJ • FBX • STL • PLY • USDZ</p>
+                  <p className="font-medium mt-1" style={{ color: 'var(--gold)' }}>Recommended: GLB</p>
+                </div>
+              </div>
+            )}
+
+            {uploadStatus && (
+              <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-surface-2)', borderRadius: 8, fontSize: '0.8125rem', color: 'var(--gold)' }}>
+                <span className="d3-live-dot" style={{ display: 'inline-block', marginRight: 8, background: 'var(--gold)' }} />
+                {uploadStatus}
+              </div>
+            )}
+
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              className="hidden" 
+              accept=".glb,.gltf,.obj,.fbx,.stl,.ply,.usdz"
+              onChange={handleFileUpload}
             />
           </div>
         </AdminPanel>
@@ -121,6 +246,17 @@ export default function AdminHeroPage() {
               </AdminField>
               <AdminField label="Destination" hint="A site path such as /signup, or a full https:// URL.">
                 <AdminInput value={hero.ctaHref} onChange={(v) => set('ctaHref', v)} placeholder="/signup" />
+                {hero.ctaHref && !/^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i.test(hero.ctaHref) && (
+                  <div className="mt-2 text-[#E7B4AC]" style={{ fontSize: '0.8125rem' }}>
+                    Invalid link<br/>
+                    Please enter a valid URL such as:<br/>
+                    https://example.com<br/>
+                    or<br/>
+                    /menu<br/>
+                    or<br/>
+                    #features
+                  </div>
+                )}
               </AdminField>
             </div>
 
@@ -141,6 +277,17 @@ export default function AdminHeroPage() {
                   onChange={(v) => set('secondaryCtaHref', v)}
                   placeholder="/#how-it-works"
                 />
+                {hero.secondaryCtaHref && !/^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i.test(hero.secondaryCtaHref) && (
+                  <div className="mt-2 text-[#E7B4AC]" style={{ fontSize: '0.8125rem' }}>
+                    Invalid link<br/>
+                    Please enter a valid URL such as:<br/>
+                    https://example.com<br/>
+                    or<br/>
+                    /menu<br/>
+                    or<br/>
+                    #features
+                  </div>
+                )}
               </AdminField>
             </div>
           </div>
@@ -157,6 +304,17 @@ export default function AdminHeroPage() {
                 onChange={(v) => set('imageUrl', v)}
                 placeholder="Leave empty for the current look"
               />
+              {hero.imageUrl && !/^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i.test(hero.imageUrl) && (
+                <div className="mt-2 text-[#E7B4AC]" style={{ fontSize: '0.8125rem' }}>
+                  Invalid link<br/>
+                  Please enter a valid URL such as:<br/>
+                  https://example.com<br/>
+                  or<br/>
+                  /menu<br/>
+                  or<br/>
+                  #features
+                </div>
+              )}
             </AdminField>
 
             <AdminField label="Image description" hint="Read aloud by screen readers. Describe the image.">

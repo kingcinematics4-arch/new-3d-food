@@ -183,7 +183,7 @@ export default function HomeHero({ hero }: { hero: Hero }) {
                     'radial-gradient(ellipse at 50% 45%, rgba(201,169,110,0.07) 0%, transparent 68%)',
                 }}
               >
-                <HeroViewer />
+                <HeroViewer modelUrlGlb={hero.modelUrlGlb} />
               </div>
             </div>
           ) : null}
