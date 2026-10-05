@@ -5,8 +5,8 @@
 // HERO SECTION EDITOR
 //
 // Every visible element of the first screen: headline, supporting copy, both
-// calls to action and their destinations, the hero image, the 3D viewer and
-// the credential strip — plus per-element visibility switches.
+// calls to action and their destinations, the optional background image and the
+// 3D dish demonstration — plus per-element visibility switches.
 
 import React from 'react';
 import { useSiteContent } from '@/components/admin/SiteContentProvider';
@@ -18,7 +18,6 @@ import {
   AdminTextarea,
   AdminToggle,
   AdminNote,
-  AdminEmpty,
 } from '@/components/admin/ui';
 
 export default function AdminHeroPage() {
@@ -60,38 +59,22 @@ export default function AdminHeroPage() {
             />
             <div className="d3-rule" />
             <AdminToggle
-              checked={hero.showEyebrow}
-              onChange={(v) => set('showEyebrow', v)}
-              label="Show the small label above the headline"
-              description="The DINE3D wordmark line."
-            />
-            <AdminToggle
               checked={hero.showSecondaryCta}
               onChange={(v) => set('showSecondaryCta', v)}
               label="Show the second button"
               description="Usually a quieter link such as “See how it works”."
             />
             <AdminToggle
-              checked={hero.showStats}
-              onChange={(v) => set('showStats', v)}
-              label="Show the credential strip"
-              description="The row of short figures beneath the buttons. Leave values blank to show nothing."
-            />
-            <AdminToggle
               checked={hero.showViewer}
               onChange={(v) => set('showViewer', v)}
-              label="Show the 3D viewer panel"
-              description="The interactive model preview beside the headline."
+              label="Show the 3D model"
+              description="The interactive dish preview beside the headline."
             />
           </div>
         </AdminPanel>
 
         <AdminPanel title="Headline and copy">
           <div className="flex flex-col gap-5">
-            <AdminField label="Small label" hint="Short, uppercase. Shown above the headline.">
-              <AdminInput value={hero.eyebrow} onChange={(v) => set('eyebrow', v)} placeholder="DINE3D" />
-            </AdminField>
-
             <AdminField label="Headline" hint="First line. Keep it short — it sets the display size.">
               <AdminInput value={hero.heading} onChange={(v) => set('heading', v)} placeholder="See your meal" />
             </AdminField>
@@ -163,28 +146,8 @@ export default function AdminHeroPage() {
           </div>
         </AdminPanel>
 
-        <AdminPanel
-          title="Viewer panel"
-          description="The card beside the headline that shows the interactive 3D model."
-        >
+        <AdminPanel title="Background image">
           <div className="flex flex-col gap-5">
-            <AdminField label="Panel title">
-              <AdminInput
-                value={hero.viewerTitle}
-                onChange={(v) => set('viewerTitle', v)}
-                placeholder="Upload your own GLB"
-              />
-            </AdminField>
-            <AdminField label="Panel caption">
-              <AdminInput
-                value={hero.viewerCaption}
-                onChange={(v) => set('viewerCaption', v)}
-                placeholder="Menus, prices and 3D models come from your data"
-              />
-            </AdminField>
-
-            <div className="d3-rule" />
-
             <AdminField
               label="Hero image"
               hint="Optional. Leave empty to keep the current background treatment. Accepts a site path or an https URL."
@@ -204,109 +167,6 @@ export default function AdminHeroPage() {
               />
             </AdminField>
           </div>
-        </AdminPanel>
-
-        <AdminPanel
-          title="Credential strip"
-          description="The short figures under the buttons. These are product facts — only fill in what is true."
-          aside={
-            <button
-              type="button"
-              className="d3-btn-inline"
-              onClick={() =>
-                set('stats', [
-                  ...hero.stats,
-                  { id: `stat-${Date.now()}`, value: '', label: '' },
-                ])
-              }
-            >
-              + Add
-            </button>
-          }
-        >
-          {hero.stats.length === 0 ? (
-            <AdminEmpty
-              title="No figures configured"
-              body="Nothing is shown under the buttons right now. Add one only if you have a real fact to state."
-            />
-          ) : (
-            <div className="flex flex-col">
-              {hero.stats.map((stat, index) => (
-                <div
-                  key={stat.id}
-                  className="flex flex-wrap items-end gap-3 py-4"
-                  style={{ borderTop: index === 0 ? 'none' : '1px solid var(--border-warm)' }}
-                >
-                  <AdminField label="Value" className="flex-1" >
-                    <AdminInput
-                      value={stat.value}
-                      onChange={(v) =>
-                        set(
-                          'stats',
-                          hero.stats.map((s) => (s.id === stat.id ? { ...s, value: v } : s))
-                        )
-                      }
-                      placeholder="360°"
-                    />
-                  </AdminField>
-
-                  <AdminField label="Label" className="flex-1">
-                    <AdminInput
-                      value={stat.label}
-                      onChange={(v) =>
-                        set(
-                          'stats',
-                          hero.stats.map((s) => (s.id === stat.id ? { ...s, label: v } : s))
-                        )
-                      }
-                      placeholder="3D MENU VIEWER"
-                    />
-                  </AdminField>
-
-                  <button
-                    type="button"
-                    className="d3-btn-inline"
-                    disabled={index === 0}
-                    onClick={() =>
-                      set('stats', [
-                        ...hero.stats.slice(0, index - 1),
-                        hero.stats[index],
-                        hero.stats[index - 1],
-                      ])
-                    }
-                    style={{ opacity: index === 0 ? 0.35 : 1 }}
-                    aria-label="Move up"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className="d3-btn-inline"
-                    disabled={index === hero.stats.length - 1}
-                    onClick={() =>
-                      set('stats', [
-                        ...hero.stats.slice(0, index),
-                        hero.stats[index + 1],
-                        hero.stats[index],
-                      ])
-                    }
-                    style={{ opacity: index === hero.stats.length - 1 ? 0.35 : 1 }}
-                    aria-label="Move down"
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    className="d3-btn-inline d3-btn-danger"
-                    onClick={() => set('stats', hero.stats.filter((s) => s.id !== stat.id))}
-                    aria-label="Remove"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </AdminPanel>
 
         {!hasContent && hero.enabled ? (

@@ -21,8 +21,6 @@ export default function HomeFaq({ faq }: { faq: Faq }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
           {/* Left */}
           <div className="flex flex-col gap-6">
-            {faq.eyebrow ? <span className="d3-eyebrow">{faq.eyebrow}</span> : null}
-
             <h2 className="d3-display-md">
               {faq.heading}
               {faq.headingAccent ? (

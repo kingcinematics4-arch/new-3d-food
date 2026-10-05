@@ -15,9 +15,8 @@ export default function HomePricing({ pricing }: { pricing: Pricing }) {
     <section id="pricing" className="d3-section" style={{ background: 'var(--bg-secondary)' }}>
       <div className="d3-divider" />
       <div className="d3-container">
-        {(pricing.eyebrow || pricing.heading) && (
-          <div className="text-center mb-16">
-            {pricing.eyebrow ? <span className="d3-eyebrow block mb-4">{pricing.eyebrow}</span> : null}
+        {pricing.heading ? (
+          <div className="text-center" style={{ marginBottom: '3.5rem' }}>
             <h2 className="d3-display-md">
               {pricing.heading}
               {pricing.headingAccent ? (
@@ -31,7 +30,7 @@ export default function HomePricing({ pricing }: { pricing: Pricing }) {
             </h2>
             {pricing.body ? <p className="d3-body mt-6">{pricing.body}</p> : null}
           </div>
-        )}
+        ) : null}
 
         {plans.length === 0 ? (
           <div className="flex flex-col items-center gap-2 text-center" style={{ padding: '4rem 0' }}>
@@ -65,24 +64,7 @@ export default function HomePricing({ pricing }: { pricing: Pricing }) {
                   />
                 )}
 
-                {plan.featured && (
-                  <span
-                    className="d3-badge d3-badge-gold absolute top-4 right-4"
-                    style={{ fontSize: '0.5625rem' }}
-                  >
-                    MOST POPULAR
-                  </span>
-                )}
-
                 <div>
-                  {plan.tagline ? (
-                    <span
-                      className="d3-eyebrow block mb-2"
-                      style={{ color: 'var(--text-dimmed)', fontSize: '0.5625rem' }}
-                    >
-                      {plan.tagline.toUpperCase()}
-                    </span>
-                  ) : null}
                   {plan.name ? (
                     <h3
                       style={{
@@ -95,6 +77,15 @@ export default function HomePricing({ pricing }: { pricing: Pricing }) {
                     >
                       {plan.name}
                     </h3>
+                  ) : null}
+
+                  {/* Who the plan is for, in plain copy. Set as a small muted
+                      sentence rather than an uppercase label: it carries real
+                      information and does not need to shout to be read. */}
+                  {plan.tagline ? (
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.375rem' }}>
+                      {plan.tagline}
+                    </p>
                   ) : null}
                 </div>
 

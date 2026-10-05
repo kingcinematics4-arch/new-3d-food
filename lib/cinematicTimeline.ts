@@ -216,29 +216,3 @@ export const wellOpacity = (progress: number): number =>
 /** The scroll hint retires the instant the visitor acts on it. */
 export const hintOpacity = (progress: number): number =>
   1 - easeOutCubic(span(clamp01(progress), 0.004, 0.03));
-
-/* ============================================================
-   THE CAPTION
-   One quiet word for the beat in progress, the way a film slate names a shot.
-   Deliberately tiny and dim: it must never compete with the logo.
-   ============================================================ */
-
-const CAPTIONS: Array<{ at: number; text: string }> = [
-  { at: 0.04, text: 'The mark' },
-  { at: 0.19, text: 'The plate' },
-  { at: 0.36, text: 'The cloche' },
-  { at: 0.5, text: 'The service' },
-  { at: 0.62, text: 'Dine3D' },
-  { at: 0.8, text: 'The meal' },
-  { at: 0.9, text: 'See it before you order' },
-];
-
-export function captionFor(progress: number): string {
-  const p = clamp01(progress);
-  let text = '';
-  for (const entry of CAPTIONS) {
-    if (p < entry.at) break;
-    text = entry.text;
-  }
-  return text;
-}

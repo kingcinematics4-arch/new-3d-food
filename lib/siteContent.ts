@@ -148,20 +148,10 @@ export type Branding = z.infer<typeof brandingSchema>;
    Every section can be switched off independently.
    ============================================================ */
 
-const heroStatSchema = z.object({
-  id: shortId,
-  value: optionalText(40),
-  label: optionalText(60),
-});
-export type HeroStat = z.infer<typeof heroStatSchema>;
-
 const heroSchema = z.object({
   enabled: z.boolean().default(true),
-  showEyebrow: z.boolean().default(true),
   showSecondaryCta: z.boolean().default(true),
-  showStats: z.boolean().default(true),
   showViewer: z.boolean().default(true),
-  eyebrow: optionalText(60),
   /** First line of the headline. */
   heading: optionalText(120),
   /** Second line, rendered in the accent italic treatment. */
@@ -174,9 +164,6 @@ const heroSchema = z.object({
   secondaryCtaHref: safePath(300),
   imageUrl: safePath(300),
   imageAlt: optionalText(160),
-  viewerTitle: optionalText(80),
-  viewerCaption: optionalText(160),
-  stats: z.array(heroStatSchema).max(6).default([]),
 });
 export type Hero = z.infer<typeof heroSchema>;
 
@@ -199,7 +186,6 @@ const featureSchema = z.object({
   id: shortId,
   enabled: z.boolean().default(true),
   icon: iconName.default('cube'),
-  eyebrow: optionalText(40),
   title: optionalText(80),
   description: optionalText(400),
   imageUrl: safePath(300),
@@ -208,7 +194,6 @@ export type Feature = z.infer<typeof featureSchema>;
 
 const featuresSchema = z.object({
   enabled: z.boolean().default(true),
-  eyebrow: optionalText(60),
   heading: optionalText(140),
   headingAccent: optionalText(140),
   body: optionalText(600),
@@ -232,7 +217,6 @@ export type Plan = z.infer<typeof planSchema>;
 
 const pricingSchema = z.object({
   enabled: z.boolean().default(true),
-  eyebrow: optionalText(60),
   heading: optionalText(140),
   headingAccent: optionalText(140),
   body: optionalText(600),
@@ -250,7 +234,6 @@ export type Step = z.infer<typeof stepSchema>;
 
 const howItWorksSchema = z.object({
   enabled: z.boolean().default(true),
-  eyebrow: optionalText(60),
   heading: optionalText(140),
   headingAccent: optionalText(140),
   body: optionalText(600),
@@ -267,7 +250,6 @@ export type FaqItem = z.infer<typeof faqItemSchema>;
 
 const faqSchema = z.object({
   enabled: z.boolean().default(true),
-  eyebrow: optionalText(60),
   heading: optionalText(140),
   headingAccent: optionalText(140),
   body: optionalText(600),
@@ -428,11 +410,8 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
 
   hero: {
     enabled: true,
-    showEyebrow: true,
     showSecondaryCta: true,
-    showStats: true,
     showViewer: true,
-    eyebrow: 'DINE3D',
     heading: 'See your meal',
     headingAccent: 'before you order.',
     subheading: 'Turn your restaurant menu into an interactive 3D dining experience.',
@@ -443,20 +422,12 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
     secondaryCtaHref: '/#how-it-works',
     imageUrl: '',
     imageAlt: '',
-    viewerTitle: 'Upload your own GLB',
-    viewerCaption: 'Menus, prices and 3D models come from your data',
-    stats: [
-      { id: 'stat-1', value: '360°', label: '3D MENU VIEWER' },
-      { id: 'stat-2', value: 'GLB / USDZ', label: 'YOUR OWN MODELS' },
-      { id: 'stat-3', value: 'No App', label: 'SCAN AND ORDER' },
-    ],
   },
 
   about: { ...emptyEditorial },
 
   features: {
     enabled: true,
-    eyebrow: 'CAPABILITIES',
     heading: 'Crafted for',
     headingAccent: 'modern dining',
     body: 'Everything you need to bring your menu into the physical world — beautifully.',
@@ -465,7 +436,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         id: 'feat-1',
         enabled: true,
         icon: 'cube',
-        eyebrow: 'VISUALIZATION',
         title: 'Photoreal 3D Models',
         description: 'Bring every dish to life with immersive 3D visualization, realistic lighting, materials and presentation.',
         imageUrl: '',
@@ -474,7 +444,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         id: 'feat-2',
         enabled: true,
         icon: 'phone',
-        eyebrow: 'MOBILE',
         title: 'Native AR Experiences',
         description: 'Let guests explore dishes directly from their phones through immersive augmented reality.',
         imageUrl: '',
@@ -483,7 +452,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         id: 'feat-3',
         enabled: true,
         icon: 'qr',
-        eyebrow: 'QR',
         title: 'Instant QR Menus',
         description: 'Give every restaurant a simple QR-powered entry point into the complete Dine3D experience.',
         imageUrl: '',
@@ -492,7 +460,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         id: 'feat-4',
         enabled: true,
         icon: 'chart',
-        eyebrow: 'DATA',
         title: 'Live Analytics',
         description: 'Understand scans, menu interactions, popular dishes and customer engagement in real time.',
         imageUrl: '',
@@ -501,7 +468,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         id: 'feat-5',
         enabled: true,
         icon: 'palette',
-        eyebrow: 'BRANDING',
         title: 'Your Brand, Elevated',
         description: "Customize the experience with your restaurant's logo, colors, menu and brand identity.",
         imageUrl: '',
@@ -510,7 +476,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         id: 'feat-6',
         enabled: true,
         icon: 'bolt',
-        eyebrow: 'PERFORMANCE',
         title: 'Fast Everywhere',
         description: 'Optimized for fast loading, mobile devices and modern web experiences globally.',
         imageUrl: '',
@@ -526,7 +491,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
 
   pricing: {
     enabled: true,
-    eyebrow: 'PRICING',
     heading: 'Simple,',
     headingAccent: 'transparent pricing.',
     body: '',
@@ -586,7 +550,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
 
   howItWorks: {
     enabled: true,
-    eyebrow: 'THE EXPERIENCE',
     heading: 'From QR code',
     headingAccent: 'to table.',
     body: '',
@@ -602,7 +565,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
 
   faq: {
     enabled: true,
-    eyebrow: 'QUESTIONS',
     heading: 'Frequently',
     headingAccent: 'asked.',
     body: "Everything you need to know about Dine3D. Can't find an answer? Contact us.",

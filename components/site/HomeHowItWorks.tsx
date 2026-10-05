@@ -13,9 +13,8 @@ export default function HomeHowItWorks({ howItWorks }: { howItWorks: HowItWorks 
   return (
     <section id="how-it-works" className="d3-section" style={{ background: 'var(--bg-primary)' }}>
       <div className="d3-container">
-        {(howItWorks.eyebrow || howItWorks.heading) && (
-          <div className="mb-20" style={{ maxWidth: 480 }}>
-            {howItWorks.eyebrow ? <span className="d3-eyebrow block mb-4">{howItWorks.eyebrow}</span> : null}
+        {howItWorks.heading ? (
+          <div style={{ maxWidth: 480, marginBottom: '4rem' }}>
             <h2 className="d3-display-md">
               {howItWorks.heading}
               {howItWorks.headingAccent ? (
@@ -29,7 +28,7 @@ export default function HomeHowItWorks({ howItWorks }: { howItWorks: HowItWorks 
             </h2>
             {howItWorks.body ? <p className="d3-body mt-6">{howItWorks.body}</p> : null}
           </div>
-        )}
+        ) : null}
 
         {steps.length === 0 ? (
           <div className="flex flex-col items-center gap-2 text-center" style={{ padding: '4rem 0' }}>
