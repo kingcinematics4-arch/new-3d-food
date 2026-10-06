@@ -4,14 +4,15 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 import { requireOwnedHotelId } from '@/lib/hotelAccess';
 
-const VALID_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'delivered', 'cancelled'] as const;
+const VALID_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'delivered', 'completed', 'cancelled'] as const;
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  pending: ['accepted', 'cancelled'],
+  pending: ['accepted', 'preparing', 'cancelled'],
   accepted: ['preparing', 'cancelled'],
   preparing: ['ready', 'cancelled'],
-  ready: ['delivered', 'cancelled'],
-  delivered: [],
+  ready: ['delivered', 'completed', 'cancelled'],
+  delivered: ['completed', 'cancelled'],
+  completed: [],
   cancelled: [],
 };
 
@@ -35,10 +36,13 @@ export async function POST(request: Request) {
       });
     }
 
-    // Fetch current order to validate transition
+    // Fetch current order to validate transition. Only columns
+    // that have existed since migration 001 are selected:
+    // orders.order_number is absent until migration 008 is
+    // applied, and listing it here would fail the whole query.
     const { data: currentOrder, error: fetchError } = await supabaseAdmin
       .from('orders')
-      .select('id, hotel_id, status, order_number')
+      .select('id, hotel_id, status')
       .eq('id', validated.order_id)
       .single();
 

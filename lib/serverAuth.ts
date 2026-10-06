@@ -57,6 +57,13 @@ export function getServerSupabase() {
   const key = supabasePublishableKey || 'missing-anon-key';
 
   return createServerClient(url, key, {
+    global: {
+      // Session, identity and owner-scoped reads must always be
+      // live: a cached auth/user response could answer for the
+      // wrong session, and cached owner data would go stale.
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: 'no-store' }),
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll().map(({ name, value }) => ({ name, value }));

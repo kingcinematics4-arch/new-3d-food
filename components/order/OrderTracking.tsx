@@ -23,7 +23,7 @@ interface LiveOrder {
   notes: string | null;
   total_amount: number;
   created_at: string;
-  updated_at: string;
+  updated_at?: string | null;
   items: LiveOrderItem[];
 }
 
@@ -98,7 +98,10 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   useEffect(() => {
     if (!order) return;
     const current = (order.status || '').trim().toLowerCase();
-    if (current === 'delivered' || current === 'cancelled') return;
+    // Terminal states: no further kitchen updates are possible,
+    // so polling stops. orders.status stays the only source of
+    // truth while the order is still open.
+    if (current === 'delivered' || current === 'completed' || current === 'cancelled') return;
 
     const timer = setInterval(loadOrder, 2000);
     return () => clearInterval(timer);

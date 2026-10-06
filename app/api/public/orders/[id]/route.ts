@@ -1,18 +1,35 @@
 // app/api/public/orders/[id]/route.ts
-// Guest-facing read model behind /order-status/[orderId].
+// Guest-facing read model behind /order/[orderId].
 //
-// A diner has no session, so this is the only way their order can be followed
-// after checkout. The route accepts EITHER the permanent reference number
-// (DINE-XXXXX) or the raw uuid -- the customer only ever sees the reference
-// number, but keeping the uuid path means existing links keep working.
-// Only the columns a guest may see are selected: the restaurant id, the guest's
-// phone number and internal notes are omitted.
+// A diner has no session, so this is the only way their order can be
+// followed after checkout. The route accepts EITHER the permanent
+// reference number (DINE-XXXXX, only present once migration 008 has
+// been applied) or the raw uuid the create route navigates with --
+// the customer is navigated straight from "Place Order" with the
+// order's permanent id. Only the columns a guest may see are
+// selected: the restaurant id, the guest's phone number and internal
+// notes are omitted.
+//
+// The select list is built from the deployed schema
+// (lib/ordersSchema): orders.updated_at and orders.order_number
+// only exist once migrations 007/008 have been run in the Supabase
+// SQL Editor, and selecting a column that does not exist makes
+// Postgres fail the whole query (42703), which is what previously
+// broke this page entirely.
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getOrdersSchema } from '@/lib/ordersSchema';
+import { orderReference } from '@/lib/orderReference';
 
-function isReferenceNumber(value: string): boolean {
+function isStoredReferenceNumber(value: string): boolean {
   return /^DINE-\d+$/i.test(value);
 }
+
+// This endpoint is polled every 2 seconds by the customer
+// tracking page to follow a live order. It must never be
+// statically rendered or cached: every poll reads the
+// current database row.
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   _request: Request,
@@ -28,19 +45,43 @@ export async function GET(
       });
     }
 
-    // Resolve by the permanent reference number when one was supplied, else by
-    // the raw uuid. Both columns are indexed so either path is fast.
-    const column = isReferenceNumber(orderId) ? 'order_number' : 'id';
+    const schema = await getOrdersSchema();
 
-    const { data: order, error } = await supabaseAdmin
+    // A stored DINE-<digits> reference is resolved against
+    // orders.order_number (indexed, unique). Anything else is the
+    // order's permanent uuid and is resolved against orders.id.
+    const column = schema.orderNumber && isStoredReferenceNumber(orderId)
+      ? 'order_number'
+      : 'id';
+
+    const selectColumns = [
+      'id',
+      'status',
+      'payment_status',
+      'payment_method',
+      'table_number',
+      'customer_name',
+      'customer_phone',
+      'notes',
+      'total_amount',
+      'created_at',
+      ...(schema.orderNumber ? ['order_number'] : []),
+      ...(schema.updatedAt ? ['updated_at'] : []),
+      'order_items (id, menu_item_id, quantity, price_at_time, notes, menu_items (name))',
+    ];
+
+    // The select list is assembled from the detected schema, so
+    // its shape cannot be inferred statically; the row is read
+    // as untyped data below.
+    const { data: rawOrder, error } = await supabaseAdmin
       .from('orders')
-      .select(
-        'id, order_number, status, payment_status, payment_method, table_number, customer_name, total_amount, created_at, updated_at, order_items (id, menu_item_id, quantity, price_at_time, notes, menu_items (name))'
-      )
+      .select(selectColumns.join(', '))
       .eq(column, orderId)
       .maybeSingle();
 
     if (error) throw error;
+
+    const order = rawOrder as any;
 
     if (!order) {
       return new NextResponse(JSON.stringify({ success: false, error: 'We could not find that order' }), {
@@ -58,19 +99,27 @@ export async function GET(
       notes: item.notes,
     }));
 
+    // The reference shown to the customer: the stored order_number
+    // when the database has one, otherwise the stable code derived
+    // from this row's id. It is computed from the stored row, so it
+    // is identical on every refresh.
+    const reference = orderReference(order as { id: string; order_number?: string | null });
+
     return new NextResponse(JSON.stringify({
       success: true,
       order: {
         id: order.id,
-        order_number: order.order_number,
+        order_number: reference,
         status: order.status,
         payment_status: order.payment_status,
         payment_method: order.payment_method,
         table_number: order.table_number,
         customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        notes: order.notes,
         total_amount: order.total_amount,
         created_at: order.created_at,
-        updated_at: order.updated_at,
+        ...(schema.updatedAt ? { updated_at: (order as any).updated_at } : {}),
         items,
       },
     }), {

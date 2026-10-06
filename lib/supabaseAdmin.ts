@@ -53,6 +53,16 @@ export const supabaseAdmin = createClient(
   resolvedUrl,
   supabaseServiceRoleKey || 'missing-service-role-key',
   {
+    global: {
+      // Next.js caches `fetch` GET responses in its Data Cache by
+      // default. A cached database read would silently serve a
+      // stale row (for example an order whose status the kitchen
+      // just changed), so every server-side request made through
+      // this client opts out of the Data Cache and always reads
+      // the live database.
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: 'no-store' }),
+    },
     auth: {
       autoRefreshToken: false,
       persistSession: false,

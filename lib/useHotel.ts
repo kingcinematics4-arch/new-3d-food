@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './authContext';
 
 export interface Hotel {
@@ -190,8 +190,9 @@ export function useOrders(hotelId: string | null) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isInitialLoad = useRef(true);
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (isBackground = false) => {
     if (!hotelId) {
       setOrders([]);
       setLoading(false);
@@ -199,7 +200,9 @@ export function useOrders(hotelId: string | null) {
     }
 
     try {
-      setLoading(true);
+      if (!isBackground) {
+        setLoading(true);
+      }
       const res = await fetch(`/api/orders?hotel_id=${hotelId}`);
       const json = await res.json();
       if (json.success) {
@@ -213,12 +216,20 @@ export function useOrders(hotelId: string | null) {
       setOrders([]);
     } finally {
       setLoading(false);
+      isInitialLoad.current = false;
     }
   }, [hotelId]);
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(false);
   }, [fetchOrders]);
+
+  // Poll for new orders and status changes every 3 seconds (background, no loading spinner)
+  useEffect(() => {
+    if (!hotelId) return;
+    const timer = setInterval(() => fetchOrders(true), 3000);
+    return () => clearInterval(timer);
+  }, [hotelId, fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
@@ -229,7 +240,7 @@ export function useOrders(hotelId: string | null) {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed to update order status');
-      await fetchOrders();
+      await fetchOrders(false);
     } catch (err: any) {
       console.error('Error updating order status:', err);
       throw err;

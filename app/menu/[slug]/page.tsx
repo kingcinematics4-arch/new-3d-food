@@ -448,12 +448,15 @@ function CartDrawer({
       }
 
       // The server assigns the permanent reference number (DINE-XXXXX) via a
-      // database trigger; the create route returns it authoritatively.
-      const orderNumber = json.orderNumber || json.order?.order_number || null;
-      if (!orderNumber) {
-        throw new Error(json.error || 'Order was placed but no reference number was assigned.');
+      // database trigger when migration 008 has been applied; otherwise the
+      // reference is derived from the order's stored row id. Navigation always
+      // uses the order's permanent id, which the tracking page resolves
+      // directly against orders.id on every deployment.
+      const orderId = json.orderId || json.order?.id || null;
+      if (!orderId) {
+        throw new Error(json.error || 'Order was placed but no reference was assigned.');
       }
-      router.push(`/order/${encodeURIComponent(orderNumber)}?slug=${encodeURIComponent(slug)}`);
+      router.push(`/order/${encodeURIComponent(orderId)}?slug=${encodeURIComponent(slug)}`);
     } catch (err: any) {
       setError(err.message || 'We could not send your order. Please try again.');
       setSubmitting(false);
