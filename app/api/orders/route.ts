@@ -19,6 +19,7 @@ export async function GET(request: Request) {
       .from('orders')
       .select(`
         *,
+        order_number,
         order_items (
           id,
           menu_item_id,
@@ -32,18 +33,40 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false });
 
     if (since) {
-      query = query.gte('created_at', since);
+      query = query.gte('updated_at', since);
     }
 
     const { data: orders, error } = await query;
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, orders: orders || [] });
+    // Transform order_items to have menu_item (singular) with name for frontend compatibility
+    const transformedOrders = (orders || []).map((order: any) => ({
+      ...order,
+      order_items: (order.order_items || []).map((item: any) => ({
+        ...item,
+        menu_item: item.menu_items ? { name: item.menu_items.name } : null,
+      })),
+    }));
+
+    return new NextResponse(JSON.stringify({ success: true, orders: transformedOrders }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch orders' },
-      { status: 500 }
-    );
+    return new NextResponse(JSON.stringify({ success: false, error: error.message || 'Failed to fetch orders' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   }
 }

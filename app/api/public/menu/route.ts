@@ -25,10 +25,10 @@ export async function GET(request: Request) {
     const slug = (searchParams.get('slug') || '').trim().toLowerCase();
 
     if (!slug) {
-      return NextResponse.json(
-        { success: false, error: 'A restaurant slug is required' },
-        { status: 400 }
-      );
+      return new NextResponse(JSON.stringify({ success: false, error: 'A restaurant slug is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
     }
 
     const { data: hotel, error: hotelError } = await supabaseAdmin
@@ -41,10 +41,10 @@ export async function GET(request: Request) {
     if (hotelError) throw hotelError;
 
     if (!hotel) {
-      return NextResponse.json(
-        { success: false, error: 'No menu was found for this restaurant' },
-        { status: 404 }
-      );
+      return new NextResponse(JSON.stringify({ success: false, error: 'No menu was found for this restaurant' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
     }
 
     const [categoriesResult, itemsResult] = await Promise.all([
@@ -64,16 +64,29 @@ export async function GET(request: Request) {
     if (categoriesResult.error) throw categoriesResult.error;
     if (itemsResult.error) throw itemsResult.error;
 
-    return NextResponse.json({
+    return new NextResponse(JSON.stringify({
       success: true,
       hotel,
       categories: categoriesResult.data || [],
       menuItems: itemsResult.data || [],
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     });
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to load this menu' },
-      { status: 500 }
-    );
+    return new NextResponse(JSON.stringify({ success: false, error: error.message || 'Failed to load this menu' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   }
 }

@@ -57,6 +57,7 @@ export interface MenuItem {
 
 export interface Order {
   id: string;
+  order_number: string;
   hotel_id: string;
   customer_name: string | null;
   customer_phone: string | null;
@@ -70,6 +71,7 @@ export interface Order {
   service_charge: number;
   total_amount: number;
   created_at: string;
+  updated_at: string;
   order_items?: OrderItem[];
 }
 
