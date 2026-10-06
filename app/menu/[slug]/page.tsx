@@ -447,7 +447,13 @@ function CartDrawer({
         throw new Error(json.error || 'We could not send your order. Please try again.');
       }
 
-      router.push(`/order-status/${json.orderId}?slug=${encodeURIComponent(slug)}`);
+      // The server assigns the permanent reference number (DINE-XXXXX) via a
+      // database trigger; the create route returns it authoritatively.
+      const orderNumber = json.orderNumber || json.order?.order_number || null;
+      if (!orderNumber) {
+        throw new Error(json.error || 'Order was placed but no reference number was assigned.');
+      }
+      router.push(`/order/${encodeURIComponent(orderNumber)}?slug=${encodeURIComponent(slug)}`);
     } catch (err: any) {
       setError(err.message || 'We could not send your order. Please try again.');
       setSubmitting(false);
@@ -676,37 +682,59 @@ function MenuContent({ slug }: { slug: string }) {
   const [inspectItem, setInspectItem] = useState<PublicMenuItem | null>(null);
   const [search, setSearch] = useState('');
 
-  const loadMenu = useCallback(async () => {
+  const loadMenu = useCallback(async (isPolling = false) => {
     try {
-      setLoading(true);
+      if (!isPolling) {
+        setLoading(true);
+      }
       setLoadError(null);
 
       const res = await fetch(`/api/public/menu?slug=${encodeURIComponent(slug)}`);
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        setHotel(null);
-        setMenuItems([]);
-        setCategories([]);
-        setLoadError(json.error || 'This menu is not available right now.');
+        if (!isPolling) {
+          setHotel(null);
+          setMenuItems([]);
+          setCategories([]);
+          setLoadError(json.error || 'This menu is not available right now.');
+        }
         return;
       }
 
-      setHotel(json.hotel as PublicHotel);
+      // Preserve cart state by only updating menu items and categories
+      // Don't reset hotel on polling updates to avoid flickering
+      if (!isPolling) {
+        setHotel(json.hotel as PublicHotel);
+      }
       setMenuItems((json.menuItems || []) as PublicMenuItem[]);
       setCategories((json.categories || []) as PublicCategory[]);
     } catch {
-      setHotel(null);
-      setMenuItems([]);
-      setCategories([]);
-      setLoadError('This menu could not be loaded. Please refresh to try again.');
+      if (!isPolling) {
+        setHotel(null);
+        setMenuItems([]);
+        setCategories([]);
+        setLoadError('This menu could not be loaded. Please refresh to try again.');
+      }
     } finally {
-      setLoading(false);
+      if (!isPolling) {
+        setLoading(false);
+      }
     }
   }, [slug]);
 
+  // Initial load
   useEffect(() => {
-    loadMenu();
+    loadMenu(false);
+  }, [loadMenu]);
+
+  // Polling: refresh menu data every 2 seconds without losing cart state
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadMenu(true);
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, [loadMenu]);
 
   const currency = hotel?.currency ?? null;
