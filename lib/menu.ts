@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const menuItemSchema = z.object({
   id: z.string().optional(),
-  category_id: z.string().optional(),
+  category_id: z.string().uuid().nullable().optional(),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
   price: z.number().positive('Price must be greater than 0'),
