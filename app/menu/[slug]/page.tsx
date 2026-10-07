@@ -178,6 +178,32 @@ function FoodDetailModal({
               {item.is_veg ? 'Veg' : 'Non-veg'}
             </span>
           </div>
+
+          {/* View in 3D button — prominent when 3D model exists */}
+          {has3D && (
+            <button
+              onClick={() => {}}
+              style={{
+                position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '0.5rem 1rem',
+                borderRadius: 100,
+                background: 'rgba(0,0,0,0.8)',
+                border: '1px solid rgba(201,169,110,0.3)',
+                color: 'var(--gold)',
+                fontSize: '0.6875rem', fontWeight: 600,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1L6 11M1 6L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2" />
+              </svg>
+              View in 3D
+            </button>
+          )}
         </div>
 
         {/* Content */}
@@ -685,6 +711,11 @@ function MenuContent({ slug }: { slug: string }) {
   const [inspectItem, setInspectItem] = useState<PublicMenuItem | null>(null);
   const [search, setSearch] = useState('');
 
+  // Open detail modal when any food card is clicked
+  const handleCardClick = useCallback((item: PublicMenuItem) => {
+    setInspectItem(item);
+  }, []);
+
   const loadMenu = useCallback(async (isPolling = false) => {
     try {
       if (!isPolling) {
@@ -992,7 +1023,7 @@ function MenuContent({ slug }: { slug: string }) {
                       cart={cart}
                       onAdd={addToCart}
                       onRemove={removeFromCart}
-                      onInspect={setInspectItem}
+                      onClick={handleCardClick}
                     />
                   ))}
                 </div>
@@ -1015,7 +1046,7 @@ function MenuContent({ slug }: { slug: string }) {
                       cart={cart}
                       onAdd={addToCart}
                       onRemove={removeFromCart}
-                      onInspect={setInspectItem}
+                      onClick={handleCardClick}
                     />
                   ))}
                 </div>
@@ -1040,7 +1071,7 @@ function MenuContent({ slug }: { slug: string }) {
                       cart={cart}
                       onAdd={addToCart}
                       onRemove={removeFromCart}
-                      onInspect={setInspectItem}
+                      onClick={handleCardClick}
                     />
                   ))}
                 </div>
@@ -1147,14 +1178,14 @@ function FoodCard({
   cart,
   onAdd,
   onRemove,
-  onInspect,
+  onClick,
 }: {
   item: PublicMenuItem;
   currency: string | null;
   cart: CartItem[];
   onAdd: (item: PublicMenuItem) => void;
   onRemove: (id: string) => void;
-  onInspect: (item: PublicMenuItem) => void;
+  onClick: (item: PublicMenuItem) => void;
 }) {
   const inCart = cart.find((c) => c.menuItem.id === item.id);
   const has3D = Boolean(item.model_url_glb?.trim());
@@ -1195,24 +1226,22 @@ function FoodCard({
           <NoAssetPanel label="No 3D model" height="12rem" />
         )}
 
-        {/* Inspect button — only meaningful when a model exists */}
+        {/* 3D badge — shows 3D availability on the card */}
         {has3D && (
-          <button
-            onClick={() => onInspect(item)}
+          <span
             style={{
               position: 'absolute', top: 8, right: 8,
-              padding: '0.25rem 0.625rem',
-              borderRadius: 6,
+              padding: '0.1875rem 0.5rem',
+              borderRadius: 4,
               background: 'rgba(0,0,0,0.7)',
               border: '1px solid rgba(201,169,110,0.2)',
               color: 'var(--gold)',
-              fontSize: '0.5625rem', fontWeight: 600,
+              fontSize: '0.5rem', fontWeight: 600,
               letterSpacing: '0.08em', textTransform: 'uppercase',
-              cursor: 'pointer',
             }}
           >
-            Inspect 3D
-          </button>
+            3D
+          </span>
         )}
 
         {/* Badges */}
@@ -1231,7 +1260,7 @@ function FoodCard({
       </div>
 
       {/* Content */}
-      <div className="p-3.5 flex flex-col gap-2.5">
+      <div className="p-3.5 flex flex-col gap-2.5" onClick={() => onClick(item)} style={{ cursor: 'pointer' }}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
