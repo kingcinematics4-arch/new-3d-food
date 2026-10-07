@@ -8,6 +8,7 @@ import Dine3DLogo from '@/components/Dine3DLogo';
 
 // Lazy-load 3D viewer
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
+const Dish3DModal = dynamic(() => import('@/components/menu/Dish3DModal'), { ssr: false });
 
 /* ============================================================
    LIVE TYPES — every field below comes from the database.
@@ -75,12 +76,14 @@ function FoodDetailModal({
   onClose,
   onAddToCart,
   cartQty,
+  onView3D,
 }: {
   item: PublicMenuItem;
   currency: string | null;
   onClose: () => void;
   onAddToCart: (item: PublicMenuItem, qty: number, notes: string) => void;
   cartQty: number;
+  onView3D: (item: PublicMenuItem) => void;
 }) {
   const [qty, setQty] = useState(Math.max(1, cartQty));
   const [notes, setNotes] = useState('');
@@ -107,7 +110,7 @@ function FoodDetailModal({
           boxShadow: '0 -32px 80px rgba(0,0,0,0.8)',
         }}
       >
-        {/* 3D viewer — only when the restaurant actually uploaded a model */}
+        {/* Food image — ALWAYS show photo only, never 3D model in details */}
         <div
           className="relative"
           style={{
@@ -117,22 +120,14 @@ function FoodDetailModal({
             overflow: 'hidden',
           }}
         >
-          {has3D ? (
-            <FoodModelViewer
-              modelUrlGlb={item.model_url_glb ?? undefined}
-              modelUrlUsdz={item.model_url_usdz ?? undefined}
-              altText={item.name}
-              autoRotate
-              className="h-full w-full"
-            />
-          ) : image ? (
+          {image ? (
             <img
               src={image}
               alt={item.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            <NoAssetPanel label="No 3D model" height="100%" />
+            <NoAssetPanel label="No photo" height="100%" />
           )}
 
           {/* Close button */}
@@ -179,10 +174,10 @@ function FoodDetailModal({
             </span>
           </div>
 
-          {/* View in 3D button — prominent when 3D model exists */}
+          {/* View in 3D button — only when 3D model exists */}
           {has3D && (
             <button
-              onClick={() => {}}
+              onClick={() => onView3D(item)}
               style={{
                 position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
                 display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -709,6 +704,7 @@ function MenuContent({ slug }: { slug: string }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [inspectItem, setInspectItem] = useState<PublicMenuItem | null>(null);
+  const [view3DItem, setView3DItem] = useState<PublicMenuItem | null>(null);
   const [search, setSearch] = useState('');
 
   // Open detail modal when any food card is clicked
@@ -1024,6 +1020,7 @@ function MenuContent({ slug }: { slug: string }) {
                       onAdd={addToCart}
                       onRemove={removeFromCart}
                       onClick={handleCardClick}
+                      onView3D={setView3DItem}
                     />
                   ))}
                 </div>
@@ -1047,6 +1044,7 @@ function MenuContent({ slug }: { slug: string }) {
                       onAdd={addToCart}
                       onRemove={removeFromCart}
                       onClick={handleCardClick}
+                      onView3D={setView3DItem}
                     />
                   ))}
                 </div>
@@ -1072,6 +1070,7 @@ function MenuContent({ slug }: { slug: string }) {
                       onAdd={addToCart}
                       onRemove={removeFromCart}
                       onClick={handleCardClick}
+                      onView3D={setView3DItem}
                     />
                   ))}
                 </div>
@@ -1105,6 +1104,17 @@ function MenuContent({ slug }: { slug: string }) {
             });
           }}
           cartQty={cart.find((c) => c.menuItem.id === inspectItem.id)?.quantity || 0}
+          onView3D={setView3DItem}
+        />
+      )}
+
+      {/* 3D Viewer Modal */}
+      {view3DItem && (
+        <Dish3DModal
+          item={view3DItem}
+          priceLabel={formatPrice(Number(view3DItem.price) || 0, currency)}
+          categoryName={categories.find((c) => c.id === view3DItem.category_id)?.name || ''}
+          onClose={() => setView3DItem(null)}
         />
       )}
 
@@ -1179,6 +1189,7 @@ function FoodCard({
   onAdd,
   onRemove,
   onClick,
+  onView3D,
 }: {
   item: PublicMenuItem;
   currency: string | null;
@@ -1186,6 +1197,7 @@ function FoodCard({
   onAdd: (item: PublicMenuItem) => void;
   onRemove: (id: string) => void;
   onClick: (item: PublicMenuItem) => void;
+  onView3D: (item: PublicMenuItem) => void;
 }) {
   const inCart = cart.find((c) => c.menuItem.id === item.id);
   const has3D = Boolean(item.model_url_glb?.trim());
@@ -1369,6 +1381,42 @@ function FoodCard({
             }}
           >
             Add to Order
+          </button>
+        )}
+
+        {/* View in 3D button — separate from card click */}
+        {has3D && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView3D(item);
+            }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              width: '100%', padding: '0.5rem',
+              borderRadius: 5, border: '1px solid rgba(201,169,110,0.3)',
+              background: 'rgba(201,169,110,0.05)',
+              color: 'var(--gold)',
+              fontSize: '0.6875rem', fontWeight: 600,
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              cursor: 'pointer',
+              transition: 'all 200ms',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(201,169,110,0.12)';
+              e.currentTarget.style.borderColor = 'rgba(201,169,110,0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(201,169,110,0.05)';
+              e.currentTarget.style.borderColor = 'rgba(201,169,110,0.3)';
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1L6 11M1 6L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2" />
+            </svg>
+            View in 3D
           </button>
         )}
       </div>

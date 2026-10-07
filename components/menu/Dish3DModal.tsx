@@ -39,8 +39,25 @@ const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'),
   ),
 });
 
+// Type that matches what the customer menu has access to
+interface Dish3DItem {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  image_url: string | null;
+  model_url_glb: string | null;
+  model_url_usdz: string | null;
+  is_veg: boolean;
+  calories: number | null;
+  preparation_time_mins: number | null;
+  dietary_tags: string[] | null;
+  rating: number | null;
+  order_count: number | null;
+}
+
 interface Dish3DModalProps {
-  item: MenuItem | null;
+  item: Dish3DItem | null;
   priceLabel: string;
   categoryName: string;
   onClose: () => void;
