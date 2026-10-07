@@ -1205,17 +1205,9 @@ function FoodCard({
         transition: 'border-color 300ms',
       }}
     >
-      {/* Visual area — a stored model, a stored photo, or an honest empty panel */}
+      {/* Visual area — ALWAYS show food photo only, never 3D model in card */}
       <div className="relative" style={{ background: 'var(--bg-secondary)' }}>
-        {has3D ? (
-          <FoodModelViewer
-            modelUrlGlb={item.model_url_glb ?? undefined}
-            modelUrlUsdz={item.model_url_usdz ?? undefined}
-            altText={item.name}
-            autoRotate
-            className="h-48 w-full"
-          />
-        ) : image ? (
+        {image ? (
           <img
             src={image}
             alt={item.name}
@@ -1223,7 +1215,7 @@ function FoodCard({
             style={{ width: '100%', height: '12rem', objectFit: 'cover', display: 'block' }}
           />
         ) : (
-          <NoAssetPanel label="No 3D model" height="12rem" />
+          <NoAssetPanel label="No photo" height="12rem" />
         )}
 
         {/* 3D badge — shows 3D availability on the card */}
