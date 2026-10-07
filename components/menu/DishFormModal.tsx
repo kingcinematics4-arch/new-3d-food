@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import type { Category, MenuItem } from '@/lib/useHotel';
 import { CubeIcon } from './DishCard';
+import { formatBytes } from '@/lib/foodModel';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), {
   ssr: false,
@@ -33,7 +34,7 @@ export interface DishPayload {
   name: string;
   description: string;
   price: number;
-  category_id: string;
+  category_id: string | null;
   image_url: string;
   model_url_glb: string;
   model_url_usdz: string;
@@ -67,6 +68,11 @@ interface FormState {
   ingredients: string;
   allergens: string;
   dietary_tags: string[];
+  // 3D model upload state
+  modelFile: File | null;
+  modelUploading: boolean;
+  modelUploadProgress: number;
+  modelUploadError: string | null;
 }
 
 function initialState(item: MenuItem | null, categories: Category[]): FormState {
@@ -88,6 +94,10 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
       ingredients: Array.isArray(item.ingredients) ? item.ingredients.join(', ') : '',
       allergens: Array.isArray(item.allergens) ? item.allergens.join(', ') : '',
       dietary_tags: Array.isArray(item.dietary_tags) ? item.dietary_tags : [],
+      modelFile: null,
+      modelUploading: false,
+      modelUploadProgress: 0,
+      modelUploadError: null,
     };
   }
 
@@ -109,6 +119,10 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
     ingredients: '',
     allergens: '',
     dietary_tags: [],
+    modelFile: null,
+    modelUploading: false,
+    modelUploadProgress: 0,
+    modelUploadError: null,
   };
 }
 
@@ -153,6 +167,89 @@ export default function DishFormModal({
         : [...prev.dietary_tags, tag],
     }));
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleModelUpload = async () => {
+    if (!form.modelFile || !item) return;
+
+    setForm((prev) => ({ ...prev, modelUploading: true, modelUploadProgress: 0, modelUploadError: null }));
+
+    try {
+      const formData = new FormData();
+      formData.append('file', form.modelFile);
+      formData.append('menu_item_id', item.id);
+
+      const res = await fetch('/api/menu/3d-model', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      const json = await res.json();
+
+      if (!json.success) {
+        throw new Error(json.error || 'Upload failed');
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        model_url_glb: json.model.mimeType === 'model/gltf-binary' ? json.model.url : prev.model_url_glb,
+        model_url_usdz: json.model.mimeType === 'model/vnd.usdz+zip' ? json.model.url : prev.model_url_usdz,
+        modelFile: null,
+        modelUploading: false,
+        modelUploadProgress: 100,
+      }));
+    } catch (err: any) {
+      setForm((prev) => ({
+        ...prev,
+        modelUploading: false,
+        modelUploadError: err.message || 'Upload failed',
+      }));
+    }
+  };
+
+  const handleFileSelect = (file: File) => {
+    setForm((prev) => ({ ...prev, modelFile: file, modelUploadError: null }));
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const clearModelFile = () => {
+    setForm((prev) => ({ ...prev, modelFile: null, modelUploadError: null }));
+  };
+
+  const removeExistingModel = async () => {
+    if (!item) return;
+    try {
+      await fetch(`/api/menu/3d-model?menu_item_id=${item.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      setForm((prev) => ({
+        ...prev,
+        model_url_glb: '',
+        model_url_usdz: '',
+      }));
+    } catch (err: any) {
+      alert(err.message || 'Failed to remove model');
+    }
+  };
+
   const handleCategoryChange = async (value: string) => {
     if (value !== '__add_new__') {
       set('category', value);
@@ -172,7 +269,12 @@ export default function DishFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const categoryId = categories.find((c) => c.name === form.category)?.id || '';
+    const matchedCategory = categories.find((c) => c.name === form.category);
+    const categoryId = matchedCategory?.id || null;
+
+    if (!matchedCategory && form.category) {
+      throw new Error(`Category "${form.category}" no longer exists. Please select a valid category.`);
+    }
 
     await onSubmit({
       name: form.name.trim(),
@@ -199,6 +301,9 @@ export default function DishFormModal({
   const photoPreview = form.image_url.trim();
   const modelPreview = form.model_url_glb.trim();
   const has3D = Boolean(form.model_url_glb.trim() || form.model_url_usdz.trim());
+
+  // Supported formats for the file input accept attribute
+  const ACCEPTED_3D_FORMATS = '.glb,.gltf,.usdz,.obj,.fbx,.stl,.ply,.3ds,.dae,model/gltf-binary,model/gltf+json,model/vnd.usdz+zip,model/obj';
 
   const checkboxStyle: React.CSSProperties = {
     width: 15,
@@ -495,45 +600,208 @@ export default function DishFormModal({
                 )}
               </div>
 
-              <div>
-                <label className="d3-label" htmlFor="dish-glb">
-                  3D Model URL (GLB)
-                </label>
+              {/* File upload area — drag & drop or choose file */}
+              <div
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                style={{
+                  border: form.modelFile ? '2px dashed var(--gold)' : '2px dashed var(--border-warm)',
+                  borderRadius: 10,
+                  background: form.modelFile ? 'rgba(201,169,110,0.05)' : 'var(--bg-secondary)',
+                  padding: '1.5rem',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 200ms',
+                  position: 'relative',
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <input
-                  id="dish-glb"
-                  type="url"
-                  value={form.model_url_glb}
-                  onChange={(e) => set('model_url_glb', e.target.value)}
-                  placeholder="https://your-cdn.com/dish.glb"
-                  className="d3-input"
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ACCEPTED_3D_FORMATS}
+                  onChange={handleInputChange}
+                  style={{ display: 'none' }}
+                  disabled={form.modelUploading}
                 />
+
+                {form.modelFile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                    <svg
+                      width="32"
+                      height="32"
+                      viewBox="0 0 32 32"
+                      fill="none"
+                      style={{ color: 'var(--gold)' }}
+                      aria-hidden="true"
+                    >
+                      <path d="M16 4L28 12V24L16 32L4 24V12L16 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                      <path d="M16 4V32M4 12L16 20L28 12" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" strokeLinejoin="round" />
+                    </svg>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                        {form.modelFile.name}
+                      </span>
+                      <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
+                        {formatBytes(form.modelFile.size)}
+                      </span>
+                    </div>
+
+                    {form.modelUploading && (
+                      <div style={{ width: '100%', maxWidth: 300, marginTop: 8 }}>
+                        <div
+                          style={{
+                            height: 4,
+                            background: 'var(--bg-surface-2)',
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${form.modelUploadProgress}%`,
+                              height: '100%',
+                              background: 'var(--gold)',
+                              borderRadius: 2,
+                              transition: 'width 300ms',
+                            }}
+                          />
+                        </div>
+                        <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', marginTop: 4 }}>
+                          Uploading... {form.modelUploadProgress}%
+                        </span>
+                      </div>
+                    )}
+
+                    {!form.modelUploading && form.modelUploadError && (
+                      <span style={{ fontSize: '0.6875rem', color: '#FCA5A5' }}>
+                        {form.modelUploadError}
+                      </span>
+                    )}
+
+                    {!form.modelUploading && !form.modelUploadError && (
+                      <button
+                        type="button"
+                        onClick={handleModelUpload}
+                        className="d3-btn-quiet"
+                        style={{ marginTop: 8, padding: '0.5rem 1rem' }}
+                      >
+                        Upload Model
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={clearModelFile}
+                      style={{
+                        marginTop: 8,
+                        padding: '0.375rem 0.75rem',
+                        background: 'transparent',
+                        border: '1px solid var(--border-warm)',
+                        borderRadius: 6,
+                        color: 'var(--text-muted)',
+                        fontSize: '0.6875rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                    <svg
+                      width="40"
+                      height="40"
+                      viewBox="0 0 40 40"
+                      fill="none"
+                      style={{ color: 'var(--text-dimmed)', opacity: 0.5 }}
+                      aria-hidden="true"
+                    >
+                      <path d="M20 8L32 16V28L20 36L8 28V16L20 8Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+                      <path d="M20 8V36M8 16L20 24L32 16" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" strokeLinejoin="round" />
+                    </svg>
+                    <div>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                        Drag & drop a 3D model here
+                      </span>
+                      <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>
+                        or click to browse
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                      GLB, GLTF, USDZ, OBJ, FBX, STL, PLY, 3DS, DAE
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div>
-                <label className="d3-label" htmlFor="dish-usdz">
-                  AR Model URL (USDZ)
-                </label>
-                <input
-                  id="dish-usdz"
-                  type="url"
-                  value={form.model_url_usdz}
-                  onChange={(e) => set('model_url_usdz', e.target.value)}
-                  placeholder="https://your-cdn.com/dish.usdz"
-                  className="d3-input"
-                />
-              </div>
+              {/* Existing model preview + remove option */}
+              {has3D && !form.modelFile && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div
+                      style={{
+                        width: 60,
+                        height: 45,
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        border: '1px solid var(--border-warm)',
+                        background: 'var(--bg-secondary)',
+                        position: 'relative',
+                      }}
+                    >
+                      {modelPreview ? (
+                        <FoodModelViewer
+                          modelUrlGlb={modelPreview}
+                          modelUrlUsdz={form.model_url_usdz.trim() || undefined}
+                          altText={form.name || '3D preview'}
+                          className="h-full w-full"
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', color: 'var(--text-dimmed)' }}>
+                          USDZ
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.6875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                        Current model attached
+                      </span>
+                      <span style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)', display: 'block' }}>
+                        {form.model_url_glb ? 'GLB' : 'USDZ'} · Ready to view
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeExistingModel}
+                    style={{
+                      padding: '0.375rem 0.75rem',
+                      background: 'transparent',
+                      border: '1px solid rgba(200,80,80,0.3)',
+                      borderRadius: 6,
+                      color: '#FCA5A5',
+                      fontSize: '0.6875rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Remove Model
+                  </button>
+                </div>
+              )}
 
               {/* Quick presets */}
               <div className="d3-note">
                 <span>
                   3D is an <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>optional</strong>{' '}
-                  enhancement. Paste a link to a real GLB or USDZ asset to enable it — the
-                  food photograph stays the primary visual either way.
+                  enhancement. Upload a GLB or USDZ for the best 3D viewing experience. Other formats
+                  (OBJ, FBX, STL, PLY, 3DS, DAE) are accepted and stored but will show a placeholder
+                  in the 3D viewer — the food photograph stays the primary visual either way.
                 </span>
               </div>
 
               {/* Preview only when a model is actually attached */}
-              {modelPreview && (
+              {(modelPreview || form.model_url_usdz.trim()) && !form.modelFile && (
                 <div
                   style={{
                     borderRadius: 10,
@@ -543,7 +811,7 @@ export default function DishFormModal({
                   }}
                 >
                   <FoodModelViewer
-                    modelUrlGlb={modelPreview}
+                    modelUrlGlb={modelPreview || undefined}
                     modelUrlUsdz={form.model_url_usdz.trim() || undefined}
                     altText={form.name || '3D preview'}
                     className="h-full w-full"
