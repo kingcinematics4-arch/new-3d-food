@@ -60,9 +60,29 @@ export const ACCEPTED_HERO_IMAGE_LABEL = 'PNG, JPG, WebP, GIF, BMP, TIFF, SVG, A
 export const HERO_IMAGE_FILE_ACCEPT =
   '.png,.jpg,.jpeg,.webp,.gif,.bmp,.tiff,.tif,.svg,.avif,.heic,.heif,.apng,.ico,.cur,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/tiff,image/svg+xml,image/avif,image/heic,image/heif,image/apng,image/x-icon,image/vnd.microsoft.icon';
 
+/**
+ * The public read-only Supabase Storage bucket that holds hero background images.
+ *
+ * Created by migration 005 and broadened to accept every image format by
+ * migration 009. The same bucket also stores the site logo (object names
+ * prefixed `site-logo-…`) and dish photos (under `dish-photos/…`), which is why
+ * hero objects are given their own `hero-bg-` prefix so the three can be told
+ * apart.
+ */
+export const HERO_IMAGE_BUCKET = 'dine3d-branding';
+
+/**
+ * The storage object-name prefix for hero background images.
+ *
+ * Object names look like `hero-bg-<timestamp>-<random>.<ext>`. The prefix matches
+ * the convention documented in `heroImage.server.ts` and is hardcoded in
+ * `buildHeroObjectName` there, so this constant is purely descriptive.
+ */
+export const HERO_IMAGE_PREFIX = 'hero-bg-';
+
 /* ============================================================
-   HELPERS
-   ============================================================ */
+    HELPERS
+    ============================================================ */
 
 export { formatBytes } from './branding';
 import { formatBytes } from './branding';
@@ -95,4 +115,34 @@ export function isAcceptableHeroImageFile(file: File): { ok: true } | { ok: fals
   }
 
   return { ok: true };
+}
+
+/**
+ * True when the URL points at a hero background image this app manages in the
+ * branding bucket.
+ *
+ * The public URL format Supabase generates is
+ * `{supabaseUrl}/storage/v1/object/public/<bucket>/<objectPath>`. Hero objects
+ * are written under names prefixed `hero-bg-` in the shared `dine3d-branding`
+ * bucket, so we check both the bucket and that prefix to distinguish our hero
+ * images from logos (`site-logo-…`) and dish photos (`dish-photos/…`) that
+ * share the same bucket.
+ *
+ * This mirrors the URL shape that `heroImage.server.ts`'s
+ * `deleteManagedHeroImage` parses back into an object path via the
+ * `/storage/v1/object/public/${HERO_IMAGE_BUCKET}/` marker.
+ */
+export function isManagedHeroImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  if (url.startsWith('/')) return false;
+
+  try {
+    const parsed = new URL(url);
+    const marker = `/storage/v1/object/public/${HERO_IMAGE_BUCKET}/`;
+    if (!parsed.pathname.startsWith(marker)) return false;
+    const objectPath = decodeURIComponent(parsed.pathname.slice(marker.length));
+    return objectPath.startsWith(HERO_IMAGE_PREFIX);
+  } catch {
+    return false;
+  }
 }
