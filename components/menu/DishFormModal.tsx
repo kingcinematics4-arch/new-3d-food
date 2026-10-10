@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import type { Category, MenuItem } from '@/lib/useHotel';
 import { CubeIcon } from './DishCard';
 import { formatBytes } from '@/lib/foodModel';
+import MenuImageUploader from './MenuImageUploader';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), {
   ssr: false,
@@ -506,74 +507,13 @@ export default function DishFormModal({
 
             {/* ---------- Photography ---------- */}
             <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
-                  Food Photography
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                <div
-                  style={{
-                    width: 148,
-                    height: 111,
-                    flexShrink: 0,
-                    borderRadius: 10,
-                    overflow: 'hidden',
-                    border: '1px solid var(--border-warm)',
-                    background: 'var(--bg-secondary)',
-                    position: 'relative',
-                  }}
-                >
-                  {photoPreview ? (
-                    <img
-                      src={photoPreview}
-                      alt="Preview"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.5625rem',
-                        letterSpacing: '0.14em',
-                        textTransform: 'uppercase',
-                        color: 'var(--text-dimmed)',
-                      }}
-                    >
-                      No photo
-                    </div>
-                  )}
-                </div>
-                <div style={{ flex: 1, minWidth: 200 }}>
-                  <label className="d3-label" htmlFor="dish-image">
-                    Food Image URL
-                  </label>
-                  <input
-                    id="dish-image"
-                    type="url"
-                    value={form.image_url}
-                    onChange={(e) => set('image_url', e.target.value)}
-                    placeholder="https://your-cdn.com/dish.jpg"
-                    className="d3-input"
-                  />
-                  <p
-                    style={{
-                      margin: '0.5rem 0 0',
-                      fontSize: '0.6875rem',
-                      lineHeight: 1.6,
-                      color: 'var(--text-dimmed)',
-                    }}
-                  >
-                    This photograph is what guests see on your menu. It is the dish&apos;s
-                    primary visual.
-                  </p>
-                </div>
-              </div>
+              <MenuImageUploader
+                value={form.image_url}
+                onChange={(url) => set('image_url', url)}
+                onRemove={() => set('image_url', '')}
+                menuItemId={item?.id || ''}
+                disabled={isSaving}
+              />
             </section>
 
             {/* ---------- 3D Experience (optional) ---------- */}
