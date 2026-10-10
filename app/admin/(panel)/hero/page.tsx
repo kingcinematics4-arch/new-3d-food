@@ -19,6 +19,7 @@ import {
   AdminToggle,
   AdminNote,
 } from '@/components/admin/ui';
+import HeroImageUploader from '@/components/admin/HeroImageUploader';
 import dynamic from 'next/dynamic';
 import { useRef, useState } from 'react';
 
@@ -316,6 +317,10 @@ export default function AdminHeroPage() {
                 </div>
               )}
             </AdminField>
+
+            <div className="d3-rule" />
+
+            <HeroImageUploader />
 
             <AdminField label="Image description" hint="Read aloud by screen readers. Describe the image.">
               <AdminInput
