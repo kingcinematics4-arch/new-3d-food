@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 import { MENU_THEME_IDS, DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 import { setStoredMenuTheme, getStoredMenuTheme } from '@/lib/menuThemeStore.server';
+import { setStoredCustomTheme, getStoredCustomTheme } from '@/lib/customThemeStore.server';
 
 const updateHotelSchema = z.object({
   hotel_id: z.string().min(1, 'hotel_id is required'),
@@ -26,6 +27,7 @@ const updateHotelSchema = z.object({
   tax_rate: z.number().optional(),
   service_charge: z.number().optional(),
   menu_theme: z.enum(MENU_THEME_IDS).optional(),
+  custom_theme_config: z.any().optional(),
 });
 
 export async function PUT(request: Request) {
@@ -35,6 +37,14 @@ export async function PUT(request: Request) {
 
     const { hotel_id, ...updateData } = validated;
 
+    // Always persist theme & custom configuration to the hotel-specific store
+    if (updateData.menu_theme) {
+      await setStoredMenuTheme(hotel_id, updateData.menu_theme);
+    }
+    if (updateData.custom_theme_config) {
+      await setStoredCustomTheme(hotel_id, updateData.custom_theme_config);
+    }
+
     const { data, error } = await supabaseAdmin
       .from('hotels')
       .update(updateData)
@@ -43,45 +53,57 @@ export async function PUT(request: Request) {
       .single();
 
     if (error) {
-      if (
-        updateData.menu_theme &&
-        error.message?.includes('menu_theme')
-      ) {
-        const { menu_theme, ...rest } = updateData;
+      // If error is due to missing columns (menu_theme, custom_theme_config) or check constraint:
+      const { menu_theme, custom_theme_config, ...rest } = updateData;
 
-        if (menu_theme) {
-          await setStoredMenuTheme(hotel_id, menu_theme);
-        }
-
-        if (Object.keys(rest).length > 0) {
-          const { data: retryData, error: retryError } = await supabaseAdmin
-            .from('hotels')
-            .update(rest)
-            .eq('id', hotel_id)
-            .select()
-            .single();
-          if (retryError) throw retryError;
-          const storedTheme = await getStoredMenuTheme(hotel_id);
-          return NextResponse.json({
-            success: true,
-            hotel: { ...retryData, menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME },
-          });
-        }
-        const { data: currentHotel } = await supabaseAdmin
+      if (Object.keys(rest).length > 0) {
+        const { data: retryData } = await supabaseAdmin
           .from('hotels')
-          .select('*')
+          .update(rest)
           .eq('id', hotel_id)
+          .select()
           .single();
+
         const storedTheme = await getStoredMenuTheme(hotel_id);
+        const storedCustomConfig = await getStoredCustomTheme(hotel_id);
+
         return NextResponse.json({
           success: true,
-          hotel: { ...currentHotel, menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME },
+          hotel: {
+            ...retryData,
+            menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME,
+            custom_theme_config: storedCustomConfig || custom_theme_config || null,
+          },
         });
       }
-      throw error;
+
+      const { data: currentHotel } = await supabaseAdmin
+        .from('hotels')
+        .select('*')
+        .eq('id', hotel_id)
+        .single();
+
+      const storedTheme = await getStoredMenuTheme(hotel_id);
+      const storedCustomConfig = await getStoredCustomTheme(hotel_id);
+
+      return NextResponse.json({
+        success: true,
+        hotel: {
+          ...currentHotel,
+          menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME,
+          custom_theme_config: storedCustomConfig || custom_theme_config || null,
+        },
+      });
     }
 
-    return NextResponse.json({ success: true, hotel: data });
+    const storedCustomConfig = await getStoredCustomTheme(hotel_id);
+    return NextResponse.json({
+      success: true,
+      hotel: {
+        ...data,
+        custom_theme_config: data?.custom_theme_config || storedCustomConfig || null,
+      },
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to update hotel settings' },

@@ -27,6 +27,7 @@ export interface Hotel {
   is_active: boolean;
   subscription_plan: string;
   menu_theme: string;
+  custom_theme_config?: import('./customTheme').CustomThemeConfig | null;
   created_at: string;
   updated_at: string;
 }

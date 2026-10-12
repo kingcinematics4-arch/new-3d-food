@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import { getHotelSchema } from './hotelSchema';
 import { getStoredMenuTheme } from './menuThemeStore.server';
+import { getStoredCustomTheme } from './customThemeStore.server';
 import { DEFAULT_MENU_THEME } from './menuThemes';
 
 export const BASE_HOTEL_COLUMNS =
@@ -28,6 +29,7 @@ export interface PublicHotelData {
   service_charge: number | null;
   city: string | null;
   menu_theme: string | null;
+  custom_theme_config?: any | null;
 }
 
 export interface PublicCategoryData {
@@ -103,6 +105,10 @@ export async function fetchPublicMenuData(slug: string): Promise<PublicMenuData>
       hotel.menu_theme = DEFAULT_MENU_THEME;
     }
   }
+
+  // Resolve custom theme configuration per hotel
+  const storedCustomTheme = await getStoredCustomTheme(hotel.id);
+  hotel.custom_theme_config = hotel.custom_theme_config || storedCustomTheme || null;
 
   const [categoriesResult, itemsResult] = await Promise.all([
     supabaseAdmin
