@@ -37,9 +37,6 @@ async function columnExists(column: string): Promise<boolean> {
       .limit(1);
     if (!error) return true;
     if (error.code && MISSING_COLUMN_CODES.has(error.code)) return false;
-    // Unexpected failure (network, permissions): assume absent so the
-    // caller falls back to the migration-001 column set, which always
-    // works, rather than failing every order request.
     console.error(
       `[ordersSchema] probe for orders.${column} failed; treating as absent:`,
       error.message
@@ -54,18 +51,15 @@ async function columnExists(column: string): Promise<boolean> {
   }
 }
 
-let cached: Promise<OrdersSchema> | null = null;
-
 /**
- * Which optional orders columns this deployment has. Cached for the
- * lifetime of the server process.
+ * Which optional orders columns this deployment has. Probes on each call
+ * so a schema change mid-session is always detected — critical because
+ * the module-level cache in earlier versions caused stale results in
+ * long-running dev servers.
  */
-export function getOrdersSchema(): Promise<OrdersSchema> {
-  if (!cached) {
-    cached = (async () => ({
-      orderNumber: await columnExists('order_number'),
-      updatedAt: await columnExists('updated_at'),
-    }))();
-  }
-  return cached;
+export async function getOrdersSchema(): Promise<OrdersSchema> {
+  return {
+    orderNumber: await columnExists('order_number'),
+    updatedAt: await columnExists('updated_at'),
+  };
 }

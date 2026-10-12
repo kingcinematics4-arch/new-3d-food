@@ -26,6 +26,7 @@ export interface Hotel {
   service_charge: number;
   is_active: boolean;
   subscription_plan: string;
+  menu_theme: string;
   created_at: string;
   updated_at: string;
 }
@@ -353,6 +354,7 @@ export function useHotelCustomization(hotelId: string | null) {
     dark_mode: true,
     typography: 'Inter',
     welcome_banner: 'Experience our menu in 3D!',
+    menu_theme: 'classic-luxury',
   });
   const [loading, setLoading] = useState(true);
 
@@ -377,6 +379,7 @@ export function useHotelCustomization(hotelId: string | null) {
           dark_mode: h.dark_mode !== false,
           typography: h.typography || 'Inter',
           welcome_banner: h.welcome_text || 'Experience our menu in 3D!',
+          menu_theme: h.menu_theme || 'classic-luxury',
         });
       }
     } catch (err) {
@@ -393,7 +396,7 @@ export function useHotelCustomization(hotelId: string | null) {
   const saveCustomization = async (data: typeof customization) => {
     if (!hotelId) return;
     try {
-      const res = await fetch('/api/hotel/update', {
+       const res = await fetch('/api/hotel/update', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -406,6 +409,7 @@ export function useHotelCustomization(hotelId: string | null) {
           dark_mode: data.dark_mode,
           typography: data.typography,
           welcome_text: data.welcome_banner,
+          menu_theme: data.menu_theme,
         }),
       });
       const json = await res.json();

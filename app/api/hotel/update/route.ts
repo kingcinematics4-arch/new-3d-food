@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
+import { MENU_THEME_IDS, DEFAULT_MENU_THEME } from '@/lib/menuThemes';
+import { setStoredMenuTheme, getStoredMenuTheme } from '@/lib/menuThemeStore.server';
 
 const updateHotelSchema = z.object({
   hotel_id: z.string().min(1, 'hotel_id is required'),
@@ -23,6 +25,7 @@ const updateHotelSchema = z.object({
   currency: z.string().optional(),
   tax_rate: z.number().optional(),
   service_charge: z.number().optional(),
+  menu_theme: z.enum(MENU_THEME_IDS).optional(),
 });
 
 export async function PUT(request: Request) {
@@ -39,7 +42,44 @@ export async function PUT(request: Request) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (
+        updateData.menu_theme &&
+        error.message?.includes('menu_theme')
+      ) {
+        const { menu_theme, ...rest } = updateData;
+
+        if (menu_theme) {
+          await setStoredMenuTheme(hotel_id, menu_theme);
+        }
+
+        if (Object.keys(rest).length > 0) {
+          const { data: retryData, error: retryError } = await supabaseAdmin
+            .from('hotels')
+            .update(rest)
+            .eq('id', hotel_id)
+            .select()
+            .single();
+          if (retryError) throw retryError;
+          const storedTheme = await getStoredMenuTheme(hotel_id);
+          return NextResponse.json({
+            success: true,
+            hotel: { ...retryData, menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME },
+          });
+        }
+        const { data: currentHotel } = await supabaseAdmin
+          .from('hotels')
+          .select('*')
+          .eq('id', hotel_id)
+          .single();
+        const storedTheme = await getStoredMenuTheme(hotel_id);
+        return NextResponse.json({
+          success: true,
+          hotel: { ...currentHotel, menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME },
+        });
+      }
+      throw error;
+    }
 
     return NextResponse.json({ success: true, hotel: data });
   } catch (error: any) {

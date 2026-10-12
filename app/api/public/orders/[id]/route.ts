@@ -19,6 +19,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getOrdersSchema } from '@/lib/ordersSchema';
+import { getHotelSchema } from '@/lib/hotelSchema';
+import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
+import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 import { orderReference } from '@/lib/orderReference';
 
 function isStoredReferenceNumber(value: string): boolean {
@@ -46,6 +49,7 @@ export async function GET(
     }
 
     const schema = await getOrdersSchema();
+    const hotelSchema = await getHotelSchema();
 
     // A stored DINE-<digits> reference is resolved against
     // orders.order_number (indexed, unique). Anything else is the
@@ -54,6 +58,9 @@ export async function GET(
       ? 'order_number'
       : 'id';
 
+    // The select list is assembled from the detected schema, so its
+    // shape cannot be inferred statically; the row is read as untyped
+    // data below.
     const selectColumns = [
       'id',
       'status',
@@ -65,6 +72,7 @@ export async function GET(
       'notes',
       'total_amount',
       'created_at',
+      `hotels (${hotelSchema.menuTheme ? 'menu_theme, ' : ''}slug)`,
       ...(schema.orderNumber ? ['order_number'] : []),
       ...(schema.updatedAt ? ['updated_at'] : []),
       'order_items (id, menu_item_id, quantity, price_at_time, notes, menu_items (name))',
@@ -121,6 +129,8 @@ export async function GET(
         created_at: order.created_at,
         ...(schema.updatedAt ? { updated_at: (order as any).updated_at } : {}),
         items,
+        hotel_theme: (order as any).hotels?.menu_theme || await getStoredMenuTheme((order as any).hotels?.id) || DEFAULT_MENU_THEME,
+        hotel_slug: (order as any).hotels?.slug || null,
       },
     }), {
       status: 200,

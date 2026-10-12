@@ -269,23 +269,66 @@ export default function CustomizeMenuPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="d3-label" htmlFor="typography">
-                  Typography
-                </label>
-                <select
-                  id="typography"
-                  value={customization.typography}
-                  onChange={(e) => patch({ typography: e.target.value as any })}
-                  className="d3-input"
-                >
-                  {TYPOGRAPHY.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label} — {t.value}
-                    </option>
-                  ))}
-                </select>
-              </div>
+           <div>
+                 <label className="d3-label" htmlFor="typography">
+                   Typography
+                 </label>
+                 <select
+                   id="typography"
+                   value={customization.typography}
+                   onChange={(e) => patch({ typography: e.target.value as any })}
+                   className="d3-input"
+                 >
+                   {TYPOGRAPHY.map((t) => (
+                     <option key={t.value} value={t.value}>
+                       {t.label} — {t.value}
+                     </option>
+                   ))}
+                 </select>
+               </div>
+
+               <div>
+                 <label className="d3-label" htmlFor="menu-theme-link">
+                   Menu Theme
+                 </label>
+                 <div className="flex gap-2">
+                   <select
+                     id="menu-theme-link"
+                     value={customization.menu_theme || 'classic-luxury'}
+                     onChange={(e) => patch({ menu_theme: e.target.value as any })}
+                     className="d3-input flex-1"
+                   >
+                     {[
+                       { value: 'classic-luxury', label: 'Classic Luxury' },
+                       { value: 'modern-dark', label: 'Modern Dark' },
+                       { value: 'fresh-minimal', label: 'Fresh Minimal' },
+                       { value: 'indian-heritage', label: 'Indian Heritage' },
+                       { value: 'contemporary-premium', label: 'Contemporary Premium' },
+                     ].map((t) => (
+                       <option key={t.value} value={t.value}>
+                         {t.label}
+                       </option>
+                     ))}
+                   </select>
+                   <Link
+                     href="/dashboard/menu-theme"
+                     className="d3-btn-ghost"
+                     style={{ padding: '0.4375rem 1rem', fontSize: '0.75rem', flexShrink: 0 }}
+                   >
+                     Theme Gallery
+                   </Link>
+                 </div>
+                 <p
+                   style={{
+                     marginTop: '0.375rem',
+                     fontSize: '0.625rem',
+                     color: 'var(--text-dimmed)',
+                     lineHeight: 1.5,
+                   }}
+                 >
+                   Themes control colours, typography, card shapes, and layout as a complete system.
+                 </p>
+               </div>
             </div>
           </section>
 
