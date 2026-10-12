@@ -1,3 +1,6 @@
+/* Google Fonts Import — must precede @tailwind directives (CSS spec: @import before all other rules) */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,9 +9,6 @@
    DINE3D GLOBAL DESIGN SYSTEM
    Premium Luxury Technology + Fine Dining
    ============================================ */
-
-/* Google Fonts Import */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap');
 
 /* ============================================
    CSS CUSTOM PROPERTIES (DESIGN TOKENS)
@@ -61,6 +61,34 @@
   /* Fixed navbar height. Everything that clears the bar reads this one token,
      so the logo can grow without any surface ending up underneath it. */
   --d3-nav-h: 78px;
+
+  /* ============================================
+     LAYOUT DESIGN TOKENS
+     These control structural properties (radius, spacing,
+     image ratio, container width) so each menu theme can
+     present a genuinely different layout — not just colours.
+     Defaults here match the Classic Luxury theme.
+     ============================================ */
+  --d3-card-radius: 12px;
+  --d3-modal-radius: 16px;
+  --d3-modal-image-radius: 16px 16px 0 0;
+  --d3-input-radius: 6px;
+  --d3-btn-radius: 6px;
+  --d3-badge-radius: 4px;
+  --d3-chip-radius: 5px;
+  --d3-image-height: 12rem;
+  --d3-image-aspect: 4 / 3;
+  --d3-container-max: 720px;
+  --d3-content-gutter: 1rem;
+  --d3-section-gap: 2.5rem;
+  --d3-header-bg: rgba(11,10,8,0.95);
+  --d3-header-border: var(--border-subtle);
+  --d3-nav-bg: rgba(11,10,8,0.92);
+  --d3-nav-border: var(--border-subtle);
+  --d3-price-weight: 500;
+  --d3-shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --d3-shadow-card-hover: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+  --d3-shadow-elevated: 0 1px 3px rgba(0,0,0,0.08);
 }
 
 /* ============================================
@@ -1184,4 +1212,459 @@ img {
     --d3-logo-h: 34px;
     --d3-logo-maxw: 150px;
   }
+}
+
+/* ============================================
+   MENU THEMES
+   Per-theme CSS variable overrides applied via
+   a class on the public menu root element.
+   The colour variables override :root; the
+   layout variables override the tokens added
+   above. Structural differences (header style,
+   category nav, card shape) are expressed via
+   both variables and direct CSS rules.
+   ============================================ */
+
+/* ---- Shared: theme root resets ---- */
+.d3-theme-classic-luxury,
+.d3-theme-modern-dark,
+.d3-theme-fresh-minimal,
+.d3-theme-indian-heritage,
+.d3-theme-contemporary-premium {
+  /* Ensure font-display and font-body resolve per theme */
+  --font-display: var(--theme-font-display, 'Cormorant Garamond', Georgia, serif);
+  --font-body: var(--theme-font-body, 'Inter', system-ui, sans-serif);
+}
+
+/* ---- 1. CLASSIC LUXURY ---- */
+.d3-theme-classic-luxury {
+  --bg-primary: #F4F1EA;
+  --bg-secondary: #F8F5F0;
+  --bg-tertiary: #EAE7E1;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #F4F1EA;
+  --bg-surface-3: #EAE7E1;
+  --bg-elevated: #E0DDD6;
+  --gold: #B8A47A;
+  --gold-bright: #CDB98F;
+  --gold-dim: #6E6350;
+  --gold-pale: #D9CBAB;
+  --gold-deep: #9A8760;
+  --text-primary: #1A1A1A;
+  --text-secondary: #4A4A40;
+  --text-muted: #7B776E;
+  --text-dimmed: #A6A297;
+  --text-gold: #B8A47A;
+  --border-subtle: rgba(184,164,122,0.12);
+  --border-light: rgba(184,164,122,0.20);
+  --border-medium: rgba(184,164,122,0.30);
+  --border-warm: rgba(184,164,122,0.08);
+  --border-solid: #E3DFDA;
+  --theme-font-display: 'Cormorant Garamond', Georgia, serif;
+  --theme-font-body: 'Inter', system-ui, sans-serif;
+  --d3-card-radius: 12px;
+  --d3-modal-radius: 16px;
+  --d3-modal-image-radius: 16px 16px 0 0;
+  --d3-input-radius: 6px;
+  --d3-btn-radius: 6px;
+  --d3-badge-radius: 4px;
+  --d3-chip-radius: 5px;
+  --d3-image-height: 12rem;
+  --d3-image-aspect: 4 / 3;
+  --d3-container-max: 720px;
+  --d3-content-gutter: 1rem;
+  --d3-section-gap: 2.5rem;
+  --d3-header-bg: rgba(11,10,8,0.95);
+  --d3-header-border: var(--border-subtle);
+  --d3-nav-bg: rgba(255,255,255,0.9);
+  --d3-nav-border: var(--border-subtle);
+  --d3-price-weight: 500;
+  --d3-shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --d3-shadow-card-hover: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+  --d3-shadow-elevated: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* Classic Luxury: header is semi-transparent charcoal veil over cream */
+.d3-theme-classic-luxury .d3-header { background: rgba(11,10,8,0.8); }
+
+/* Classic Luxury: category pills are rounded, champagne hairline */
+.d3-theme-classic-luxury .d3-category-pill {
+  border-radius: 9999px;
+  border: 1px solid rgba(184,164,122,0.20);
+  background: rgba(184,164,122,0.05);
+}
+.d3-theme-classic-luxury .d3-category-pill-active {
+  border-color: var(--border-medium);
+  background: rgba(184,164,122,0.08);
+  color: var(--gold-pale);
+}
+
+/* Classic Luxury: price uses serif display font */
+.d3-theme-classic-luxury .d3-price { font-family: var(--font-display); }
+
+/* ---- 2. MODERN DARK ---- */
+.d3-theme-modern-dark {
+  --bg-primary: #0A0A0A;
+  --bg-secondary: #0F0F0F;
+  --bg-tertiary: #121212;
+  --bg-surface: #141414;
+  --bg-surface-2: #1A1A1A;
+  --bg-surface-3: #202020;
+  --bg-elevated: #252525;
+  --gold: #E1C99A;
+  --gold-bright: #F0DCAF;
+  --gold-dim: #8A7C5E;
+  --gold-pale: #F0DCAF;
+  --gold-deep: #B89C5C;
+  --text-primary: #FFFFFF;
+  --text-secondary: #D1D1D1;
+  --text-muted: #A0A0A0;
+  --text-dimmed: #787878;
+  --text-gold: #E1C99A;
+  --border-subtle: rgba(229,229,229,0.06);
+  --border-light: rgba(229,229,229,0.10);
+  --border-medium: rgba(229,229,229,0.18);
+  --border-warm: rgba(229,229,229,0.08);
+  --border-solid: #2A2A2A;
+  --theme-font-display: 'Manrope', system-ui, sans-serif;
+  --theme-font-body: 'Inter', system-ui, sans-serif;
+  --d3-card-radius: 4px;
+  --d3-modal-radius: 0;
+  --d3-modal-image-radius: 0;
+  --d3-input-radius: 0;
+  --d3-btn-radius: 0;
+  --d3-badge-radius: 0;
+  --d3-chip-radius: 0;
+  --d3-image-height: 11rem;
+  --d3-image-aspect: 16 / 9;
+  --d3-container-max: 800px;
+  --d3-content-gutter: 1.25rem;
+  --d3-section-gap: 2rem;
+  --d3-header-bg: rgba(11,10,8,0.98);
+  --d3-header-border: var(--border-subtle);
+  --d3-nav-bg: rgba(11,10,8,0.95);
+  --d3-nav-border: var(--border-subtle);
+  --d3-price-weight: 600;
+  --d3-shadow-card: 0 1px 3px rgba(0,0,0,0.30);
+  --d3-shadow-card-hover: 0 8px 32px rgba(0,0,0,0.50);
+  --d3-shadow-elevated: 0 2px 8px rgba(0,0,0,0.40);
+}
+
+/* Modern Dark: cards have sharp corners and high-contrast borders */
+.d3-theme-modern-dark .d3-food-card {
+  border-radius: 0;
+  border: 1px solid var(--border-light);
+}
+
+/* Modern Dark: header is solid with strong border */
+.d3-theme-modern-dark .d3-header {
+  border-bottom-color: var(--border-medium);
+}
+
+/* Modern Dark: category nav is a thin underline bar */
+.d3-theme-modern-dark .d3-category-nav {
+  border-bottom: 1px solid var(--border-subtle);
+}
+.d3-theme-modern-dark .d3-category-pill {
+  background: transparent;
+  border-radius: 0;
+  border: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  padding: 0.625rem 0;
+  margin: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.d3-theme-modern-dark .d3-category-pill-active {
+  border-bottom-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ---- 3. FRESH MINIMAL ---- */
+.d3-theme-fresh-minimal {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-tertiary: #F5F5F5;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #F7F9F7;
+  --bg-surface-3: #EDF1ED;
+  --bg-elevated: #EAEFF1;
+  --gold: #2E7D32;
+  --gold-bright: #4CAF50;
+  --gold-dim: #6B8E23;
+  --gold-pale: #66BB6A;
+  --gold-deep: #1B5E20;
+  --text-primary: #0A0A0A;
+  --text-secondary: #555555;
+  --text-muted: #7A7A7A;
+  --text-dimmed: #A8A8A8;
+  --text-gold: #2E7D32;
+  --border-subtle: rgba(46,125,50,0.10);
+  --border-light: rgba(46,125,50,0.18);
+  --border-medium: rgba(46,125,50,0.28);
+  --border-warm: rgba(0,0,0,0.06);
+  --border-solid: #E3E3E3;
+  --theme-font-display: 'Inter', system-ui, sans-serif;
+  --theme-font-body: 'Inter', system-ui, sans-serif;
+  --d3-card-radius: 16px;
+  --d3-modal-radius: 16px;
+  --d3-modal-image-radius: 16px 16px 0 0;
+  --d3-input-radius: 12px;
+  --d3-btn-radius: 12px;
+  --d3-badge-radius: 9999px;
+  --d3-chip-radius: 16px;
+  --d3-image-height: 10rem;
+  --d3-image-aspect: 1 / 1;
+  --d3-container-max: 760px;
+  --d3-content-gutter: 1rem;
+  --d3-section-gap: 2rem;
+  --d3-header-bg: rgba(255,255,255,0.95);
+  --d3-header-border: var(--border-subtle);
+  --d3-nav-bg: rgba(255,255,255,0.92);
+  --d3-nav-border: var(--border-subtle);
+  --d3-price-weight: 500;
+  --d3-shadow-card: 0 1px 3px rgba(0,0,0,0.05);
+  --d3-shadow-card-hover: 0 4px 16px rgba(0,0,0,0.08);
+  --d3-shadow-elevated: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Fresh Minimal: cards are pill-shaped with soft shadow */
+.d3-theme-fresh-minimal .d3-food-card {
+  border-radius: var(--d3-card-radius);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Fresh Minimal: category pills are fully rounded */
+.d3-theme-fresh-minimal .d3-category-pill {
+  border-radius: 9999px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-surface);
+  padding: 0.375rem 0.875rem;
+}
+.d3-theme-fresh-minimal .d3-category-pill-active {
+  background: var(--gold);
+  color: #FFFFFF;
+  border-color: var(--gold);
+}
+
+/* Fresh Minimal: header is light with subtle border */
+.d3-theme-fresh-minimal .d3-header {
+  background: var(--d3-header-bg);
+  border-bottom-color: var(--d3-header-border);
+}
+
+/* ---- 4. INDIAN HERITAGE ---- */
+.d3-theme-indian-heritage {
+  --bg-primary: #1D150E;
+  --bg-secondary: #2A2015;
+  --bg-tertiary: #35291C;
+  --bg-surface: #2A2015;
+  --bg-surface-2: #35291C;
+  --bg-surface-3: #3E3223;
+  --bg-elevated: #473B2A;
+  --gold: #C69A6E;
+  --gold-bright: #D4AF7C;
+  --gold-dim: #8B6A42;
+  --gold-pale: #E0C498;
+  --gold-deep: #A37C4F;
+  --text-primary: #E8E1D1;
+  --text-secondary: #C9BAA0;
+  --text-muted: #A69470;
+  --text-dimmed: #806F4D;
+  --text-gold: #C69A6E;
+  --border-subtle: rgba(198,154,110,0.12);
+  --border-light: rgba(198,154,110,0.22);
+  --border-medium: rgba(198,154,110,0.34);
+  --border-warm: rgba(198,154,110,0.10);
+  --border-solid: #5A4630;
+  --theme-font-display: 'Cormorant Garamond', Georgia, serif;
+  --theme-font-body: 'Inter', system-ui, sans-serif;
+  --d3-card-radius: 8px;
+  --d3-modal-radius: 12px;
+  --d3-modal-image-radius: 12px 12px 0 0;
+  --d3-input-radius: 6px;
+  --d3-btn-radius: 6px;
+  --d3-badge-radius: 4px;
+  --d3-chip-radius: 6px;
+  --d3-image-height: 12rem;
+  --d3-image-aspect: 4 / 3;
+  --d3-container-max: 720px;
+  --d3-content-gutter: 1rem;
+  --d3-section-gap: 2.5rem;
+  --d3-header-bg: rgba(29,21,14,0.96);
+  --d3-header-border: rgba(198,154,110,0.18);
+  --d3-nav-bg: rgba(29,21,14,0.94);
+  --d3-nav-border: rgba(198,154,110,0.15);
+  --d3-price-weight: 500;
+  --d3-shadow-card: 0 2px 8px rgba(0,0,0,0.25);
+  --d3-shadow-card-hover: 0 6px 24px rgba(0,0,0,0.40);
+  --d3-shadow-elevated: 0 2px 10px rgba(0,0,0,0.30);
+}
+
+/* Indian Heritage: cards use solid borders with traditional accent */
+.d3-theme-indian-heritage .d3-food-card {
+  border: 1px solid var(--border-light);
+  border-radius: var(--d3-card-radius);
+}
+
+/* Indian Heritage: category nav is boxed with earth-toned background */
+.d3-theme-indian-heritage .d3-category-nav {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.375rem;
+}
+.d3-theme-indian-heritage .d3-category-pill {
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+.d3-theme-indian-heritage .d3-category-pill-active {
+  background: var(--gold);
+  color: #1D150E;
+  border-color: var(--gold);
+}
+
+/* Indian Heritage: header has earthy border */
+.d3-theme-indian-heritage .d3-header {
+  border-bottom-color: var(--d3-header-border);
+}
+
+/* ---- 5. CONTEMPORARY PREMIUM ---- */
+.d3-theme-contemporary-premium {
+  --bg-primary: #F5F3EF;
+  --bg-secondary: #EDEAE3;
+  --bg-tertiary: #E0DED6;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #F7F5EF;
+  --bg-surface-3: #ECEAE1;
+  --bg-elevated: #E0DED6;
+  --gold: #A67C52;
+  --gold-bright: #B8926A;
+  --gold-dim: #7A6042;
+  --gold-pale: #C9AA86;
+  --gold-deep: #8A6B45;
+  --text-primary: #1A1A1A;
+  --text-secondary: #5A5A50;
+  --text-muted: #8C8C7E;
+  --text-dimmed: #AEB0A3;
+  --text-gold: #A67C52;
+  --border-subtle: rgba(166,124,82,0.08);
+  --border-light: rgba(166,124,82,0.16);
+  --border-medium: rgba(166,124,82,0.26);
+  --border-warm: rgba(0,0,0,0.04);
+  --border-solid: #DAD9D1;
+  --theme-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
+  --theme-font-body: 'Inter', system-ui, sans-serif;
+  --d3-card-radius: 0;
+  --d3-modal-radius: 0;
+  --d3-modal-image-radius: 0;
+  --d3-input-radius: 0;
+  --d3-btn-radius: 0;
+  --d3-badge-radius: 0;
+  --d3-chip-radius: 0;
+  --d3-image-height: 14rem;
+  --d3-image-aspect: 16 / 9;
+  --d3-container-max: 960px;
+  --d3-content-gutter: 1.5rem;
+  --d3-section-gap: 3rem;
+  --d3-header-bg: rgba(255,255,255,0.92);
+  --d3-header-border: var(--border-subtle);
+  --d3-nav-bg: rgba(255,255,255,0.9);
+  --d3-nav-border: var(--border-subtle);
+  --d3-price-weight: 600;
+  --d3-shadow-card: 0 1px 3px rgba(0,0,0,0.05);
+  --d3-shadow-card-hover: 0 8px 28px rgba(0,0,0,0.08);
+  --d3-shadow-elevated: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* Contemporary Premium: flat cards with minimal border */
+.d3-theme-contemporary-premium .d3-food-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: 0;
+  box-shadow: none;
+}
+.d3-theme-contemporary-premium .d3-food-card:hover {
+  box-shadow: var(--d3-shadow-card-hover);
+  transform: translateY(-2px);
+  transition: transform 200ms, box-shadow 200ms;
+}
+
+/* Contemporary Premium: category nav underlines on hover */
+.d3-theme-contemporary-premium .d3-category-pill {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  padding: 0.5rem 0;
+}
+.d3-theme-contemporary-premium .d3-category-pill-active {
+  border-bottom-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ============================================
+   SHARED THEME UTILITIES
+   ============================================ */
+
+/* Food cards respect the theme's border-radius token */
+.d3-theme-classic-luxury .d3-food-card,
+.d3-theme-fresh-minimal .d3-food-card {
+  border-radius: var(--d3-card-radius);
+}
+
+.d3-theme-modern-dark .d3-food-card,
+.d3-theme-indian-heritage .d3-food-card,
+.d3-theme-contemporary-premium .d3-food-card {
+  border-radius: var(--d3-card-radius);
+}
+
+/* Food image containers use the theme's aspect ratio */
+.d3-theme-classic-luxury .d3-food-image,
+.d3-theme-modern-dark .d3-food-image,
+.d3-theme-fresh-minimal .d3-food-image,
+.d3-theme-indian-heritage .d3-food-image,
+.d3-theme-contemporary-premium .d3-food-image {
+  aspect-ratio: var(--d3-image-aspect);
+  height: auto;
+}
+
+/* Header respects theme background and border */
+.d3-header {
+  background: var(--d3-header-bg);
+  border-bottom: 1px solid var(--d3-header-border);
+}
+
+/* Category nav base */
+.d3-category-nav {
+  background: transparent;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.d3-category-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3125rem 0.875rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 200ms;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.d3-category-pill-active {
+  color: var(--gold-pale);
+  border-color: var(--border-medium);
+}
+
+/* Price text uses theme weight */
+.d3-price {
+  font-weight: var(--d3-price-weight);
 }

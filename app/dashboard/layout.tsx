@@ -55,6 +55,12 @@ const navIcons: Record<string, React.ReactNode> = {
       <path d="M8 2V4M8 12V14M2 8H4M12 8H14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   ),
+  'Menu Themes': (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M3 6L8 10L13 6" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  ),
   Reviews: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M8 2L9.5 6H14L10.5 8.5L12 12.5L8 10L4 12.5L5.5 8.5L2 6H6.5L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
@@ -75,6 +81,7 @@ const navItems = [
   { label: 'QR Code Builder', href: '/dashboard/qr' },
   { label: 'Analytics', href: '/dashboard/analytics' },
   { label: 'Menu Design', href: '/dashboard/customize' },
+  { label: 'Menu Themes', href: '/dashboard/menu-theme' },
   { label: 'Reviews', href: '/dashboard/reviews' },
   { label: 'Restaurant Profile', href: '/dashboard/settings' },
 ];

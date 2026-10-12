@@ -1,6 +1,8 @@
 // app/api/hotel/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
+import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 
 export async function GET(
   request: Request,
@@ -17,7 +19,13 @@ export async function GET(
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, hotel });
+    const storedTheme = await getStoredMenuTheme(id);
+    const hotelWithTheme = {
+      ...hotel,
+      menu_theme: hotel?.menu_theme || storedTheme || DEFAULT_MENU_THEME,
+    };
+
+    return NextResponse.json({ success: true, hotel: hotelWithTheme });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to fetch hotel' },

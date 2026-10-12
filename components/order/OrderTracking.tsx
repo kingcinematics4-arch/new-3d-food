@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
+import { menuThemeClass } from '@/lib/menuThemes';
 
 interface LiveOrderItem {
   id: string;
@@ -25,6 +26,8 @@ interface LiveOrder {
   created_at: string;
   updated_at?: string | null;
   items: LiveOrderItem[];
+  hotel_theme: string | null;
+  hotel_slug: string | null;
 }
 
 const STAGES = [
@@ -66,7 +69,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const [order, setOrder] = useState<LiveOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const backHref = hotelSlug ? `/menu/${hotelSlug}` : '/';
+  const backHref = hotelSlug || (order?.hotel_slug ?? null) ? `/menu/${hotelSlug || order?.hotel_slug}` : '/';
 
   const loadOrder = useCallback(async () => {
     try {
@@ -113,7 +116,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const isCancelled = status === 'cancelled';
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
+    <div className={`min-h-screen flex flex-col ${menuThemeClass(order?.hotel_theme || undefined)}`} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
       <div className="w-full max-w-md mx-auto px-5 pt-10 pb-8">
         {/* Header */}
         <div className="text-center space-y-3 mb-10">
