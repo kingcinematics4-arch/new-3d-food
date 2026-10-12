@@ -13,7 +13,9 @@ import {
   FreshMinimalTemplate,
   IndianHeritageTemplate,
   ContemporaryPremiumTemplate,
+  CustomTemplate,
 } from '@/components/menu/templates';
+import type { CustomThemeConfig } from '@/lib/customTheme';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 const Dish3DModal = dynamic(() => import('@/components/menu/Dish3DModal'), { ssr: false });
@@ -59,6 +61,7 @@ export interface PublicHotel {
   dark_mode: boolean | null;
   typography: string | null;
   menu_theme: string | null;
+  custom_theme_config?: CustomThemeConfig | null;
   tax_rate: number | null;
   service_charge: number | null;
   city: string | null;
@@ -1107,6 +1110,8 @@ export default function MenuContent({
           };
 
           switch (hotel.menu_theme) {
+            case 'custom':
+              return <CustomTemplate {...commonProps} customConfig={hotel.custom_theme_config} />;
             case 'modern-dark':
               return <ModernDarkTemplate {...commonProps} />;
             case 'fresh-minimal':

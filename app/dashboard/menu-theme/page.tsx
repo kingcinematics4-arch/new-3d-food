@@ -4,30 +4,33 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useHotel } from '@/lib/useHotel';
 import { MENU_THEMES, getMenuTheme, type MenuThemeId, type MenuTheme } from '@/lib/menuThemes';
+import CustomThemeBuilder from '@/components/menu/CustomThemeBuilder';
 
 /* ============================================================
-   MENU THEME SELECTOR
-   Choose one of five built-in menu templates. Each template
-   controls the public customer-facing menu's visuals and
-   layout (background, typography, accent, cards, category
-   nav, buttons, spacing, borders, shadows, header).
+   MENU THEME SELECTOR & BUILDER
+   Choose one of five built-in menu templates OR art-direct
+   a fully personalized Custom Theme with real-time preview.
    ============================================================ */
 
 export default function MenuThemePage() {
-  const { hotel, loading: hotelLoading } = useHotel();
+  const { hotel, loading: hotelLoading, refetch } = useHotel();
   const [selectedTheme, setSelectedTheme] = useState<MenuThemeId | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'gallery' | 'custom'>('gallery');
 
   const currentThemeId = (hotel?.menu_theme as MenuThemeId) || 'classic-luxury';
 
   const handleSelect = (themeId: MenuThemeId) => {
     setSelectedTheme(themeId);
+    if (themeId === 'custom') {
+      setActiveTab('custom');
+    }
   };
 
-  const handleSave = async () => {
-    if (!hotel || !selectedTheme) return;
+  const handleSavePreset = async () => {
+    if (!hotel || !selectedTheme || selectedTheme === 'custom') return;
     setSaving(true);
     setError(null);
 
@@ -47,6 +50,7 @@ export default function MenuThemePage() {
       }
 
       setSavedSuccess(true);
+      if (refetch) refetch();
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to save theme');
@@ -64,7 +68,7 @@ export default function MenuThemePage() {
   }
 
   return (
-    <div className="flex flex-col gap-10" style={{ maxWidth: 1180 }}>
+    <div className="flex flex-col gap-10" style={{ maxWidth: 1240 }}>
       {/* ================= Page header ================= */}
       <header className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5">
         <div>
@@ -82,7 +86,7 @@ export default function MenuThemePage() {
               margin: '0.5rem 0 0',
             }}
           >
-            Menu Themes
+            Menu Themes &amp; Custom Builder
           </h1>
           <p
             style={{
@@ -90,35 +94,69 @@ export default function MenuThemePage() {
               fontSize: '0.875rem',
               lineHeight: 1.6,
               color: 'var(--text-muted)',
-              maxWidth: '54ch',
+              maxWidth: '60ch',
             }}
           >
-            Five hand-crafted templates control the look and layout of your guest-facing menu. Each
-            theme sets colours, typography, card shapes, category navigation, and spacing as a
-            complete system — not just a colour swap.
+            Select from five master templates or build a fully custom brand design.
+            The active design directly powers your public customer-facing menu.
           </p>
         </div>
 
-        {hotel?.slug && (
-          <Link
-            href={`/menu/${hotel.slug}`}
-            target="_blank"
-            className="d3-btn-ghost"
-            style={{ flexShrink: 0 }}
-          >
-            Open Live Menu
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path
-                d="M2.5 9.5L9.5 2.5M4.5 2.5H9.5V7.5"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-        )}
+        <div className="flex items-center gap-3">
+          {hotel?.slug && (
+            <Link
+              href={`/menu/${hotel.slug}`}
+              target="_blank"
+              className="d3-btn-ghost flex items-center gap-2"
+              style={{ flexShrink: 0 }}
+            >
+              <span>Open Live Menu</span>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path
+                  d="M2.5 9.5L9.5 2.5M4.5 2.5H9.5V7.5"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+          )}
+        </div>
       </header>
+
+      {/* Tabs: Template Gallery vs Custom Builder */}
+      <div className="flex border-b border-white/10 gap-6">
+        <button
+          onClick={() => setActiveTab('gallery')}
+          className={`pb-3 text-sm font-semibold tracking-wide border-b-2 transition-all ${
+            activeTab === 'gallery'
+              ? 'border-[#B8A47A] text-[#F3EFE7]'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          Theme Gallery (5 Templates + Custom)
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('custom');
+            setSelectedTheme('custom');
+          }}
+          className={`pb-3 text-sm font-semibold tracking-wide border-b-2 flex items-center gap-2 transition-all ${
+            activeTab === 'custom'
+              ? 'border-[#B8A47A] text-[#F3EFE7]'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <span>Custom Theme Builder</span>
+          {currentThemeId === 'custom' && (
+            <span className="px-2 py-0.5 rounded-full text-[0.625rem] bg-[#B8A47A] text-black font-bold">
+              Active
+            </span>
+          )}
+        </button>
+      </div>
 
       {savedSuccess && (
         <div className="d3-note d3-note-accent">
@@ -126,7 +164,7 @@ export default function MenuThemePage() {
             <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span>
-            Your menu theme has been published. Your guest menu now reflects this template.
+            Your menu theme has been published. Your guest menu now reflects this design.
           </span>
         </div>
       )}
@@ -140,63 +178,88 @@ export default function MenuThemePage() {
         </div>
       )}
 
-      {/* ================= Theme picker ================= */}
-      <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {MENU_THEMES.map((theme) => (
-            <ThemeCard
-              key={theme.id}
-              theme={theme}
-              isSelected={selectedTheme === theme.id || (!selectedTheme && currentThemeId === theme.id)}
-              isActive={currentThemeId === theme.id}
-              onSelect={handleSelect}
-            />
-          ))}
-        </div>
-      </section>
+      {/* ================= TAB 1: THEME GALLERY ================= */}
+      {activeTab === 'gallery' && (
+        <div className="flex flex-col gap-10">
+          <section>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {MENU_THEMES.map((theme) => (
+                <ThemeCard
+                  key={theme.id}
+                  theme={theme}
+                  isSelected={selectedTheme === theme.id || (!selectedTheme && currentThemeId === theme.id)}
+                  isActive={currentThemeId === theme.id}
+                  onSelect={handleSelect}
+                  onOpenStudio={() => {
+                    handleSelect('custom');
+                    setActiveTab('custom');
+                  }}
+                />
+              ))}
+            </div>
+          </section>
 
-      {/* ================= Save bar ================= */}
-      <footer
-        className="d3-panel"
-        style={{
-          padding: '1.25rem 1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          border: '1px solid var(--border-warm)',
-          borderRadius: 'var(--d3-panel-radius, 10px)',
-        }}
-      >
-        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-          {selectedTheme
-            ? `Selected: ${getMenuTheme(selectedTheme).name}`
-            : `Current theme: ${getMenuTheme(currentThemeId).name}`}
-        </div>
+          {/* Save Bar for Preset Themes */}
+          {selectedTheme && selectedTheme !== 'custom' && (
+            <footer
+              className="d3-panel"
+              style={{
+                padding: '1.25rem 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+                border: '1px solid var(--border-warm)',
+                borderRadius: 'var(--d3-panel-radius, 10px)',
+              }}
+            >
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                Selected template: <strong className="text-white">{getMenuTheme(selectedTheme).name}</strong>
+              </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <Link href="/dashboard/customize" className="d3-btn-ghost" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>
-            Back to Design
-          </Link>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button
+                  onClick={handleSavePreset}
+                  disabled={saving || selectedTheme === currentThemeId}
+                  className="d3-btn-primary"
+                  style={{ padding: '0.5625rem 1.25rem', fontSize: '0.8125rem' }}
+                >
+                  {saving ? 'Publishing…' : selectedTheme === currentThemeId ? 'Current Active Theme' : 'Use This Theme'}
+                </button>
+              </div>
+            </footer>
+          )}
 
-          <button
-            onClick={handleSave}
-            disabled={saving || !selectedTheme || selectedTheme === currentThemeId}
-            className="d3-btn-primary"
-            style={{ padding: '0.5625rem 1.25rem', fontSize: '0.8125rem' }}
-          >
-            {saving ? (
-              <>
-                <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.2" />
-                  <path d="M7 2V7L11 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Saving…
-              </>
-            ) : 'Use This Theme'}
-          </button>
+          {/* Quick jump to custom builder banner if custom theme is selected */}
+          {selectedTheme === 'custom' && (
+            <div className="p-6 rounded-2xl bg-neutral-900 border border-[#B8A47A]/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-white mb-1">Custom Theme Selected</h3>
+                <p className="text-xs text-neutral-400">
+                  Open the Custom Theme Builder to configure your background, fonts, card styles, and see live mobile preview.
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveTab('custom')}
+                className="d3-btn-primary px-5 py-2.5 text-xs font-bold whitespace-nowrap"
+              >
+                Open Custom Builder →
+              </button>
+            </div>
+          )}
         </div>
-      </footer>
+      )}
+
+      {/* ================= TAB 2: CUSTOM THEME BUILDER ================= */}
+      {activeTab === 'custom' && hotel && (
+        <CustomThemeBuilder
+          hotel={hotel}
+          initialConfig={hotel.custom_theme_config}
+          onSaved={() => {
+            if (refetch) refetch();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -210,18 +273,22 @@ interface ThemeCardProps {
   isSelected: boolean;
   isActive: boolean;
   onSelect: (id: MenuThemeId) => void;
+  onOpenStudio?: () => void;
 }
 
-function ThemeCard({ theme, isSelected, isActive, onSelect }: ThemeCardProps) {
-  const accent = theme.css['--gold'];
-  const bg = theme.css['--bg-primary'];
-  const text = theme.css['--text-primary'];
-  const cardBg = theme.css['--bg-surface'];
-  const border = theme.css['--border-light'];
+function ThemeCard({ theme, isSelected, isActive, onSelect, onOpenStudio }: ThemeCardProps) {
+  const accent = theme.css['--gold'] || '#E5A93C';
+  const bg = theme.css['--bg-primary'] || '#121212';
+  const text = theme.css['--text-primary'] || '#FFFFFF';
+  const cardBg = theme.css['--bg-surface'] || '#1C1C1E';
+  const border = theme.css['--border-light'] || 'rgba(255,255,255,0.15)';
+
+  const isCustom = theme.id === 'custom';
 
   return (
-    <button
+    <div
       onClick={() => onSelect(theme.id as MenuThemeId)}
+      className="group"
       style={{
         display: 'block',
         width: '100%',
@@ -231,18 +298,7 @@ function ThemeCard({ theme, isSelected, isActive, onSelect }: ThemeCardProps) {
         background: cardBg,
         cursor: 'pointer',
         transition: 'all 200ms',
-      }}
-      onMouseEnter={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.borderColor = 'var(--border-light)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.borderColor = 'var(--border-warm)';
-          e.currentTarget.style.transform = 'translateY(0)';
-        }
+        overflow: 'hidden',
       }}
     >
       {/* Visual preview strip */}
@@ -251,8 +307,6 @@ function ThemeCard({ theme, isSelected, isActive, onSelect }: ThemeCardProps) {
         style={{
           height: 140,
           background: bg,
-          borderTopLeftRadius: 'calc(var(--d3-card-radius) - 1px)',
-          borderTopRightRadius: 'calc(var(--d3-card-radius) - 1px)',
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -288,7 +342,9 @@ function ThemeCard({ theme, isSelected, isActive, onSelect }: ThemeCardProps) {
               ? 'Fresh'
               : theme.id === 'indian-heritage'
               ? 'Heritage'
-              : 'Contemporary'}
+              : theme.id === 'contemporary-premium'
+              ? 'Contemporary'
+              : 'Custom Studio'}
           </div>
           <div
             style={{
@@ -351,102 +407,52 @@ function ThemeCard({ theme, isSelected, isActive, onSelect }: ThemeCardProps) {
           ))}
         </div>
 
-        {/* Active dot */}
+        {/* Active Pill */}
         {isActive && (
-          <div
+          <span
             style={{
               position: 'absolute',
-              top: 8,
-              right: 8,
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: accent,
+              top: 10,
+              right: 10,
+              fontSize: '0.625rem',
+              fontWeight: 600,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              background: 'var(--gold)',
+              color: '#000',
+              padding: '0.125rem 0.5rem',
+              borderRadius: 9999,
             }}
-            aria-label="Active theme"
-          />
-        )}
-
-        {/* Selected ring */}
-        {isSelected && !isActive && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              border: `2px solid ${accent}`,
-              background: 'transparent',
-            }}
-            aria-label="Selected theme"
-          />
+          >
+            Active
+          </span>
         )}
       </div>
 
-      {/* Body */}
-      <div style={{ padding: '1rem 1rem 1.25rem' }}>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '1.125rem',
-            fontWeight: 500,
-            color: text,
-            marginBottom: '0.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          {theme.name}
-          {isActive && (
-            <span
-              style={{
-                fontSize: '0.625rem',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.12em',
-                color: accent,
-              }}
-            >
-              Active
-            </span>
-          )}
-        </div>
-
-        <p
-          style={{
-            fontSize: '0.75rem',
-            lineHeight: 1.5,
-            color: theme.css['--text-muted'],
-            margin: 0,
-            marginBottom: '0.75rem',
-          }}
-        >
+      {/* Card Info footer */}
+      <div className="p-4 flex flex-col justify-between gap-3">
+        <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed">
           {theme.description}
         </p>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            flexWrap: 'wrap',
-            fontSize: '0.625rem',
-            color: theme.css['--text-dimmed'],
-          }}
-        >
-          <span style={{ padding: '0.1875rem 0.5rem', border: `1px solid ${border}`, borderRadius: 'var(--d3-chip-radius)' }}>
-            Cards: {theme.layout.cardVariant}
-          </span>
-          <span style={{ padding: '0.1875rem 0.5rem', border: `1px solid ${border}`, borderRadius: 'var(--d3-chip-radius)' }}>
-            Nav: {theme.layout.categoryNav}
-          </span>
-          <span style={{ padding: '0.1875rem 0.5rem', border: `1px solid ${border}`, borderRadius: 'var(--d3-chip-radius)' }}>
-            Header: {theme.layout.header}
-          </span>
-        </div>
+        {isCustom && (
+          <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+            <span className="text-[0.65rem] font-bold text-[#E5A93C] uppercase tracking-wider">
+              ✦ 11 Custom Controls
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onOpenStudio) onOpenStudio();
+              }}
+              className="text-xs font-bold text-[#E5A93C] hover:underline"
+            >
+              Open Builder →
+            </button>
+          </div>
+        )}
       </div>
-    </button>
+    </div>
   );
 }

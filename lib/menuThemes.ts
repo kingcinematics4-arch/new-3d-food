@@ -16,7 +16,8 @@ export type MenuThemeId =
   | 'modern-dark'
   | 'fresh-minimal'
   | 'indian-heritage'
-  | 'contemporary-premium';
+  | 'contemporary-premium'
+  | 'custom';
 
 /** Tuple of all valid theme IDs — used by Zod enums and CHECK constraints. */
 export const MENU_THEME_IDS: [string, ...string[]] = [
@@ -25,6 +26,7 @@ export const MENU_THEME_IDS: [string, ...string[]] = [
   'fresh-minimal',
   'indian-heritage',
   'contemporary-premium',
+  'custom',
 ];
 
 /** Layout flag — how dish cards are shaped and stacked. */
@@ -282,6 +284,47 @@ const themes: Record<MenuThemeId, MenuTheme> = {
       containerMax: '960px',
       sectionGap: '3rem',
       borderRadius: '0px',
+    },
+  },
+  custom: {
+    id: 'custom',
+    name: 'Custom Theme',
+    label: 'Custom Theme',
+    description:
+      'Fully personalized menu design with bespoke background, typography, colors, and layout tailored to your brand.',
+    css: {
+      '--bg-primary': '#121212',
+      '--bg-secondary': '#1C1C1E',
+      '--bg-tertiary': '#242426',
+      '--bg-surface': '#1C1C1E',
+      '--bg-surface-2': '#242426',
+      '--bg-surface-3': '#2C2C2E',
+      '--bg-elevated': '#38383A',
+      '--gold': '#E5A93C',
+      '--gold-bright': '#F0BC5E',
+      '--gold-dim': '#8F661B',
+      '--gold-pale': '#FADCA0',
+      '--gold-deep': '#B88224',
+      '--text-primary': '#F5F5F7',
+      '--text-secondary': '#D1D1D6',
+      '--text-muted': '#8E8E93',
+      '--text-dimmed': '#636366',
+      '--border-subtle': 'rgba(229,169,60,0.12)',
+      '--border-light': 'rgba(229,169,60,0.22)',
+      '--border-medium': 'rgba(229,169,60,0.35)',
+      '--border-warm': 'rgba(255,255,255,0.08)',
+      '--border-solid': '#38383A',
+      '--font-display': "'Manrope', system-ui, sans-serif",
+      '--font-body': "'Inter', system-ui, sans-serif",
+    },
+    layout: {
+      cardVariant: 'rounded',
+      categoryNav: 'pills',
+      header: 'standard',
+      imageRatio: '16/9',
+      containerMax: '860px',
+      sectionGap: '2rem',
+      borderRadius: '12px',
     },
   },
 };

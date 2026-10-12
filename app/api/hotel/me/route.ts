@@ -8,6 +8,9 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { findHotelOwnedByUser } from '@/lib/hotelAccess';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
+import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
+import { getStoredCustomTheme } from '@/lib/customThemeStore.server';
+import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 
 export async function GET() {
   try {
@@ -35,7 +38,17 @@ export async function GET() {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, hotel });
+    const storedTheme = await getStoredMenuTheme(owned.id);
+    const storedCustomConfig = await getStoredCustomTheme(owned.id);
+
+    return NextResponse.json({
+      success: true,
+      hotel: {
+        ...hotel,
+        menu_theme: hotel?.menu_theme || storedTheme || DEFAULT_MENU_THEME,
+        custom_theme_config: hotel?.custom_theme_config || storedCustomConfig || null,
+      },
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to resolve hotel' },
