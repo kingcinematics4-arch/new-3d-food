@@ -7,6 +7,13 @@ import { formatPrice } from '@/lib/menu';
 import { menuThemeClass } from '@/lib/menuThemes';
 import { MenuThemeProviderContext } from '@/components/menu/MenuThemeProvider';
 import Dine3DLogo from '@/components/Dine3DLogo';
+import {
+  ClassicLuxuryTemplate,
+  ModernDarkTemplate,
+  FreshMinimalTemplate,
+  IndianHeritageTemplate,
+  ContemporaryPremiumTemplate,
+} from '@/components/menu/templates';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 const Dish3DModal = dynamic(() => import('@/components/menu/Dish3DModal'), { ssr: false });
@@ -1074,212 +1081,45 @@ export default function MenuContent({
         className={`min-h-screen ${menuThemeClass(hotel?.menu_theme || undefined)}`}
         style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)', paddingBottom: '6rem' }}
       >
-        <header className="d3-header sticky top-0 z-30">
-          <div
-            className="flex items-center justify-between px-4 py-3"
-            style={{ maxWidth: 'var(--d3-container-max)', margin: '0 auto' }}
-          >
-            <div className="flex items-center gap-2.5">
-              {hotel.logo_url?.trim() ? (
-                <img
-                  src={hotel.logo_url}
-                  alt={hotel.name}
-                  style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 4 }}
-                />
-              ) : (
-                <Dine3DLogo size="xs" href={null} />
-              )}
-              <div>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-                  {hotel.name}
-                </h1>
-                {hotel.city?.trim() ? (
-                  <span style={{ fontSize: '0.6rem', color: 'var(--text-dimmed)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                    {hotel.city}
-                  </span>
-                ) : null}
-              </div>
-            </div>
+        {(() => {
+          const commonProps = {
+            hotel,
+            currency,
+            tableNumber: initialTableNumber,
+            categories,
+            pills,
+            selectedCategory,
+            onSelectCategory: setSelectedCategory,
+            search,
+            onSearchChange: setSearch,
+            filteredItems,
+            featuredItems: featured,
+            popularItems: popular,
+            regularItems: rest,
+            cart,
+            totalCount,
+            totalPrice,
+            onAdd: addToCart,
+            onRemove: removeFromCart,
+            onItemClick: handleCardClick,
+            onView3D: setView3DItem,
+            onOpenCart: () => setIsCartOpen(true),
+          };
 
-            <button
-              onClick={() => setIsCartOpen(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                padding: '0.5rem 0.875rem',
-                borderRadius: 5,
-                background: 'var(--bg-surface)',
-                border: totalCount > 0 ? '1px solid var(--border-medium)' : '1px solid var(--border-warm)',
-                color: totalCount > 0 ? 'var(--gold-pale)' : 'var(--text-muted)',
-                fontWeight: 500, fontSize: '0.75rem',
-                letterSpacing: '0.02em',
-                cursor: 'pointer',
-                transition: 'all 200ms',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M1 1H3L4.5 8.5H10.5L12 3.5H4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="5.5" cy="11.5" r="1" fill="currentColor" />
-                <circle cx="9.5" cy="11.5" r="1" fill="currentColor" />
-              </svg>
-              {totalCount > 0 ? `${totalCount} item${totalCount > 1 ? 's' : ''} · ${formatPrice(totalPrice, currency)}` : 'Order'}
-            </button>
-          </div>
-
-          {menuItems.length > 0 && (
-            <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 1rem 0.625rem' }}>
-              <div className="relative mb-2">
-                <svg
-                  width="14" height="14" viewBox="0 0 14 14" fill="none"
-                  style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dimmed)' }}
-                >
-                  <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2" />
-                  <path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                </svg>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search this menu"
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 0.875rem 0.5rem 2rem',
-                    borderRadius: 'var(--d3-input-radius)',
-                    background: 'var(--bg-surface-2)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.8125rem',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-
-              {pills.length > 1 && (
-                <div className="d3-category-nav flex gap-1.5 overflow-x-auto" style={{ paddingBottom: 2 }}>
-                  {pills.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`d3-category-pill ${selectedCategory === cat ? 'd3-category-pill-active' : ''}`}
-                      style={{
-                        padding: '0.3125rem 0.875rem',
-                        fontSize: '0.6875rem', fontWeight: 500,
-                        letterSpacing: '0.06em',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        transition: 'all 200ms',
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </header>
-
-        <main style={{ maxWidth: 'var(--d3-container-max)', margin: '0 auto', padding: '1.5rem 1rem' }}>
-          {hotel.welcome_text?.trim() && menuItems.length > 0 ? (
-            <p
-              style={{
-                margin: '0 0 1.75rem',
-                fontSize: '0.8125rem',
-                lineHeight: 1.7,
-                color: 'var(--text-muted)',
-                textAlign: 'center',
-              }}
-            >
-              {hotel.welcome_text}
-            </p>
-          ) : null}
-
-          {menuItems.length === 0 ? (
-            <MenuEmptyState hasSearch={Boolean(search.trim())} />
-          ) : (
-            <>
-              {featured.length > 0 && (
-                <section className="mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>CHEF'S FEATURED</span>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {featured.map((item) => (
-                      <FoodCard
-                        key={item.id}
-                        item={item}
-                        currency={currency}
-                        cart={cart}
-                        onAdd={addToCart}
-                        onRemove={removeFromCart}
-                        onClick={handleCardClick}
-                        onView3D={setView3DItem}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {popular.length > 0 && (
-                <section className="mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>MOST POPULAR</span>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {popular.map((item) => (
-                      <FoodCard
-                        key={item.id}
-                        item={item}
-                        currency={currency}
-                        cart={cart}
-                        onAdd={addToCart}
-                        onRemove={removeFromCart}
-                        onClick={handleCardClick}
-                        onView3D={setView3DItem}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {rest.length > 0 && (
-                <section>
-                  {(featured.length > 0 || popular.length > 0) && (
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>ALL DISHES</span>
-                      <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {rest.map((item) => (
-                      <FoodCard
-                        key={item.id}
-                        item={item}
-                        currency={currency}
-                        cart={cart}
-                        onAdd={addToCart}
-                        onRemove={removeFromCart}
-                        onClick={handleCardClick}
-                        onView3D={setView3DItem}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {filteredItems.length === 0 && (
-                <div className="py-20 text-center flex flex-col items-center gap-4">
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ color: 'var(--text-dimmed)', opacity: 0.4 }} aria-hidden="true">
-                    <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M16 24C16 19.6 19.6 16 24 16C28.4 16 32 19.6 32 24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>No dishes found</p>
-                </div>
-              )}
-            </>
-          )}
-        </main>
+          switch (hotel.menu_theme) {
+            case 'modern-dark':
+              return <ModernDarkTemplate {...commonProps} />;
+            case 'fresh-minimal':
+              return <FreshMinimalTemplate {...commonProps} />;
+            case 'indian-heritage':
+              return <IndianHeritageTemplate {...commonProps} />;
+            case 'contemporary-premium':
+              return <ContemporaryPremiumTemplate {...commonProps} />;
+            case 'classic-luxury':
+            default:
+              return <ClassicLuxuryTemplate {...commonProps} />;
+          }
+        })()}
 
         {inspectItem && (
           <FoodDetailModal
