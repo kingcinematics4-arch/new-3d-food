@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [resendStatus, setResendStatus] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [showPw, setShowPw] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   // Ref guards so a double click cannot fire duplicate requests. The resend
   // endpoint sends a real email, so it must be entered exactly once per click.
@@ -75,6 +77,29 @@ export default function LoginPage() {
     } finally {
       resendInFlight.current = false;
       setResending(false);
+    }
+  }, [email]);
+
+  // Sends a Supabase password-reset email. Called only by the "Forgot password?"
+  // button which lives OUTSIDE the <form> so it can never interfere with the
+  // browser's implicit form submission algorithm (Enter key in any input).
+  const handleForgotPassword = useCallback(async () => {
+    if (!email) {
+      setError('Enter your email address above, then click "Forgot password?".');
+      return;
+    }
+    setResetSending(true);
+    setError(null);
+    try {
+      const { error: resetError } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+      });
+      if (resetError) throw resetError;
+      setResetSent(true);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send password reset email.');
+    } finally {
+      setResetSending(false);
     }
   }, [email]);
 
@@ -305,17 +330,11 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Password */}
+            {/* Password — the "Forgot password?" button has been moved OUTSIDE
+                the <form> element (see below) so it is never a candidate for
+                the browser's implicit form-submission algorithm. */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="d3-label" style={{ margin: 0 }}>Password</label>
-                <button
-                  type="button"
-                  style={{ background: 'none', border: 'none', color: 'var(--text-dimmed)', fontSize: '0.75rem', cursor: 'pointer' }}
-                >
-                  Forgot password?
-                </button>
-              </div>
+              <label className="d3-label" style={{ marginBottom: '0.5rem', display: 'block' }}>Password</label>
               <div className="relative">
                 <input
                   type={showPw ? 'text' : 'password'}
@@ -378,6 +397,33 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Forgot password — deliberately outside the <form> so it is never
+              reachable by the form's implicit Enter-key submission path.
+              type="button" is also explicit as a belt-and-suspenders guard. */}
+          <div style={{ textAlign: 'right', marginTop: '0.625rem' }}>
+            {resetSent ? (
+              <span style={{ color: 'var(--gold)', fontSize: '0.75rem' }}>
+                Reset link sent — check your inbox.
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetSending}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-dimmed)',
+                  fontSize: '0.75rem',
+                  cursor: resetSending ? 'not-allowed' : 'pointer',
+                  padding: 0,
+                }}
+              >
+                {resetSending ? 'Sending reset link…' : 'Forgot password?'}
+              </button>
+            )}
+          </div>
 
            {/* Divider */}
            <div className="flex items-center gap-4 my-6">
