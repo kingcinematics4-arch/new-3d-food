@@ -10,14 +10,25 @@ import { formatPrice } from '@/lib/menu';
 
 const normalise = (status: string) => (status || '').trim().toLowerCase();
 
+/* Customer-facing labels that match the 5-stage tracker shown to diners. */
+const STATUS_LABEL: Record<string, string> = {
+  pending:   'Order Placed',
+  placed:    'Order Placed',
+  accepted:  'Accepted',
+  preparing: 'Preparing',
+  ready:     'Ready',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
 /* Statuses read as one monochrome family — only the newest
    order carries the champagne accent. */
 const STATUS_CLASS: Record<string, string> = {
-  placed: 'd3-status-placed',
-  pending: 'd3-status-placed',
-  accepted: 'd3-status-accepted',
+  placed:    'd3-status-placed',
+  pending:   'd3-status-placed',
+  accepted:  'd3-status-accepted',
   preparing: 'd3-status-preparing',
-  ready: 'd3-status-ready',
+  ready:     'd3-status-ready',
   completed: 'd3-status-completed',
   cancelled: 'd3-status-cancelled',
 };
@@ -26,7 +37,7 @@ function StatusBadge({ status }: { status: string }) {
   const key = normalise(status);
   return (
     <span className={`d3-badge ${STATUS_CLASS[key] || STATUS_CLASS.cancelled}`}>
-      {key || 'unknown'}
+      {STATUS_LABEL[key] || key || 'unknown'}
     </span>
   );
 }
@@ -35,7 +46,7 @@ function getMinutesAgo(dateStr: string) {
   return Math.max(1, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
 }
 
-const TABS = ['all', 'pending', 'preparing', 'ready', 'completed', 'cancelled'];
+const TABS = ['all', 'pending', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
 
 export default function LiveOrdersPage() {
   const { hotel, loading: hotelLoading } = useHotel();
@@ -313,13 +324,24 @@ export default function LiveOrdersPage() {
                   </span>
                 </div>
 
-                {/* Actions */}
-                <div className="flex flex-col gap-8" style={{ gap: 8 }}>
+                {/* Actions — mirror the 5-stage flow shown to customers:
+                     pending → accepted → preparing → ready → completed      */}
+                <div className="flex flex-col" style={{ gap: 8 }}>
                   {normalise(order.status) === 'pending' && (
                     <button
                       type="button"
-                      onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                      onClick={() => handleUpdateStatus(order.id, 'accepted')}
                       className="d3-btn-primary"
+                      style={{ flex: 1 }}
+                    >
+                      Accept Order
+                    </button>
+                  )}
+                  {(normalise(order.status) === 'accepted' || normalise(order.status) === 'pending') && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                      className={normalise(order.status) === 'accepted' ? 'd3-btn-primary' : 'd3-btn-quiet'}
                       style={{ flex: 1 }}
                     >
                       Start Preparing
@@ -342,7 +364,7 @@ export default function LiveOrdersPage() {
                       className="d3-btn-quiet"
                       style={{ flex: 1 }}
                     >
-                      Complete
+                      Complete Order
                     </button>
                   )}
                   {!['completed', 'cancelled'].includes(normalise(order.status)) && (
