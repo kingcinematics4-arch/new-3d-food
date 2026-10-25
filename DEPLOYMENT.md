@@ -54,15 +54,58 @@ Visit `http://localhost:3000` to view the SaaS landing page, register a test res
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project-id.supabase.co` | Production, Preview, Development |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` *(or `NEXT_PUBLIC_SUPABASE_ANON_KEY`)* | `your-anon-key` | Production, Preview, Development |
 | `SUPABASE_SERVICE_ROLE_KEY` | `your-service-role-key` | Production (Secret) |
-| `NEXT_PUBLIC_SITE_URL` | `https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app` | Production |
+| `NEXT_PUBLIC_SITE_URL` | `https://new-3d-food.vercel.app` | Production |
 
-> `NEXT_PUBLIC_SITE_URL` pins the base URL used inside Supabase confirmation
-> emails. If it is not set, the app falls back to the Vercel deployment URL
-> variables and finally to the hardcoded production URL - it never emits
-> `localhost` on Vercel. Leave it unset locally so `http://localhost:3000`
-> keeps working during development.
+> `NEXT_PUBLIC_SITE_URL` must be the **stable production alias**
+> (`https://new-3d-food.vercel.app`) or a custom domain ? never an ephemeral
+> deployment URL like `new-3d-food-<hash>-?.vercel.app`. Those hash URLs are
+> behind Vercel Deployment Protection (SSO) for non-team visitors and cause
+> Chrome's "password may be compromised / deceptive site" warning when
+> credentials are entered there.
+>
+> If unset, the app falls back to Vercel production URL env vars and finally
+> to `https://new-3d-food.vercel.app` ? it never emits `localhost` on Vercel.
+> Leave it unset locally so `http://localhost:3000` keeps working in `next dev`.
 
 4. Click **Deploy**. Vercel will build and deploy your single full-stack application.
+
+5. **Share only the stable URL with users:** `https://new-3d-food.vercel.app`
+   (or your custom domain). Do not share Deployment ? Visit links that look like
+   `new-3d-food-hfducz6u9-?.vercel.app`.
+
+6. **Deployment Protection (required check):** Vercel ? Project ? **Settings** ?
+   **Deployment Protection**. Use **Standard Protection** so previews / auto-
+   generated hash URLs stay gated, but the production alias stays public. If
+   scope is **All Deployments**, even `new-3d-food.vercel.app` will show
+   Vercel SSO instead of DinePixel login.
+
+---
+
+## Chrome "password may be compromised / deceptive site" warning
+
+This is **Chrome Password Protection** (Safe Browsing phishing / deceptive-site
+detection when a password is typed), **not** a bug in the DinePixel login form
+and **not** a leaked-password "Have I Been Pwned" toast.
+
+**Evidence already verified against production:**
+
+| URL | Behaviour |
+|---|---|
+| `https://new-3d-food-<hash>-?.vercel.app` | HTTP **302** ? `https://vercel.com/sso-api??` with `_vercel_sso_nonce`. Page title can be **Login - Vercel**. |
+| `https://new-3d-food.vercel.app` | HTTP **200**, title **Dine3D**, no SSO redirect. Login POSTs to same-origin `/api/auth/login` ? Supabase `signInWithPassword` over HTTPS. |
+
+**Owner actions (cannot be fixed by redesigning `/login`):**
+
+1. Use / advertise only `https://new-3d-food.vercel.app` (or a custom domain).
+2. Set Vercel env `NEXT_PUBLIC_SITE_URL=https://new-3d-food.vercel.app` and **redeploy**.
+3. Set Supabase **Site URL** + redirect allow-list to the same stable origin (Step 4).
+4. Confirm Deployment Protection is **Standard Protection**, not All Deployments.
+5. Check Safe Browsing status:
+   https://transparencyreport.google.com/safe-browsing/search?url=https://new-3d-food.vercel.app
+   and the hash URL you were sharing. If either is flagged and you believe it is a
+   false positive, request review at
+   https://safebrowsing.google.com/safebrowsing/report_error/
+6. Optional: attach a custom domain (Step 5) ? best long-term reputation for login.
 
 ---
 
@@ -72,15 +115,16 @@ In your [Supabase Project Dashboard](https://supabase.com/dashboard):
 1. Navigate to **Authentication** ➔ **URL Configuration**.
 2. Set **Site URL** to:
    ```text
-   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app
+   https://new-3d-food.vercel.app
    ```
    > The Site URL is the fallback Supabase uses whenever a supplied
    > `emailRedirectTo` is not allow-listed. If this still says
    > `http://localhost:3000`, every confirmation link will point at localhost.
+   > Never set Site URL to an ephemeral `*-<hash>-*.vercel.app` deployment.
 3. Under **Redirect URLs**, add exactly these:
    ```text
-   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/auth/callback
-   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/**
+   https://new-3d-food.vercel.app/auth/callback
+   https://new-3d-food.vercel.app/**
    https://*-kingcinematics4-7720s-projects.vercel.app/**
    http://localhost:3000/**
    ```
@@ -95,9 +139,9 @@ In your [Supabase Project Dashboard](https://supabase.com/dashboard):
 ```text
 User clicks "Confirm Email"
   -> Supabase confirms the address
-  -> redirects to  https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/auth/callback?token_hash=...&type=signup
+  -> redirects to  https://new-3d-food.vercel.app/auth/callback?token_hash=...&type=signup
   -> /auth/callback exchanges the token for a session and sets the session cookies
-  -> redirects to  https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/dashboard
+  -> redirects to  https://new-3d-food.vercel.app/dashboard
 ```
 
 ---
