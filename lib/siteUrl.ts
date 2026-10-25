@@ -10,8 +10,10 @@
 // configuration, never from an untrusted request host, while still supporting
 // http://localhost:3000 during local development.
 
-export const DEFAULT_PRODUCTION_URL =
-  'https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app';
+// Stable production alias only — never an ephemeral `*-<hash>-*.vercel.app`
+// deployment URL. Those URLs are behind Vercel Deployment Protection (SSO) and
+// trigger Chrome "deceptive site" password warnings when credentials are entered.
+export const DEFAULT_PRODUCTION_URL = 'https://new-3d-food.vercel.app';
 
 /** Canonical production origin used for every emailed confirmation link. */
 export const PRODUCTION_SITE_URL = DEFAULT_PRODUCTION_URL;
@@ -165,7 +167,7 @@ export function getSiteUrl(request?: Request): string {
  * destination itself and defaults to /dashboard.
  *
  * Production value:
- *   https://new-3d-food-jz4ddpgn2-kingcinematics4-7720s-projects.vercel.app/auth/callback
+ *   https://new-3d-food.vercel.app/auth/callback
  */
 export function getAuthCallbackUrl(_request?: Request): string {
   return `${getPublicSiteUrl(_request)}/auth/callback`;
