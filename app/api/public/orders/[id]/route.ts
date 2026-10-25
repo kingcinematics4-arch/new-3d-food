@@ -72,7 +72,7 @@ export async function GET(
       'notes',
       'total_amount',
       'created_at',
-      `hotels (${hotelSchema.menuTheme ? 'menu_theme, ' : ''}slug)`,
+      `hotels (id, ${hotelSchema.menuTheme ? 'menu_theme, ' : ''}slug)`,
       ...(schema.orderNumber ? ['order_number'] : []),
       ...(schema.updatedAt ? ['updated_at'] : []),
       'order_items (id, menu_item_id, quantity, price_at_time, notes, menu_items (name))',
