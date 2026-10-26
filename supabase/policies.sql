@@ -144,10 +144,55 @@ CREATE POLICY "qr_codes_select" ON public.qr_codes
                 WHERE h.id = qr_codes.hotel_id AND h.user_id = auth.uid())
   );
 
-DROP POLICY IF EXISTS "qr_codes_manage" ON public.qr_codes;
-CREATE POLICY "qr_codes_manage" ON public.qr_codes
-  FOR ALL USING (
+-- ----------------------------------------------------
+-- 6. SAVED CUSTOM THEMES (hotel theme library)
+-- ----------------------------------------------------
+-- A hotel's library of named, restorable custom themes. Owners manage their
+-- own library; public diners never read this table directly — the public menu
+-- resolves the active theme through the server-side store, which is itself
+-- guarded by session-derived ownership.
+DROP POLICY IF EXISTS "hct_select" ON public.hotel_custom_themes;
+CREATE POLICY "hct_select" ON public.hotel_custom_themes
+  FOR SELECT USING (
     auth.role() = 'service_role'
     OR EXISTS (SELECT 1 FROM public.hotels h
-                WHERE h.id = qr_codes.hotel_id AND h.user_id = auth.uid())
+                WHERE h.id = hotel_custom_themes.hotel_id AND h.user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM public.hotel_users hu
+                WHERE hu.hotel_id = hotel_custom_themes.hotel_id AND hu.user_id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "hct_insert" ON public.hotel_custom_themes;
+CREATE POLICY "hct_insert" ON public.hotel_custom_themes
+  FOR INSERT WITH CHECK (
+    auth.role() = 'service_role'
+    OR EXISTS (SELECT 1 FROM public.hotels h
+                WHERE h.id = hotel_custom_themes.hotel_id AND h.user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM public.hotel_users hu
+                WHERE hu.hotel_id = hotel_custom_themes.hotel_id AND hu.user_id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "hct_update" ON public.hotel_custom_themes;
+CREATE POLICY "hct_update" ON public.hotel_custom_themes
+  FOR UPDATE USING (
+    auth.role() = 'service_role'
+    OR EXISTS (SELECT 1 FROM public.hotels h
+                WHERE h.id = hotel_custom_themes.hotel_id AND h.user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM public.hotel_users hu
+                WHERE hu.hotel_id = hotel_custom_themes.hotel_id AND hu.user_id = auth.uid())
+  ) WITH CHECK (
+    auth.role() = 'service_role'
+    OR EXISTS (SELECT 1 FROM public.hotels h
+                WHERE h.id = hotel_custom_themes.hotel_id AND h.user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM public.hotel_users hu
+                WHERE hu.hotel_id = hotel_custom_themes.hotel_id AND hu.user_id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "hct_delete" ON public.hotel_custom_themes;
+CREATE POLICY "hct_delete" ON public.hotel_custom_themes
+  FOR DELETE USING (
+    auth.role() = 'service_role'
+    OR EXISTS (SELECT 1 FROM public.hotels h
+                WHERE h.id = hotel_custom_themes.hotel_id AND h.user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM public.hotel_users hu
+                WHERE hu.hotel_id = hotel_custom_themes.hotel_id AND hu.user_id = auth.uid())
   );

@@ -10,6 +10,7 @@ import { findHotelOwnedByUser } from '@/lib/hotelAccess';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
 import { getStoredCustomTheme } from '@/lib/customThemeStore.server';
+import { listSavedCustomThemes, getActiveSavedCustomTheme } from '@/lib/hotelCustomThemes.server';
 import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 
 export async function GET() {
@@ -40,6 +41,8 @@ export async function GET() {
 
     const storedTheme = await getStoredMenuTheme(owned.id);
     const storedCustomConfig = await getStoredCustomTheme(owned.id);
+    const savedThemes = await listSavedCustomThemes(owned.id);
+    const activeSavedTheme = await getActiveSavedCustomTheme(owned.id);
 
     return NextResponse.json({
       success: true,
@@ -48,6 +51,8 @@ export async function GET() {
         menu_theme: hotel?.menu_theme || storedTheme || DEFAULT_MENU_THEME,
         custom_theme_config: hotel?.custom_theme_config || storedCustomConfig || null,
       },
+      saved_themes: savedThemes,
+      active_saved_theme_id: activeSavedTheme?.id || null,
     });
   } catch (error: any) {
     return NextResponse.json(

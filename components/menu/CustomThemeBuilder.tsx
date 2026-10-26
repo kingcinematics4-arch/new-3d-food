@@ -124,6 +124,9 @@ export default function CustomThemeBuilder({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [themeName, setThemeName] = useState('');
+  const [savingToLibrary, setSavingToLibrary] = useState(false);
 
   // Update a single configuration field
   const updateConfig = <K extends keyof CustomThemeConfig>(key: K, value: CustomThemeConfig[K]) => {
@@ -140,7 +143,7 @@ export default function CustomThemeBuilder({
     }
   };
 
-  // Save custom theme config to API
+  // Save custom theme config to the hotel's active theme slot
   const handleSave = async () => {
     if (!hotel.id) return;
     setSaving(true);
@@ -159,6 +162,12 @@ export default function CustomThemeBuilder({
       const json = await res.json();
 
       if (!json.success) {
+        if (res.status === 503) {
+          throw new Error(
+            json.error ||
+              'The database is missing the theme columns. Run supabase/migrations/012_theme_columns_idempotent.sql in the Supabase SQL Editor, then save again.'
+          );
+        }
         throw new Error(json.error || 'Failed to save custom theme configuration');
       }
 
@@ -169,6 +178,42 @@ export default function CustomThemeBuilder({
       setError(err.message || 'Failed to save custom theme');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Save the current design as a NAMED theme in the hotel's library. This does
+  // NOT touch the active theme — it just stores a restorable copy. The owner
+  // must later Apply it from the Custom Themes page.
+  const handleSaveToLibrary = async () => {
+    if (!hotel.id || !themeName.trim()) return;
+    setSavingToLibrary(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/hotel/themes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hotel_id: hotel.id,
+          name: themeName.trim(),
+          theme_config: config,
+          apply_now: false,
+        }),
+      });
+      const json = await res.json();
+
+      if (!json.success) {
+        throw new Error(json.error || 'Failed to save theme to library');
+      }
+
+      setSaveSuccess(true);
+      setShowSaveDialog(false);
+      setThemeName('');
+      setTimeout(() => setSaveSuccess(false), 3500);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save theme to library');
+    } finally {
+      setSavingToLibrary(false);
     }
   };
 
@@ -498,7 +543,7 @@ export default function CustomThemeBuilder({
             </div>
 
             {/* Save Action */}
-            <div className="pt-4 border-t border-white/10">
+            <div className="pt-4 border-t border-white/10 space-y-3">
               <button
                 type="button"
                 onClick={handleSave}
@@ -517,6 +562,23 @@ export default function CustomThemeBuilder({
                   <span>Save &amp; Publish Custom Theme</span>
                 )}
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setThemeName('');
+                  setShowSaveDialog(true);
+                }}
+                disabled={saving}
+                className="w-full py-2.5 px-4 rounded-xl border border-white/20 hover:border-[#E5A93C] text-neutral-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4">
+                  <path d="M7 2V9M4 6H10" strokeLinecap="round" />
+                  <rect x="2" y="2" width="10" height="10" rx="2" />
+                </svg>
+                Save as Named Theme…
+              </button>
+            </div>
             </div>
           </div>
         </div>
@@ -652,6 +714,116 @@ export default function CustomThemeBuilder({
           </div>
         </div>
       </div>
+
+      {/* Save as Named Theme dialog */}
+      {showSaveDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+          onClick={() => {
+            if (!savingToLibrary) setShowSaveDialog(false);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-white/15 bg-neutral-900 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-white/10">
+              <h3 className="text-base font-bold text-white tracking-tight">Save as Named Theme</h3>
+              <p className="text-xs text-neutral-400 mt-1">
+                Stored in your theme library. This does not change your active menu — apply it later from Custom Themes.
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Live mini preview */}
+              <div
+                className="rounded-xl p-4 flex items-center gap-4"
+                style={{
+                  background: config.pageBg,
+                  color: config.textColor,
+                  fontFamily: config.bodyFont,
+                  borderRadius: config.borderRadius,
+                  border: config.cardStyle === 'bordered' ? `1px solid ${config.primaryColor}` : 'none',
+                }}
+              >
+                <div
+                  className="w-14 h-14 rounded-lg flex items-center justify-center text-lg font-bold flex-shrink-0"
+                  style={{ background: config.primaryColor, color: '#fff' }}
+                >
+                  D
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm truncate">Dish preview</p>
+                  <p className="text-xs opacity-70 truncate">
+                    {config.menuLayout} · {config.cardStyle} · {config.headingFont}
+                  </p>
+                </div>
+                <div
+                  className="ml-auto px-3 py-1 rounded-full text-xs font-bold flex-shrink-0"
+                  style={{ background: config.primaryColor, color: '#fff' }}
+                >
+                  ${12}
+                </div>
+              </div>
+
+              <div>
+                <label className="d3-label mb-1.5">Theme name</label>
+                <input
+                  type="text"
+                  value={themeName}
+                  onChange={(e) => setThemeName(e.target.value)}
+                  placeholder="e.g. Summer Garden, Monochrome Gold…"
+                  maxLength={80}
+                  autoFocus
+                  className="w-full bg-neutral-950 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#E5A93C]"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveToLibrary();
+                    if (e.key === 'Escape') setShowSaveDialog(false);
+                  }}
+                />
+              </div>
+
+              {error && (
+                <div className="d3-note d3-note-danger text-xs">
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!savingToLibrary) setShowSaveDialog(false);
+                }}
+                disabled={savingToLibrary}
+                className="px-4 py-2 rounded-lg border border-white/20 text-neutral-300 hover:text-white text-xs font-semibold transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveToLibrary}
+                disabled={savingToLibrary || !themeName.trim()}
+                className="px-4 py-2 rounded-lg bg-[#E5A93C] hover:bg-[#F0BC5E] text-black text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingToLibrary ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2" />
+                      <path d="M8 2a6 6 0 016 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span>Saving…</span>
+                  </>
+                ) : (
+                  <span>Save to Library</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
