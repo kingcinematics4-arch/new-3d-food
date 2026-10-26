@@ -10,7 +10,6 @@ import {
   CARD_STYLE_OPTIONS,
   BUTTON_STYLE_OPTIONS,
   MENU_LAYOUT_OPTIONS,
-  HEADER_STYLE_OPTIONS,
 } from '@/lib/customTheme';
 import CustomTemplate from './templates/CustomTemplate';
 import type { PublicMenuItem, PublicHotel, PublicCategory } from '@/app/menu/[slug]/MenuContent';
@@ -505,10 +504,10 @@ export default function CustomThemeBuilder({
               </div>
             </div>
 
-            {/* 4. Menu Layout & Header Style */}
+            {/* 4. Menu Layout */}
             <div className="space-y-4 mb-6">
               <span className="text-[0.65rem] uppercase font-bold tracking-wider text-[#E5A93C]">
-                4. Layout &amp; Header
+                4. Layout
               </span>
 
               <div>
@@ -527,27 +526,6 @@ export default function CustomThemeBuilder({
                     >
                       <span className="block text-xs font-bold">{ml.label}</span>
                       <span className="block text-[0.6rem] text-neutral-400 mt-0.5">{ml.description}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="d3-label mb-1.5">Header &amp; Navigation Style</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {HEADER_STYLE_OPTIONS.map((hs) => (
-                    <button
-                      key={hs.value}
-                      type="button"
-                      onClick={() => updateConfig('headerStyle', hs.value)}
-                      className={`p-2.5 rounded-lg text-left transition-all border ${
-                        config.headerStyle === hs.value
-                          ? 'border-[#E5A93C] bg-[#E5A93C]/10 text-white'
-                          : 'border-white/10 bg-neutral-900 hover:bg-neutral-850 text-neutral-300'
-                      }`}
-                    >
-                      <span className="block text-xs font-bold">{hs.label}</span>
-                      <span className="block text-[0.6rem] text-neutral-400 mt-0.5">{hs.description}</span>
                     </button>
                   ))}
                 </div>

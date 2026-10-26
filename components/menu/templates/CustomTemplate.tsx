@@ -134,7 +134,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
       }}
     >
       {/* ================= 11. HEADER STYLES ================= */}
-      {config.headerStyle === 'centered' && (
+      {false && (
         <header
           className="border-b sticky top-0 z-30 backdrop-blur-md px-4 py-4"
           style={{
@@ -160,7 +160,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
 
             {hotel.logo_url?.trim() ? (
               <img
-                src={hotel.logo_url}
+                src={hotel.logo_url ?? undefined}
                 alt={hotel.name}
                 className="w-12 h-12 rounded-full object-cover border mb-2 shadow-sm"
                 style={{ borderColor: config.primaryColor }}
@@ -190,7 +190,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
         </header>
       )}
 
-      {config.headerStyle === 'minimal' && (
+      {false && (
         <header
           className="border-b sticky top-0 z-30 backdrop-blur-md px-4 py-3"
           style={{
@@ -225,7 +225,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
         </header>
       )}
 
-      {config.headerStyle === 'boxed' && (
+      {false && (
         <header
           className="sticky top-0 z-30 px-4 py-3 border-b"
           style={{
@@ -256,7 +256,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
         </header>
       )}
 
-      {config.headerStyle === 'sticky-blur' && (
+      {true && (
         <header
           className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-3"
           style={{
@@ -268,7 +268,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
             <div className="flex items-center gap-3">
               {hotel.logo_url?.trim() ? (
                 <img
-                  src={hotel.logo_url}
+                src={hotel.logo_url ?? undefined}
                   alt={hotel.name}
                   className="w-9 h-9 rounded-lg object-cover border"
                   style={{ borderColor: `${config.primaryColor}40` }}
