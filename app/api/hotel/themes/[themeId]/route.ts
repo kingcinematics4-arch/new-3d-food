@@ -10,6 +10,7 @@
 // theme even if it guesses the other hotel's theme id.
 
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { requireOwnedHotelId } from '@/lib/hotelAccess';
 import {
   updateSavedCustomTheme,
@@ -20,6 +21,17 @@ import {
 
 interface Context {
   params: { themeId: string };
+}
+
+/**
+ * Sync the active saved theme's config onto the hotels row so the public
+ * customer menu (which reads hotels.custom_theme_config) actually reflects it.
+ */
+async function syncActiveThemeToHotel(hotelId: string, themeConfig: any): Promise<void> {
+  await supabaseAdmin
+    .from('hotels')
+    .update({ menu_theme: 'custom', custom_theme_config: themeConfig })
+    .eq('id', hotelId);
 }
 
 export async function PATCH(request: Request, { params }: Context) {
@@ -52,6 +64,8 @@ export async function PATCH(request: Request, { params }: Context) {
           { status: 404 }
         );
       }
+      // Mirror the saved config onto the hotels row so the public menu picks it up.
+      await syncActiveThemeToHotel(access.hotelId, theme.theme_config);
       return NextResponse.json({ success: true, theme, applied: true });
     }
 
