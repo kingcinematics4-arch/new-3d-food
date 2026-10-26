@@ -1,6 +1,22 @@
 // app/api/hotel/update/route.ts
+//
+// PUT /api/hotel/update — persist hotel settings including menu theme.
+//
+// AUTHORIZATION: the hotel id is ALWAYS resolved from the authenticated
+// Supabase session via `requireOwnedHotelId`. A `hotel_id` in the request body
+// is only accepted when it matches the session's own hotel, so a signed-in
+// owner can never write into another tenant. This route is therefore
+// owner-scoped: no admin role is required, and no global-default theme is
+// writable from here.
+//
+// PERSISTENCE: themes are stored in `public.hotels.menu_theme` and
+// `public.hotels.custom_theme_config` (migrations 010/011). The previous
+// file-based store (`data/menu-themes.json`) failed on Vercel's read-only
+// filesystem with `EROFS: read-only file system, open '/var/task/data/menu-themes.json'`.
+
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { requireOwnedHotelId } from '@/lib/hotelAccess';
 import { z } from 'zod';
 import { MENU_THEME_IDS, DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 import { setStoredMenuTheme, getStoredMenuTheme } from '@/lib/menuThemeStore.server';
@@ -31,41 +47,69 @@ const updateHotelSchema = z.object({
 });
 
 export async function PUT(request: Request) {
+  let body: any = {};
   try {
-    const body = await request.json();
-    const validated = updateHotelSchema.parse(body);
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: 'Invalid JSON body' },
+      { status: 400 }
+    );
+  }
 
-    const { hotel_id, ...updateData } = validated;
+  let validated;
+  try {
+    validated = updateHotelSchema.parse(body);
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, error: err.issues?.[0]?.message || err.message || 'Validation failed' },
+      { status: 400 }
+    );
+  }
 
-    // Always persist theme & custom configuration to the hotel-specific store
+  const { hotel_id: requestedHotelId, ...updateData } = validated;
+
+  // ---- Authorization: session-derived hotel id only ----
+  const access = await requireOwnedHotelId(requestedHotelId);
+  if (!access.ok) {
+    return NextResponse.json(
+      { success: false, error: access.error },
+      { status: access.status }
+    );
+  }
+  const hotelId = access.hotelId;
+
+  try {
+    // Persist theme & custom configuration to the hotel's own row.
     if (updateData.menu_theme) {
-      await setStoredMenuTheme(hotel_id, updateData.menu_theme);
+      await setStoredMenuTheme(hotelId, updateData.menu_theme);
     }
     if (updateData.custom_theme_config) {
-      await setStoredCustomTheme(hotel_id, updateData.custom_theme_config);
+      await setStoredCustomTheme(hotelId, updateData.custom_theme_config);
     }
 
     const { data, error } = await supabaseAdmin
       .from('hotels')
       .update(updateData)
-      .eq('id', hotel_id)
+      .eq('id', hotelId)
       .select()
       .single();
 
     if (error) {
-      // If error is due to missing columns (menu_theme, custom_theme_config) or check constraint:
+      // If error is due to missing columns (menu_theme, custom_theme_config):
+      // strip them and retry so older schemas still save the other fields.
       const { menu_theme, custom_theme_config, ...rest } = updateData;
 
       if (Object.keys(rest).length > 0) {
         const { data: retryData } = await supabaseAdmin
           .from('hotels')
           .update(rest)
-          .eq('id', hotel_id)
+          .eq('id', hotelId)
           .select()
           .single();
 
-        const storedTheme = await getStoredMenuTheme(hotel_id);
-        const storedCustomConfig = await getStoredCustomTheme(hotel_id);
+        const storedTheme = await getStoredMenuTheme(hotelId);
+        const storedCustomConfig = await getStoredCustomTheme(hotelId);
 
         return NextResponse.json({
           success: true,
@@ -77,14 +121,15 @@ export async function PUT(request: Request) {
         });
       }
 
+      // Nothing left to update in the main row; return current state.
       const { data: currentHotel } = await supabaseAdmin
         .from('hotels')
         .select('*')
-        .eq('id', hotel_id)
+        .eq('id', hotelId)
         .single();
 
-      const storedTheme = await getStoredMenuTheme(hotel_id);
-      const storedCustomConfig = await getStoredCustomTheme(hotel_id);
+      const storedTheme = await getStoredMenuTheme(hotelId);
+      const storedCustomConfig = await getStoredCustomTheme(hotelId);
 
       return NextResponse.json({
         success: true,
@@ -96,7 +141,7 @@ export async function PUT(request: Request) {
       });
     }
 
-    const storedCustomConfig = await getStoredCustomTheme(hotel_id);
+    const storedCustomConfig = await getStoredCustomTheme(hotelId);
     return NextResponse.json({
       success: true,
       hotel: {
