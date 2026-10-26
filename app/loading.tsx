@@ -16,7 +16,7 @@ export default function Loading() {
       className="flex items-center justify-center w-full"
       style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}
     >
-      <BrandedLoader label="Dine3D" minHeight={240} />
+      <BrandedLoader label="DinePixel" minHeight={240} />
     </div>
   );
 }

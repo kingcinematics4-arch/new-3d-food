@@ -35,6 +35,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      document.title = 'Sign In — DinePixel';
       const params = new URLSearchParams(window.location.search);
       const urlError = params.get('error_description') || params.get('error');
       if (urlError) {
@@ -316,12 +317,17 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <form method="POST" action="/api/auth/login" onSubmit={handleSubmit} className="flex flex-col gap-5">
             {/* Email */}
             <div>
-              <label className="d3-label">Email Address</label>
+              <label htmlFor="email" className="d3-label">Email Address</label>
               <input
+                id="email"
+                name="email"
                 type="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -334,10 +340,13 @@ export default function LoginPage() {
                 the <form> element (see below) so it is never a candidate for
                 the browser's implicit form-submission algorithm. */}
             <div>
-              <label className="d3-label" style={{ marginBottom: '0.5rem', display: 'block' }}>Password</label>
+              <label htmlFor="password" className="d3-label" style={{ marginBottom: '0.5rem', display: 'block' }}>Password</label>
               <div className="relative">
                 <input
+                  id="password"
+                  name="password"
                   type={showPw ? 'text' : 'password'}
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

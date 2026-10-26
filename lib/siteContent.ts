@@ -359,7 +359,7 @@ export type SectionKey = (typeof SECTION_KEYS)[number];
 
 export const SECTION_LABELS: Record<SectionKey, string> = {
   hero: 'Hero',
-  about: 'About Dine3D',
+  about: 'About DinePixel',
   features: 'Features',
   menu3d: '3D Food Menu',
   ar: 'AR Experience',
@@ -375,7 +375,7 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
 
 export const SECTION_DESCRIPTIONS: Record<SectionKey, string> = {
   hero: 'The first screen. Headline, supporting copy and calls to action.',
-  about: 'Editorial introduction to the Dine3D platform.',
+  about: 'Editorial introduction to the DinePixel platform.',
   features: 'Grid of capability cards.',
   menu3d: 'How dishes are presented in interactive 3D.',
   ar: 'Native augmented reality placement on guest devices.',
@@ -385,7 +385,7 @@ export const SECTION_DESCRIPTIONS: Record<SectionKey, string> = {
   pricing: 'Subscription plans and what each one includes.',
   howItWorks: 'Numbered walkthrough of the guest journey.',
   faq: 'Questions and answers.',
-  contact: 'Direct contact details for the Dine3D team.',
+  contact: 'Direct contact details for the DinePixel team.',
   footer: 'Closing call to action, link columns and legal line.',
 };
 
@@ -413,7 +413,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
 
   branding: {
     logoUrl: '/images/dine3d-logo.png',
-    logoAlt: 'Dine3D',
+    logoAlt: 'DinePixel',
     logoWidth: 930,
     logoHeight: 258,
     faviconUrl: '',
@@ -470,7 +470,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         enabled: true,
         icon: 'qr',
         title: 'Instant QR Menus',
-        description: 'Give every restaurant a simple QR-powered entry point into the complete Dine3D experience.',
+        description: 'Give every restaurant a simple QR-powered entry point into the complete DinePixel experience.',
         imageUrl: '',
       },
       {
@@ -559,7 +559,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
           'SLA guaranteed',
         ],
         ctaText: 'Contact Sales',
-        ctaHref: 'mailto:hello@dine3d.com',
+        ctaHref: 'mailto:hello@dinepixel.com',
         featured: false,
       },
     ],
@@ -571,7 +571,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
     headingAccent: 'to table.',
     body: '',
     steps: [
-      { id: 'step-1', enabled: true, label: 'Scan', description: "Guests scan the restaurant's Dine3D QR code." },
+      { id: 'step-1', enabled: true, label: 'Scan', description: "Guests scan the restaurant's DinePixel QR code." },
       { id: 'step-2', enabled: true, label: 'Explore', description: 'They browse the menu and inspect dishes through interactive 3D experiences.' },
       { id: 'step-3', enabled: true, label: 'Customize', description: 'They select quantity, preferences and special instructions.' },
       { id: 'step-4', enabled: true, label: 'Order', description: 'They add items to the cart and place the order.' },
@@ -584,18 +584,18 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
     enabled: true,
     heading: 'Frequently',
     headingAccent: 'asked.',
-    body: "Everything you need to know about Dine3D. Can't find an answer? Contact us.",
+    body: "Everything you need to know about DinePixel. Can't find an answer? Contact us.",
     items: [
-      { id: 'faq-1', question: 'What is Dine3D?', answer: 'Dine3D is a premium restaurant technology platform that transforms static menus into interactive 3D and AR dining experiences, accessible through a simple QR code.' },
+      { id: 'faq-1', question: 'What is DinePixel?', answer: 'DinePixel is a premium restaurant technology platform that transforms static menus into interactive 3D and AR dining experiences, accessible through a simple QR code.' },
       { id: 'faq-2', question: 'How does the QR menu work?', answer: 'Each restaurant gets a unique QR code. Guests scan it with any smartphone camera — no app download required — and instantly access the 3D menu experience.' },
-      { id: 'faq-3', question: 'Does Dine3D support AR?', answer: 'Yes. Where supported by the device (iOS via Safari, Android via Chrome), guests can place dishes in their real environment using native augmented reality.' },
+      { id: 'faq-3', question: 'Does DinePixel support AR?', answer: 'Yes. Where supported by the device (iOS via Safari, Android via Chrome), guests can place dishes in their real environment using native augmented reality.' },
       { id: 'faq-4', question: 'Can restaurants upload their own 3D models?', answer: 'Yes. Restaurants upload their own GLB and USDZ models per dish through the dashboard. A dish only appears in 3D once its model is saved.' },
       { id: 'faq-5', question: 'Can I customize my menu?', answer: 'Absolutely. Each restaurant has full control over branding: logo, colors, typography, cover image, categories and every dish detail.' },
       { id: 'faq-6', question: 'How does ordering work?', answer: 'Guests browse the 3D menu, add items to cart, add notes, and place orders. The restaurant receives orders instantly in the dashboard and kitchen display.' },
       { id: 'faq-7', question: 'Can customers add special instructions?', answer: 'Yes. Customers can add special instructions for each item as well as a general note with the order.' },
       { id: 'faq-8', question: 'Can I track analytics?', answer: 'Yes. The analytics dashboard shows QR scans, menu views, dish interactions, AR launches, popular dishes, orders, revenue, and conversion rates.' },
-      { id: 'faq-9', question: 'Does it work on mobile?', answer: 'Dine3D is built mobile-first. The customer menu experience is optimized for smartphones since most guests access it via QR code on their phone.' },
-      { id: 'faq-10', question: 'Can multiple restaurants use one Dine3D account?', answer: "Each restaurant gets its own account and isolated dashboard. For multi-location restaurant groups, our Enterprise plan supports multiple locations under one management view." },
+      { id: 'faq-9', question: 'Does it work on mobile?', answer: 'DinePixel is built mobile-first. The customer menu experience is optimized for smartphones since most guests access it via QR code on their phone.' },
+      { id: 'faq-10', question: 'Can multiple restaurants use one DinePixel account?', answer: "Each restaurant gets its own account and isolated dashboard. For multi-location restaurant groups, our Enterprise plan supports multiple locations under one management view." },
     ],
   },
 
@@ -614,7 +614,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
     enabled: true,
     tagline: 'SEE IT. EXPERIENCE IT. DINE IT.',
     description: 'The premium 3D restaurant menu platform for modern hospitality.',
-    copyrightText: '© Dine3D. All rights reserved.',
+    copyrightText: '© DinePixel. All rights reserved.',
     closingHeading: 'Bring your menu',
     closingAccent: 'to life in 3D.',
     closingBody: 'Create your restaurant and publish your own menu.',

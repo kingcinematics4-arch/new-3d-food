@@ -46,10 +46,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase,
-    title: 'Dine3D — See It. Experience It. Dine It.',
+    title: 'DinePixel — See It. Experience It. Dine It.',
     description,
     keywords:
-      'restaurant 3d menu, ar food menu, interactive dining, qr code menu, 3d food visualization, restaurant technology',
+      'restaurant 3d menu, ar food menu, interactive dining, qr code menu, 3d food visualization, restaurant technology, dinepixel',
     ...(logo.hasCustomLogo
       ? {
           icons: {
@@ -63,14 +63,14 @@ export async function generateMetadata(): Promise<Metadata> {
         }
       : {}),
     openGraph: {
-      title: 'Dine3D — Premium 3D Restaurant Menu Platform',
+      title: 'DinePixel — Premium 3D Restaurant Menu Platform',
       description,
       type: 'website',
-      images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'Dine3D' }],
+      images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'DinePixel' }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Dine3D — See It. Experience It. Dine It.',
+      title: 'DinePixel — See It. Experience It. Dine It.',
       description,
       images: [OG_IMAGE],
     },

@@ -10,8 +10,8 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Dine3D Admin',
-    template: '%s — Dine3D Admin',
+    default: 'DinePixel Admin',
+    template: '%s — DinePixel Admin',
   },
   // The admin panel must never be indexed.
   robots: { index: false, follow: false, nocache: true },

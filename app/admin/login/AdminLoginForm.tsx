@@ -76,7 +76,7 @@ export default function AdminLoginForm({ configured }: { configured: boolean }) 
             Sign in to the admin panel
           </h1>
           <p className="d3-body-sm" style={{ margin: 0, color: 'var(--text-dimmed)' }}>
-            Manage the public Dine3D website.
+            Manage the public DinePixel website.
           </p>
         </div>
       </div>
@@ -93,10 +93,12 @@ export default function AdminLoginForm({ configured }: { configured: boolean }) 
           </span>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="block">
+        <form method="POST" action="/api/admin/auth/login" onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label htmlFor="admin-password" className="block">
             <span className="d3-label">Password</span>
             <input
+              id="admin-password"
+              name="password"
               type="password"
               className="d3-input"
               value={password}
@@ -131,7 +133,7 @@ export default function AdminLoginForm({ configured }: { configured: boolean }) 
       )}
 
       <p className="text-center" style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
-        This panel is for the Dine3D owner. Restaurant owners sign in at{' '}
+        This panel is for the DinePixel owner. Restaurant owners sign in at{' '}
         <a href="/login" style={{ color: 'var(--gold)' }}>
           the restaurant dashboard
         </a>

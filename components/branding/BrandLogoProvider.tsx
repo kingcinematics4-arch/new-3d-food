@@ -71,7 +71,7 @@ export function BrandLogoProvider({
       setLogo({
         logoUrl: payload.logoUrl,
         logoVersion: payload.logoVersion ?? null,
-        logoAlt: payload.logoAlt || 'Dine3D',
+        logoAlt: payload.logoAlt || 'DinePixel',
         logoWidth: Number(payload.logoWidth) || FALLBACK_LOGO_REFERENCE.logoWidth,
         logoHeight: Number(payload.logoHeight) || FALLBACK_LOGO_REFERENCE.logoHeight,
         hasCustomLogo: Boolean(payload.hasCustomLogo),

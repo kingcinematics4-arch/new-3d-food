@@ -106,7 +106,7 @@ export default function HomeFooter({ footer, branding }: { footer: Footer; brand
               {/* Official logo. Rendered through the shared component, which reads
                   the uploaded file from the branding provider and falls back to the
                   bundled asset. No second image path is maintained here. */}
-              <Dine3DLogo size="md" href={null} alt={branding.logoAlt || 'Dine3D'} />
+              <Dine3DLogo size="md" href={null} alt={branding.logoAlt || 'DinePixel'} />
 
               {footer.tagline ? (
                 <p
@@ -159,7 +159,7 @@ export default function HomeFooter({ footer, branding }: { footer: Footer; brand
             <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>
               {footer.copyrightText?.includes('©')
                 ? footer.copyrightText
-                : `© ${currentYear} ${footer.copyrightText || 'Dine3D. All rights reserved.'}`}
+                : `© ${currentYear} ${footer.copyrightText || 'DinePixel. All rights reserved.'}`}
             </p>
           </div>
         </div>
