@@ -68,8 +68,18 @@ export interface PublicMenuData {
 
 async function resolveHotelColumns(): Promise<string> {
   const schema = await getHotelSchema();
-  return schema.menuTheme
-    ? `${BASE_HOTEL_COLUMNS}, menu_theme`
+  // Select menu_theme AND custom_theme_config together when the migration
+  // has been applied, so the public menu reads the saved theme in the same
+  // row it just looked up. Without this the page made a second probe
+  // (getStoredCustomTheme) for the config, which still worked, but the two
+  // columns now travel as one query.
+  const optional = [
+    schema.menuTheme ? 'menu_theme' : null,
+    schema.customThemeConfig ? 'custom_theme_config' : null,
+  ].filter(Boolean) as string[];
+
+  return optional.length
+    ? `${BASE_HOTEL_COLUMNS}, ${optional.join(', ')}`
     : BASE_HOTEL_COLUMNS;
 }
 

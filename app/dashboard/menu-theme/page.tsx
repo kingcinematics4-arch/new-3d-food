@@ -46,6 +46,14 @@ export default function MenuThemePage() {
       const json = await res.json();
 
       if (!json.success) {
+        // A 503 here means the schema probe caught the missing columns — tell
+        // the owner exactly what to run instead of a generic failure.
+        if (res.status === 503) {
+          throw new Error(
+            json.error ||
+              'The database is missing the theme columns. Run supabase/migrations/012_theme_columns_idempotent.sql in the Supabase SQL Editor, then save again.'
+          );
+        }
         throw new Error(json.error || 'Failed to save theme');
       }
 
@@ -172,7 +180,7 @@ export default function MenuThemePage() {
       {error && (
         <div className="d3-note d3-note-danger">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
-            <path d="M4 4L10 10M10 4L4 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <path d="M4 4L10 10M10 4L4 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span>{error}</span>
         </div>

@@ -40,8 +40,10 @@ async function columnExists(table: string, column: string): Promise<boolean> {
 }
 
 export interface HotelSchema {
-  /** public.hotels.menu_theme exists (migration 010 applied). */
+  /** public.hotels.menu_theme exists (migration 010/012 applied). */
   menuTheme: boolean;
+  /** public.hotels.custom_theme_config exists (migration 011/012 applied). */
+  customThemeConfig: boolean;
 }
 
 /**
@@ -53,5 +55,6 @@ export interface HotelSchema {
 export async function getHotelSchema(): Promise<HotelSchema> {
   return {
     menuTheme: await columnExists('hotels', 'menu_theme'),
+    customThemeConfig: await columnExists('hotels', 'custom_theme_config'),
   };
 }
