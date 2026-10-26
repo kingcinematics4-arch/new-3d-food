@@ -251,7 +251,7 @@ export default function CustomThemeBuilder({
   };
 
   return (
-    <div className="flex flex-col gap-8 w-full">
+    <div className="flex flex-col gap-8 w-full min-h-0">
       {/* Notifications */}
       {saveSuccess && (
         <div className="d3-note d3-note-accent flex items-center justify-between">
@@ -280,9 +280,9 @@ export default function CustomThemeBuilder({
       )}
 
       {/* Main Studio Grid: Controls on Left, Live Preview on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0 max-h-[calc(100vh-10rem)]">
         {/* ================= CONTROLS COLUMN (5 Cols) ================= */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <div className="lg:col-span-5 flex flex-col gap-6 min-h-0 h-full overflow-y-auto">
           {/* Header & Reset Action */}
           <div className="d3-panel p-5 sm:p-6">
             <div className="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-white/10">
@@ -595,9 +595,9 @@ export default function CustomThemeBuilder({
         </div>
 
         {/* ================= LIVE PREVIEW COLUMN (7 Cols) ================= */}
-        <div className="lg:col-span-7 flex flex-col gap-4 sticky top-6">
+        <div className="lg:col-span-7 flex flex-col gap-4 lg:sticky lg:top-4 shrink-0 min-h-0">
           {/* Top Bar with Mobile / Desktop Toggle */}
-          <div className="flex items-center justify-between bg-neutral-900/90 border border-white/10 px-4 py-2.5 rounded-xl">
+          <div className="flex items-center justify-between bg-neutral-900/90 border border-white/10 px-4 py-2.5 rounded-xl shrink-0">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-bold text-white uppercase tracking-wider">
@@ -636,10 +636,10 @@ export default function CustomThemeBuilder({
           </div>
 
           {/* Interactive Preview Container */}
-          <div className="w-full flex justify-center bg-neutral-950/80 border border-white/10 rounded-2xl p-4 sm:p-6 min-h-[640px] max-h-[820px] overflow-hidden">
+          <div className="flex-1 flex flex-col items-center justify-center bg-neutral-950/80 border border-white/10 rounded-2xl p-4 sm:p-6 min-h-0">
             {previewDevice === 'mobile' ? (
               /* SMARTPHONE FRAME */
-              <div className="w-[380px] max-w-full h-[760px] rounded-[40px] border-4 border-neutral-700 bg-neutral-950 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col relative">
+              <div className="max-w-[390px] max-h-[80vh] aspect-[9/16] shrink-0 self-center rounded-[32px] border-4 border-neutral-700 bg-neutral-950 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col relative">
                 {/* Speaker notch */}
                 <div className="w-full h-6 bg-neutral-900 flex items-center justify-center relative flex-shrink-0 z-40 border-b border-white/5">
                   <div className="w-16 h-3 bg-black rounded-full" />
@@ -680,7 +680,7 @@ export default function CustomThemeBuilder({
               </div>
             ) : (
               /* WIDESCREEN DESKTOP BROWSER FRAME */
-              <div className="w-full h-[760px] rounded-xl border border-white/15 bg-neutral-950 shadow-2xl overflow-hidden flex flex-col">
+              <div className="w-full max-h-full rounded-xl border border-white/15 bg-neutral-950 shadow-2xl overflow-hidden flex flex-col">
                 {/* Browser address bar mockup */}
                 <div className="px-4 py-2 bg-neutral-900 border-b border-white/10 flex items-center gap-3 flex-shrink-0">
                   <div className="flex gap-1.5">
