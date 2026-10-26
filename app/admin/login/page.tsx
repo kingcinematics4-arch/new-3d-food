@@ -15,7 +15,7 @@ import BrandedLoader from '@/components/branding/BrandedLoader';
 import AdminLoginForm from './AdminLoginForm';
 
 export const metadata: Metadata = {
-  title: 'Dine3D Admin — Sign in',
+  title: 'DinePixel Admin — Sign in',
   robots: { index: false, follow: false },
 };
 

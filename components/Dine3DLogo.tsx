@@ -147,7 +147,7 @@ export default function Dine3DLogo({
   const image = (
     <Image
       src={resolvedSrc}
-      alt={alt ?? logo.logoAlt}
+      alt={alt ?? logo.logoAlt ?? 'DinePixel'}
       width={width}
       height={height}
       priority={priority}
@@ -180,6 +180,10 @@ export default function Dine3DLogo({
     </Link>
   );
 }
+
+export const DinePixelLogo = Dine3DLogo;
+export type DinePixelLogoProps = Dine3DLogoProps;
+export type DinePixelLogoSize = Dine3DLogoSize;
 
 /**
  * Positions the whole, untouched file so that the detected content box lands

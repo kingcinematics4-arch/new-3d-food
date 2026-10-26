@@ -93,7 +93,7 @@ export const FALLBACK_LOGO_SIZE = { width: 930, height: 258 } as const;
 export const FALLBACK_LOGO_REFERENCE: LogoReference = {
   logoUrl: FALLBACK_LOGO_URL,
   logoVersion: null,
-  logoAlt: 'Dine3D',
+  logoAlt: 'DinePixel',
   logoWidth: FALLBACK_LOGO_SIZE.width,
   logoHeight: FALLBACK_LOGO_SIZE.height,
   hasCustomLogo: false,

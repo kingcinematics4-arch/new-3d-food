@@ -13,8 +13,8 @@ import Link from 'next/link';
 import Dine3DLogo from '@/components/Dine3DLogo';
 
 const DESTINATIONS = [
-  { href: '/', label: 'Home', description: 'The Dine3D product' },
-  { href: '/#features', label: 'Features', description: 'What Dine3D does' },
+  { href: '/', label: 'Home', description: 'The DinePixel product' },
+  { href: '/#features', label: 'Features', description: 'What DinePixel does' },
   { href: '/#pricing', label: 'Pricing', description: 'Plans and what they include' },
   { href: '/#faq', label: 'Questions', description: 'Commonly asked questions' },
   { href: '/login', label: 'Restaurant sign in', description: 'For restaurant owners' },
@@ -52,7 +52,7 @@ export default function NotFound() {
               Back to the homepage
             </Link>
             <Link href="/#features" className="d3-btn-ghost">
-              Explore Dine3D
+              Explore DinePixel
             </Link>
           </div>
 

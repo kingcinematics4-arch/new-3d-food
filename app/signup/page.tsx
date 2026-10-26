@@ -30,6 +30,12 @@ export default function SignupPage() {
   // user action.
   const submitInFlight = useRef(false);
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.title = 'Create Restaurant Account — DinePixel';
+    }
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -129,7 +135,7 @@ export default function SignupPage() {
 
         {/* Headline */}
         <div className="relative z-10 flex flex-col gap-6">
-          <span className="d3-eyebrow" style={{ color: 'var(--text-dimmed)' }}>JOIN DINE3D</span>
+          <span className="d3-eyebrow" style={{ color: 'var(--text-dimmed)' }}>JOIN DINEPIXEL</span>
           <h1
             style={{
               fontFamily: 'var(--font-display)',
@@ -261,22 +267,26 @@ export default function SignupPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form method="POST" action="/api/auth/signup" onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Row: Restaurant name + Owner name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="d3-label">Restaurant Name</label>
+                <label htmlFor="signup-hotel-name" className="d3-label">Restaurant Name</label>
                 <input
+                  id="signup-hotel-name"
                   type="text" name="hotel_name" required
+                  autoComplete="organization"
                   value={formData.hotel_name} onChange={handleChange}
                   placeholder="Your restaurant name"
                   className="d3-input"
                 />
               </div>
               <div>
-                <label className="d3-label">Owner Name</label>
+                <label htmlFor="signup-owner-name" className="d3-label">Owner Name</label>
                 <input
+                  id="signup-owner-name"
                   type="text" name="owner_name" required
+                  autoComplete="name"
                   value={formData.owner_name} onChange={handleChange}
                   placeholder="Your name"
                   className="d3-input"
@@ -286,9 +296,13 @@ export default function SignupPage() {
 
             {/* Email */}
             <div>
-              <label className="d3-label">Email Address</label>
+              <label htmlFor="signup-email" className="d3-label">Email Address</label>
               <input
+                id="signup-email"
                 type="email" name="email" required
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
                 value={formData.email} onChange={handleChange}
                 placeholder="you@example.com"
                 className="d3-input"
@@ -298,9 +312,11 @@ export default function SignupPage() {
             {/* Row: Password + Confirm */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="d3-label">Password</label>
+                <label htmlFor="signup-password" className="d3-label">Password</label>
                 <input
+                  id="signup-password"
                   type={showPw ? 'text' : 'password'} name="password" required
+                  autoComplete="new-password"
                   minLength={8}
                   value={formData.password} onChange={handleChange}
                   placeholder="Min. 8 characters"
@@ -308,9 +324,11 @@ export default function SignupPage() {
                 />
               </div>
               <div>
-                <label className="d3-label">Confirm Password</label>
+                <label htmlFor="signup-confirm-password" className="d3-label">Confirm Password</label>
                 <input
+                  id="signup-confirm-password"
                   type={showPw ? 'text' : 'password'} name="confirmPassword" required
+                  autoComplete="new-password"
                   value={formData.confirmPassword} onChange={handleChange}
                   placeholder="Repeat password"
                   className="d3-input"
@@ -321,18 +339,22 @@ export default function SignupPage() {
             {/* Row: Phone + City */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="d3-label">Phone (Optional)</label>
+                <label htmlFor="signup-phone" className="d3-label">Phone (Optional)</label>
                 <input
+                  id="signup-phone"
                   type="text" name="phone"
+                  autoComplete="tel"
                   value={formData.phone} onChange={handleChange}
                   placeholder="+1 555 000 0000"
                   className="d3-input"
                 />
               </div>
               <div>
-                <label className="d3-label">City (Optional)</label>
+                <label htmlFor="signup-city" className="d3-label">City (Optional)</label>
                 <input
+                  id="signup-city"
                   type="text" name="city"
+                  autoComplete="address-level2"
                   value={formData.city} onChange={handleChange}
                   placeholder="Your city"
                   className="d3-input"
@@ -342,9 +364,11 @@ export default function SignupPage() {
 
             {/* Address */}
             <div>
-              <label className="d3-label">Address (Optional)</label>
+              <label htmlFor="signup-address" className="d3-label">Address (Optional)</label>
               <input
+                id="signup-address"
                 type="text" name="address"
+                autoComplete="street-address"
                 value={formData.address} onChange={handleChange}
                 placeholder="Street address"
                 className="d3-input"
@@ -378,7 +402,7 @@ export default function SignupPage() {
           </form>
 
           <p style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem', marginTop: '1.5rem', lineHeight: 1.6 }}>
-            By creating an account, you agree to Dine3D's{' '}
+            By creating an account, you agree to DinePixel's{' '}
             <a href="#" style={{ color: 'var(--gold)' }}>Terms of Service</a>{' '}
             and{' '}
             <a href="#" style={{ color: 'var(--gold)' }}>Privacy Policy</a>.
