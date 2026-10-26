@@ -17,6 +17,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { requireOwnedHotelId } from '@/lib/hotelAccess';
+import { getHotelSchema } from '@/lib/hotelSchema';
 import { z } from 'zod';
 import { MENU_THEME_IDS, DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 import { setStoredMenuTheme, getStoredMenuTheme } from '@/lib/menuThemeStore.server';
@@ -78,6 +79,29 @@ export async function PUT(request: Request) {
     );
   }
   const hotelId = access.hotelId;
+
+  // ---- Schema probe: is the theme column even there to save into? ----
+  // The previous code silently swallowed a missing `hotels.menu_theme`
+  // column: the UPDATE dropped the unknown column, the route still returned
+  // 200, the editor showed "Uploaded", and every later read fell back to the
+  // hardcoded default. Surface the mismatch instead of hiding it.
+  const schema = await getHotelSchema();
+  const themeColumnsPresent = schema.menuTheme && schema.customThemeConfig;
+  const themeRequested =
+    Boolean(updateData.menu_theme) || Boolean(updateData.custom_theme_config);
+
+  if (themeRequested && !themeColumnsPresent) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          'The database is missing the theme columns (hotels.menu_theme / hotels.custom_theme_config). ' +
+          'Run supabase/migrations/012_theme_columns_idempotent.sql in the Supabase SQL Editor, then save again.',
+        schema: { menuTheme: schema.menuTheme, customThemeConfig: schema.customThemeConfig },
+      },
+      { status: 503 }
+    );
+  }
 
   try {
     // Persist theme & custom configuration to the hotel's own row.

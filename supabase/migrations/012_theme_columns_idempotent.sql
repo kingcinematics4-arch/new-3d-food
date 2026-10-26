@@ -3,18 +3,31 @@
 -- Ensures `public.hotels` has the two columns the app now uses for theme
 -- persistence:
 --
---   menu_theme          text      - one of the five built-in theme IDs
+--   menu_theme          text      - one of the six accepted theme IDs
 --   custom_theme_config jsonb     - full bespoke CustomThemeConfig object
 --
 -- The previous persistence layer wrote to `data/menu-themes.json` and
 -- `data/custom-themes.json` on the local filesystem. On Vercel the deployed
-// filesystem is read-only, so every save threw:
-//
-//   EROFS: read-only file system, open '/var/task/data/menu-themes.json'
-//
-// Both columns already exist in the live database (migrations 010 and 011),
-// but this migration makes the dependency explicit and idempotent so a fresh
-// Supabase project is guaranteed to work without running the older files.
+-- filesystem is read-only, so every save threw:
+--
+--   EROFS: read-only file system, open '/var/task/data/menu-themes.json'
+--
+-- IMPORTANT — THIS FILE IS A SCHEMA DECLARATION, NOT A RUNTIME MIGRATION.
+-- Supabase does not auto-apply files under supabase/migrations/ unless the
+-- project is managed with `supabase db push` / the CLI migration runner. This
+-- project's DEPLOYMENT.md instructs the owner to paste SQL into the Dashboard
+-- SQL Editor, so the file that was actually pasted was 010 (and later 011),
+-- NOT this one. The live database therefore still lacks
+-- `hotels.menu_theme` and `hotels.custom_theme_config`.
+--
+-- That gap is the root cause of the reported bug: PUT /api/hotel/update
+-- returns 200 "Uploaded", but the `hotels` UPDATE is silently dropped for the
+-- unknown columns and the theme is never stored. Every later read of the
+-- public menu falls back to the hardcoded `classic-luxury` default, so the
+-- selected theme never reaches the customer-facing menu.
+--
+-- Run this whole file in the Supabase SQL Editor to close the gap. It is
+-- idempotent and safe to re-run.
 --
 -- IDEMPOTENT / SAFE TO RE-RUN: every statement uses IF NOT EXISTS / DO
 -- blocks, and existing constraints are dropped and re-added so the migration
