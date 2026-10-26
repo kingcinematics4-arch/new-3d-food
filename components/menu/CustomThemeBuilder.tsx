@@ -579,7 +579,6 @@ export default function CustomThemeBuilder({
                 Save as Named Theme…
               </button>
             </div>
-            </div>
           </div>
         </div>
 
