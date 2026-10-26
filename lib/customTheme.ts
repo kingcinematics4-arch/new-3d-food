@@ -22,8 +22,8 @@ export interface CustomThemeConfig {
   buttonStyle: 'solid' | 'outline' | 'soft' | 'pill';
   /** 10. Menu items layout */
   menuLayout: 'grid' | 'editorial' | 'compact-list' | 'cards';
-  /** 11. Header & navigation style */
-  headerStyle: 'centered' | 'sticky-blur' | 'minimal' | 'boxed';
+  /** 11. Header & navigation style (fixed: Sticky Blur Bar) */
+  headerStyle: 'sticky-blur';
 }
 
 export const DEFAULT_CUSTOM_THEME: CustomThemeConfig = {
@@ -79,10 +79,7 @@ export const MENU_LAYOUT_OPTIONS: Array<{ label: string; value: CustomThemeConfi
 ];
 
 export const HEADER_STYLE_OPTIONS: Array<{ label: string; value: CustomThemeConfig['headerStyle']; description: string }> = [
-  { label: 'Sticky Blur Bar', value: 'sticky-blur', description: 'Modern floating glass header with status pill' },
-  { label: 'Centered Stately', value: 'centered', description: 'Emblem in center with stately typography' },
-  { label: 'Minimalist Clean', value: 'minimal', description: 'Uncluttered inline header with direct search' },
-  { label: 'Framed Boxed', value: 'boxed', description: 'Framed header with double borders' },
+  { label: 'Sticky Blur Bar', value: 'sticky-blur', description: 'Fixed header style for all menus' },
 ];
 
 /** Presets used by the "Reset to Template" feature */
@@ -100,7 +97,7 @@ export const TEMPLATE_PRESETS: Record<string, { name: string; config: CustomThem
       cardStyle: 'bordered',
       buttonStyle: 'outline',
       menuLayout: 'editorial',
-      headerStyle: 'centered',
+      headerStyle: 'sticky-blur',
     },
   },
   'modern-dark': {
@@ -132,7 +129,7 @@ export const TEMPLATE_PRESETS: Record<string, { name: string; config: CustomThem
       cardStyle: 'flat',
       buttonStyle: 'soft',
       menuLayout: 'cards',
-      headerStyle: 'minimal',
+      headerStyle: 'sticky-blur',
     },
   },
   'indian-heritage': {
@@ -148,7 +145,7 @@ export const TEMPLATE_PRESETS: Record<string, { name: string; config: CustomThem
       cardStyle: 'bordered',
       buttonStyle: 'outline',
       menuLayout: 'cards',
-      headerStyle: 'boxed',
+      headerStyle: 'sticky-blur',
     },
   },
   'contemporary-premium': {
@@ -164,7 +161,7 @@ export const TEMPLATE_PRESETS: Record<string, { name: string; config: CustomThem
       cardStyle: 'flat',
       buttonStyle: 'solid',
       menuLayout: 'editorial',
-      headerStyle: 'minimal',
+      headerStyle: 'sticky-blur',
     },
   },
 };
