@@ -88,7 +88,7 @@ const navItems = [
   { label: 'Analytics', href: '/dashboard/analytics' },
   { label: 'Menu Design', href: '/dashboard/customize' },
   { label: 'Menu Themes', href: '/dashboard/menu-theme' },
-  { label: 'Saved Themes', href: '/dashboard/themes' },
+  { label: 'Custom Themes', href: '/dashboard/custom-themes' },
   { label: 'Reviews', href: '/dashboard/reviews' },
   { label: 'Restaurant Profile', href: '/dashboard/settings' },
 ];

@@ -20,6 +20,8 @@ interface CustomThemeBuilderProps {
   hotel: Hotel;
   initialConfig?: CustomThemeConfig | null;
   onSaved?: (config: CustomThemeConfig) => void;
+  editingThemeId?: string;
+  initialThemeName?: string;
 }
 
 const SAMPLE_PREVIEW_ITEMS: PublicMenuItem[] = [
@@ -114,6 +116,8 @@ export default function CustomThemeBuilder({
   hotel,
   initialConfig,
   onSaved,
+  editingThemeId,
+  initialThemeName,
 }: CustomThemeBuilderProps) {
   const [config, setConfig] = useState<CustomThemeConfig>(
     initialConfig || hotel.custom_theme_config || DEFAULT_CUSTOM_THEME
@@ -125,7 +129,7 @@ export default function CustomThemeBuilder({
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [themeName, setThemeName] = useState('');
+  const [themeName, setThemeName] = useState(initialThemeName || '');
   const [savingToLibrary, setSavingToLibrary] = useState(false);
 
   // Update a single configuration field
@@ -183,35 +187,43 @@ export default function CustomThemeBuilder({
 
   // Save the current design as a NAMED theme in the hotel's library. This does
   // NOT touch the active theme — it just stores a restorable copy. The owner
-  // must later Apply it from the Custom Themes page.
+  // must later Apply it from the Custom Themes page. When editingThemeId is
+  // set, this updates the existing saved theme instead of creating a new one.
   const handleSaveToLibrary = async () => {
     if (!hotel.id || !themeName.trim()) return;
     setSavingToLibrary(true);
     setError(null);
 
+    const isEdit = Boolean(editingThemeId);
     try {
-      const res = await fetch('/api/hotel/themes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hotel_id: hotel.id,
-          name: themeName.trim(),
-          theme_config: config,
-          apply_now: false,
-        }),
-      });
+      const res = await fetch(
+        isEdit
+          ? `/api/hotel/themes/${editingThemeId}`
+          : '/api/hotel/themes',
+        {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hotel_id: hotel.id,
+            name: themeName.trim(),
+            theme_config: config,
+            apply_now: false,
+          }),
+        }
+      );
       const json = await res.json();
 
       if (!json.success) {
-        throw new Error(json.error || 'Failed to save theme to library');
+        throw new Error(json.error || isEdit ? 'Failed to update theme' : 'Failed to save theme to library');
       }
 
       setSaveSuccess(true);
       setShowSaveDialog(false);
       setThemeName('');
+      if (onSaved) onSaved(config);
       setTimeout(() => setSaveSuccess(false), 3500);
     } catch (err: any) {
-      setError(err.message || 'Failed to save theme to library');
+      setError(err.message || (isEdit ? 'Failed to update theme' : 'Failed to save theme to library'));
     } finally {
       setSavingToLibrary(false);
     }
