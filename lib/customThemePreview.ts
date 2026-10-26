@@ -47,7 +47,7 @@ function cardBorder(config: CustomThemeConfig): string {
 }
 
 /** Map a button style to a CSS preview representation. */
-function buttonStyle(config: CustomThemeConfig): { background: string; border: string; color: string } {
+function buttonStyle(config: CustomThemeConfig): { background: string; border: string; color: string; borderRadius?: string } {
   switch (config.buttonStyle) {
     case 'outline':
       return { background: 'transparent', border: `1px solid ${config.primaryColor}`, color: config.primaryColor };
