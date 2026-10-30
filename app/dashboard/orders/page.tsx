@@ -42,18 +42,44 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function PaymentBadge({ status }: { status: string }) {
+  const key = normalise(status);
+  const paid = key === 'paid';
+  return (
+    <span
+      className="d3-badge px-2 py-0.5 rounded text-[0.65rem] font-bold tracking-tighter uppercase"
+      style={{
+        backgroundColor: paid ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+        borderColor: paid ? 'rgba(16,185,129,0.45)' : 'rgba(239,68,68,0.45)',
+        color: paid ? '#10b981' : '#ef4444',
+      }}
+    >
+      {paid ? '🟢 PAID' : '🔴 UNPAID'}
+    </span>
+  );
+}
+
 function getMinutesAgo(dateStr: string) {
   return Math.max(1, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
 }
 
 const TABS = ['all', 'pending', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
 
+const PAYMENT_FILTERS = ['all', 'paid', 'unpaid'];
+
+const PAYMENT_LABEL: Record<string, string> = {
+  all: 'All',
+  paid: 'Paid',
+  unpaid: 'Unpaid',
+};
+
 export default function LiveOrdersPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { orders, loading: ordersLoading, refetch: refetchOrders, updateOrderStatus, updatingOrderIds, error: ordersError } = useOrders(hotel?.id || null);
+  const { orders, loading: ordersLoading, refetch: refetchOrders, updateOrderStatus, updatePaymentStatus, updatingOrderIds, error: ordersError } = useOrders(hotel?.id || null);
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
   const [activeTab, setActiveTab] = useState('all');
+  const [activePaymentFilter, setActivePaymentFilter] = useState('all');
   const [updateError, setUpdateError] = useState<string | null>(null);
 
   const handleUpdateStatus = useCallback(
@@ -68,9 +94,28 @@ export default function LiveOrdersPage() {
     [updateOrderStatus]
   );
 
-  const filtered = orders.filter((o: Order) =>
-    activeTab === 'all' ? true : normalise(o.status) === activeTab
+  const handleUpdatePaymentStatus = useCallback(
+    async (id: string, paymentStatus: 'paid' | 'unpaid') => {
+      setPaymentError(null);
+      try {
+        await updatePaymentStatus(id, paymentStatus);
+        setPaymentSuccess(`Order marked as ${paymentStatus}.`);
+        setTimeout(() => setPaymentSuccess(null), 3000);
+      } catch (err: any) {
+        setPaymentError(err.message || 'Failed to update payment status');
+      }
+    },
+    [updatePaymentStatus]
   );
+
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+
+  const filtered = orders.filter((o: Order) => {
+    const statusMatch = activeTab === 'all' || normalise(o.status) === activeTab;
+    const paymentMatch = activePaymentFilter === 'all' || normalise(o.payment_status) === activePaymentFilter;
+    return statusMatch && paymentMatch;
+  });
 
   const getOrderItems = (order: Order) => {
     if (order.order_items && Array.isArray(order.order_items)) {
@@ -198,6 +243,67 @@ export default function LiveOrdersPage() {
         </div>
       )}
 
+      {/* Payment error notification */}
+      {paymentError && (
+        <div
+          style={{
+            padding: '0.875rem 1.25rem',
+            marginBottom: 1,
+            background: 'rgba(196,102,88,0.06)',
+            border: '1px solid rgba(196,102,88,0.25)',
+            borderRadius: 10,
+            color: '#C46658',
+            fontSize: '0.8125rem',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}
+        >
+          <span style={{ width: 14, height: 14, flexShrink: 0 }}>
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="7" cy="7" r="5.5" />
+              <line x1="7" y1="3" x2="7" y2="7" />
+            </svg>
+          </span>
+          <span>{paymentError}</span>
+          <button
+            type="button"
+            onClick={() => setPaymentError(null)}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Payment success notification */}
+      {paymentSuccess && (
+        <div
+          style={{
+            padding: '0.875rem 1.25rem',
+            marginBottom: 1,
+            background: 'rgba(16,185,129,0.08)',
+            border: '1px solid rgba(16,185,129,0.25)',
+            borderRadius: 10,
+            color: '#10b981',
+            fontSize: '0.8125rem',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}
+        >
+          <span style={{ width: 14, height: 14, flexShrink: 0 }}>
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="1 6 4 9 9 2" />
+            </svg>
+          </span>
+          <span>{paymentSuccess}</span>
+          <button
+            type="button"
+            onClick={() => setPaymentSuccess(null)}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Tab filter */}
       <div className="d3-segment" role="group" aria-label="Filter orders by status">
         {TABS.map((tab) => {
@@ -212,6 +318,25 @@ export default function LiveOrdersPage() {
               onClick={() => setActiveTab(tab)}
             >
               {tab} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Payment filter */}
+      <div className="d3-segment" role="group" aria-label="Filter orders by payment status">
+        {PAYMENT_FILTERS.map((pf) => {
+          const count = orders.filter((o: Order) => pf === 'all' || normalise(o.payment_status) === pf).length;
+          const isActive = activePaymentFilter === pf;
+          return (
+            <button
+              key={pf}
+              type="button"
+              className="d3-segment-item"
+              data-active={isActive}
+              onClick={() => setActivePaymentFilter(pf)}
+            >
+              {PAYMENT_LABEL[pf]} ({count})
             </button>
           );
         })}
@@ -289,6 +414,7 @@ export default function LiveOrdersPage() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
                     <StatusBadge status={order.status} />
+                    <PaymentBadge status={order.payment_status} />
                     <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
                   </div>
                 </div>
@@ -362,63 +488,87 @@ export default function LiveOrdersPage() {
 
                 {/* Actions — mirror the 5-stage flow shown to customers:
                      pending → accepted → preparing → ready → completed      */}
-                <div className="flex flex-col" style={{ gap: 8 }}>
-                  {normalise(order.status) === 'pending' && (
-                    <button
-                      type="button"
-                      disabled={updatingOrderIds.has(order.id)}
-                      onClick={() => handleUpdateStatus(order.id, 'accepted')}
-                      className="d3-btn-primary"
-                      style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                    >
-                      Accept Order
-                    </button>
-                  )}
-                  {(normalise(order.status) === 'accepted' || normalise(order.status) === 'pending') && (
-                    <button
-                      type="button"
-                      disabled={updatingOrderIds.has(order.id)}
-                      onClick={() => handleUpdateStatus(order.id, 'preparing')}
-                      className={normalise(order.status) === 'accepted' ? 'd3-btn-primary' : 'd3-btn-quiet'}
-                      style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                    >
-                      Start Preparing
-                    </button>
-                  )}
-                  {normalise(order.status) === 'preparing' && (
-                    <button
-                      type="button"
-                      disabled={updatingOrderIds.has(order.id)}
-                      onClick={() => handleUpdateStatus(order.id, 'ready')}
-                      className="d3-btn-quiet"
-                      style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                    >
-                      Mark Ready
-                    </button>
-                  )}
-                  {normalise(order.status) === 'ready' && (
-                    <button
-                      type="button"
-                      disabled={updatingOrderIds.has(order.id)}
-                      onClick={() => handleUpdateStatus(order.id, 'completed')}
-                      className="d3-btn-quiet"
-                      style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                    >
-                      Complete Order
-                    </button>
-                  )}
-                  {!['completed', 'cancelled'].includes(normalise(order.status)) && (
-                    <button
-                      type="button"
-                      disabled={updatingOrderIds.has(order.id)}
-                      onClick={() => handleUpdateStatus(order.id, 'cancelled')}
-                      className="d3-btn-inline d3-btn-danger"
-                      style={{ opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
+                  <div className="flex flex-col" style={{ gap: 8 }}>
+                    {normalise(order.status) === 'pending' && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'accepted')}
+                        className="d3-btn-primary"
+                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Accept Order
+                      </button>
+                    )}
+                    {(normalise(order.status) === 'accepted' || normalise(order.status) === 'pending') && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                        className={normalise(order.status) === 'accepted' ? 'd3-btn-primary' : 'd3-btn-quiet'}
+                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Start Preparing
+                      </button>
+                    )}
+                    {normalise(order.status) === 'preparing' && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'ready')}
+                        className="d3-btn-quiet"
+                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Mark Ready
+                      </button>
+                    )}
+                    {normalise(order.status) === 'ready' && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'completed')}
+                        className="d3-btn-quiet"
+                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Complete Order
+                      </button>
+                    )}
+                    {!['completed', 'cancelled'].includes(normalise(order.status)) && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'cancelled')}
+                        className="d3-btn-inline d3-btn-danger"
+                        style={{ opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    {/* Payment action — independent of order preparation status */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {normalise(order.payment_status) === 'unpaid' ? (
+                        <button
+                          type="button"
+                          disabled={updatingOrderIds.has(order.id)}
+                          onClick={() => handleUpdatePaymentStatus(order.id, 'paid')}
+                          className="d3-btn-primary"
+                          style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                        >
+                          Mark as Paid
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={updatingOrderIds.has(order.id)}
+                          onClick={() => handleUpdatePaymentStatus(order.id, 'unpaid')}
+                          className="d3-btn-quiet"
+                          style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                        >
+                          Mark as Unpaid
+                        </button>
+                      )}
+                    </div>
+                  </div>
               </article>
             );
           })}
