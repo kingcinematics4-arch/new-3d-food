@@ -208,18 +208,33 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // -----------------------------------------------------------------------
   // Polling fallback (and safety-net when Realtime is active)
   //
-  // • Realtime active  → poll every 15 s (safety net for missed events)
-  // • Realtime absent  → poll every 4 s  (responsive fallback)
-  // • Terminal order   → stop polling
+  // • Every poll fetches the current order status every 5 s
+  // • Uses recursive setTimeout (not setInterval) so a previous in-flight
+  //   fetch always completes before the next poll starts — no overlapping
+  //   API requests.
+  // • Terminal order → stop polling
   // -----------------------------------------------------------------------
   useEffect(() => {
     if (!order) return;
     if (isTerminal(order.status)) return;
 
-    const interval = realtimeOk ? 15_000 : 4_000;
-    const timer    = setInterval(() => loadOrder(true), interval);
-    return () => clearInterval(timer);
-  }, [order?.status, realtimeOk, loadOrder]);
+    const POLL_MS = 5_000;
+    let dead = false;
+
+    const tick = async () => {
+      if (dead) return;
+      await loadOrder(true);
+      if (!dead && !isTerminal(orderRef.current?.status ?? '')) {
+        setTimeout(tick, POLL_MS);
+      }
+    };
+
+    const timer = setTimeout(tick, POLL_MS);
+    return () => {
+      dead = true;
+      clearTimeout(timer);
+    };
+  }, [order?.status, loadOrder]);
 
   // -----------------------------------------------------------------------
   // Derived display values
