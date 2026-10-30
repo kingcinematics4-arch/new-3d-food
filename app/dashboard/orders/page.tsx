@@ -96,6 +96,11 @@ export default function LiveOrdersPage() {
 
   const handleUpdatePaymentStatus = useCallback(
     async (id: string, paymentStatus: 'paid' | 'unpaid') => {
+      const order = orders.find((o) => o.id === id);
+      if (order && normalise(order.status) === 'cancelled') {
+        setPaymentError('Cannot change payment status of a cancelled order.');
+        return;
+      }
       setPaymentError(null);
       try {
         await updatePaymentStatus(id, paymentStatus);
@@ -113,7 +118,11 @@ export default function LiveOrdersPage() {
 
   const filtered = orders.filter((o: Order) => {
     const statusMatch = activeTab === 'all' || normalise(o.status) === activeTab;
-    const paymentMatch = activePaymentFilter === 'all' || normalise(o.payment_status) === activePaymentFilter;
+    const isCancelled = normalise(o.status) === 'cancelled';
+    const paymentMatch =
+      activePaymentFilter === 'all'
+        ? true
+        : !isCancelled && normalise(o.payment_status) === activePaymentFilter;
     return statusMatch && paymentMatch;
   });
 
@@ -544,8 +553,9 @@ export default function LiveOrdersPage() {
                         Cancel
                       </button>
                     )}
-                    {/* Payment action — independent of order preparation status */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {/* Payment action — independent of order preparation status. Hidden for cancelled orders. */}
+                    {normalise(order.status) !== 'cancelled' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {normalise(order.payment_status) === 'unpaid' ? (
                         <button
                           type="button"
@@ -568,6 +578,7 @@ export default function LiveOrdersPage() {
                         </button>
                       )}
                     </div>
+                    )}
                   </div>
               </article>
             );
