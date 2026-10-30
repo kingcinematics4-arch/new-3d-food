@@ -10,6 +10,8 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+const normalise = (status: string) => (status || '').trim().toLowerCase();
+
 /* Shared chart palette — champagne and bone only */
 const INK_MUTED = '#9B968C';
 const INK_DIM = '#6B675F';
@@ -118,12 +120,18 @@ export default function AnalyticsDashboardPage() {
     });
   }, [orders, cutoff, now]);
 
+  const nonCancelledOrders = useMemo(() => {
+    return filteredOrders.filter((o: Order) => normalise(o.status) !== 'cancelled');
+  }, [filteredOrders]);
+
   const totalRevenue = useMemo(
-    () => filteredOrders.reduce((s: number, o: Order) => s + (o.total_amount || 0), 0),
-    [filteredOrders]
+    () => nonCancelledOrders.reduce((s: number, o: Order) => s + (o.total_amount || 0), 0),
+    [nonCancelledOrders]
   );
-  const totalOrdersCount = filteredOrders.length;
+  const totalOrdersCount = nonCancelledOrders.length;
   const aov = totalOrdersCount > 0 ? totalRevenue / totalOrdersCount : 0;
+
+  const cancelledCount = filteredOrders.filter((o: Order) => normalise(o.status) === 'cancelled').length;
 
   const dailyBuckets = useMemo(() => {
     const days: number = timeRange === 'today' ? 1 : timeRange === '7days' ? 7 : 30;
@@ -159,9 +167,18 @@ export default function AnalyticsDashboardPage() {
         return d >= bucket && d < next;
       }).length;
     });
+    const cancelledData = dailyBuckets.map((bucket) => {
+      const next = new Date(bucket);
+      next.setDate(next.getDate() + 1);
+      return filteredOrders.filter((o: Order) => {
+        const d = new Date(o.created_at);
+        return d >= bucket && d < next && normalise(o.status) === 'cancelled';
+      }).length;
+    });
     return [
       { name: 'Revenue', data: revData },
       { name: 'Orders Count', data: countData },
+      { name: 'Cancelled', data: cancelledData },
     ];
   }, [filteredOrders, dailyBuckets]);
 
@@ -243,7 +260,7 @@ export default function AnalyticsDashboardPage() {
       fontFamily: 'Inter, system-ui, sans-serif',
     },
     theme: { mode: 'dark' },
-    colors: [ACCENT, 'rgba(243,239,231,0.34)'],
+    colors: [ACCENT, 'rgba(243,239,231,0.34)', '#ef4444'],
     stroke: { curve: 'straight', width: 2, dashArray: 0 },
     markers: { size: 0, hover: { size: 4 } },
     fill: {
@@ -356,6 +373,15 @@ export default function AnalyticsDashboardPage() {
           label="Orders Placed"
           value={`${totalOrdersCount}`}
           note={totalOrdersCount > 0 ? 'Recorded against this menu' : 'No data yet'}
+        />
+        <Metric
+          label="Cancelled Orders"
+          value={`${cancelledCount}`}
+          note={
+            cancelledCount > 0
+              ? 'Excluded from revenue and AOV'
+              : 'No cancelled orders'
+          }
         />
         <Metric
           label="Average Order Value"
