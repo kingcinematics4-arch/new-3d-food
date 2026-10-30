@@ -193,6 +193,7 @@ export function useOrders(hotelId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isInitialLoad = useRef(true);
+  const updatingOrderIds = useRef<Set<string>>(new Set());
 
   const fetchOrders = useCallback(async (isBackground = false) => {
     if (!hotelId) {
@@ -234,6 +235,15 @@ export function useOrders(hotelId: string | null) {
   }, [hotelId, fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, status: string) => {
+    // Prevent duplicate clicks while this order is being updated
+    if (updatingOrderIds.current.has(orderId)) return;
+    updatingOrderIds.current.add(orderId);
+
+    const previousOrders = orders; // snapshot for rollback
+
+    // Optimistic update: reflect the new status immediately in the UI
+    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
+
     try {
       const res = await fetch('/api/orders/update-status', {
         method: 'POST',
@@ -241,15 +251,28 @@ export function useOrders(hotelId: string | null) {
         body: JSON.stringify({ order_id: orderId, status: status.toLowerCase() }),
       });
       const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Failed to update order status');
-      await fetchOrders(false);
+      if (!json.success) {
+        // API rejected — rollback to the previous state
+        setOrders(previousOrders);
+        throw new Error(json.error || 'Failed to update order status');
+      }
+
+      // API confirmed — sync with the server's version of this order
+      if (json.order) {
+        setOrders((prev) => prev.map((o) => o.id === orderId ? (json.order as Order) : o));
+      }
     } catch (err: any) {
       console.error('Error updating order status:', err);
+      // Rollback: restore the pre-click state
+      setOrders(previousOrders);
+      setError(err.message || 'Failed to update order status');
       throw err;
+    } finally {
+      updatingOrderIds.current.delete(orderId);
     }
   };
 
-  return { orders, loading, error, refetch: fetchOrders, updateOrderStatus };
+  return { orders, loading, error, refetch: fetchOrders, updateOrderStatus, updatingOrderIds: updatingOrderIds.current };
 }
 
 export function useDashboardStats(hotelId: string | null) {

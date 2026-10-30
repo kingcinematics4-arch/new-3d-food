@@ -50,17 +50,22 @@ const TABS = ['all', 'pending', 'accepted', 'preparing', 'ready', 'completed', '
 
 export default function LiveOrdersPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { orders, loading: ordersLoading, refetch: refetchOrders, updateOrderStatus } = useOrders(hotel?.id || null);
+  const { orders, loading: ordersLoading, refetch: refetchOrders, updateOrderStatus, updatingOrderIds, error: ordersError } = useOrders(hotel?.id || null);
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
   const [activeTab, setActiveTab] = useState('all');
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const handleUpdateStatus = useCallback(
     async (id: string, status: string) => {
-      await updateOrderStatus(id, status);
-      refetchOrders();
+      setUpdateError(null);
+      try {
+        await updateOrderStatus(id, status);
+      } catch (err: any) {
+        setUpdateError(err.message || 'Failed to update order status');
+      }
     },
-    [updateOrderStatus, refetchOrders]
+    [updateOrderStatus]
   );
 
   const filtered = orders.filter((o: Order) =>
@@ -161,6 +166,37 @@ export default function LiveOrdersPage() {
           ))}
         </div>
       </header>
+
+      {/* Update error notification */}
+      {updateError && (
+        <div
+          style={{
+            padding: '0.875rem 1.25rem',
+            marginBottom: 1,
+            background: 'rgba(196,102,88,0.06)',
+            border: '1px solid rgba(196,102,88,0.25)',
+            borderRadius: 10,
+            color: '#C46658',
+            fontSize: '0.8125rem',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}
+        >
+          <span style={{ width: 14, height: 14, flexShrink: 0 }}>
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="7" cy="7" r="5.5" />
+              <line x1="7" y1="3" x2="7" y2="7" />
+            </svg>
+          </span>
+          <span>{updateError}</span>
+          <button
+            type="button"
+            onClick={() => setUpdateError(null)}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Tab filter */}
       <div className="d3-segment" role="group" aria-label="Filter orders by status">
@@ -330,9 +366,10 @@ export default function LiveOrdersPage() {
                   {normalise(order.status) === 'pending' && (
                     <button
                       type="button"
+                      disabled={updatingOrderIds.has(order.id)}
                       onClick={() => handleUpdateStatus(order.id, 'accepted')}
                       className="d3-btn-primary"
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                     >
                       Accept Order
                     </button>
@@ -340,9 +377,10 @@ export default function LiveOrdersPage() {
                   {(normalise(order.status) === 'accepted' || normalise(order.status) === 'pending') && (
                     <button
                       type="button"
+                      disabled={updatingOrderIds.has(order.id)}
                       onClick={() => handleUpdateStatus(order.id, 'preparing')}
                       className={normalise(order.status) === 'accepted' ? 'd3-btn-primary' : 'd3-btn-quiet'}
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                     >
                       Start Preparing
                     </button>
@@ -350,9 +388,10 @@ export default function LiveOrdersPage() {
                   {normalise(order.status) === 'preparing' && (
                     <button
                       type="button"
+                      disabled={updatingOrderIds.has(order.id)}
                       onClick={() => handleUpdateStatus(order.id, 'ready')}
                       className="d3-btn-quiet"
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                     >
                       Mark Ready
                     </button>
@@ -360,9 +399,10 @@ export default function LiveOrdersPage() {
                   {normalise(order.status) === 'ready' && (
                     <button
                       type="button"
+                      disabled={updatingOrderIds.has(order.id)}
                       onClick={() => handleUpdateStatus(order.id, 'completed')}
                       className="d3-btn-quiet"
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                     >
                       Complete Order
                     </button>
@@ -370,8 +410,10 @@ export default function LiveOrdersPage() {
                   {!['completed', 'cancelled'].includes(normalise(order.status)) && (
                     <button
                       type="button"
+                      disabled={updatingOrderIds.has(order.id)}
                       onClick={() => handleUpdateStatus(order.id, 'cancelled')}
                       className="d3-btn-inline d3-btn-danger"
+                      style={{ opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                     >
                       Cancel
                     </button>
