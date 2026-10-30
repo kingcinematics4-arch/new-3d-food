@@ -272,7 +272,42 @@ export function useOrders(hotelId: string | null) {
     }
   };
 
-  return { orders, loading, error, refetch: fetchOrders, updateOrderStatus, updatingOrderIds: updatingOrderIds.current };
+  const updatePaymentStatus = async (orderId: string, paymentStatus: 'paid' | 'unpaid') => {
+    // Prevent duplicate clicks while this order is being updated
+    if (updatingOrderIds.current.has(orderId)) return;
+    updatingOrderIds.current.add(orderId);
+
+    const previousOrders = orders; // snapshot for rollback
+
+    // Optimistic update: reflect the new payment status immediately
+    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, payment_status: paymentStatus } : o));
+
+    try {
+      const res = await fetch('/api/orders/update-payment-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId, payment_status: paymentStatus }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setOrders(previousOrders);
+        throw new Error(json.error || 'Failed to update payment status');
+      }
+
+      if (json.order) {
+        setOrders((prev) => prev.map((o) => o.id === orderId ? (json.order as Order) : o));
+      }
+    } catch (err: any) {
+      console.error('Error updating payment status:', err);
+      setOrders(previousOrders);
+      setError(err.message || 'Failed to update payment status');
+      throw err;
+    } finally {
+      updatingOrderIds.current.delete(orderId);
+    }
+  };
+
+  return { orders, loading, error, refetch: fetchOrders, updateOrderStatus, updatePaymentStatus, updatingOrderIds: updatingOrderIds.current };
 }
 
 export function useDashboardStats(hotelId: string | null) {
