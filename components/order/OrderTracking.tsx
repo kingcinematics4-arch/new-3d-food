@@ -91,8 +91,7 @@ function isTerminal(status: string): boolean {
 
 function formatINR(amount: number): string {
   const value = Number(amount || 0);
-  if (value === 0) return '₹0';
-  return `₹${value.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
 }
 
 function formatDateTime(iso: string): string {
