@@ -35,8 +35,15 @@ const STATUS_CLASS: Record<string, string> = {
   cancelled: 'd3-status-cancelled',
 };
 
-function CancellationSourceLabel({ cancellationSource, cancelledBy }: { cancellationSource?: string | null; cancelledBy?: string | null }) {
-  const source = (cancellationSource || cancelledBy || '').toLowerCase().trim();
+function CancellationSourceLabel({ cancellationSource, cancelledBy, order }: { cancellationSource?: string | null; cancelledBy?: string | null; order?: any }) {
+  const source = (
+    cancellationSource || 
+    cancelledBy || 
+    order?.cancellationSource || 
+    order?.cancelled_by_source ||
+    order?.cancellation_source_by ||
+    ''
+  ).toLowerCase().trim();
   if (source === 'hotel' || source === 'restaurant') {
     return (
       <span
@@ -113,10 +120,16 @@ function CancellationSourceLabel({ cancellationSource, cancelledBy }: { cancella
   );
 }
 
-function StatusBadge({ status, cancellationSource, cancelledBy }: { status: string; cancellationSource?: string | null; cancelledBy?: string | null }) {
+function StatusBadge({ status, cancellationSource, cancelledBy, order }: { status: string; cancellationSource?: string | null; cancelledBy?: string | null; order?: any }) {
   const key = normalise(status);
   const isCancelled = key === 'cancelled';
-  const source = (cancellationSource || cancelledBy || '').toLowerCase().trim();
+  const source = (
+    cancellationSource || 
+    cancelledBy || 
+    order?.cancellationSource || 
+    order?.cancelled_by_source ||
+    ''
+  ).toLowerCase().trim();
   
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -546,9 +559,9 @@ export default function LiveOrdersPage() {
                     </p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
-                    <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} />
+                    <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
                     {normalise(order.status) === 'cancelled' && (
-                      <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} />
+                      <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
                     )}
                     {normalise(order.status) !== 'cancelled' && <PaymentBadge status={order.payment_status} />}
                     <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
