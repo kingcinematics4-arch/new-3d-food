@@ -602,12 +602,16 @@ export default function LiveOrdersPage() {
                   className="flex items-center justify-between"
                   style={{ borderTop: '1px solid var(--border-warm)', paddingTop: '0.875rem' }}
                 >
-                  <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
-                    {order.payment_method} · {order.payment_status}
-                  </span>
-                  <span className="d3-figure" style={{ fontSize: '1.125rem', color: 'var(--gold)' }}>
-                    {formatPrice(Number(order.total_amount) || 0, hotel?.currency)}
-                  </span>
+                  {normalise(order.status) === 'cancelled' ? null : (
+                    <>
+                      <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
+                        {order.payment_method} · {order.payment_status}
+                      </span>
+                      <span className="d3-figure" style={{ fontSize: '1.125rem', color: 'var(--gold)' }}>
+                        {formatPrice(Number(order.total_amount) || 0, hotel?.currency)}
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 {/* Cancellation reason shown only for cancelled orders */}
@@ -640,9 +644,92 @@ export default function LiveOrdersPage() {
                   </div>
                 )}
 
-                {/* Actions — mirror the 5-stage flow shown to customers:
-                     pending → accepted → preparing → ready → completed      */}
+                {/* Actions */}
+                {normalise(order.status) !== 'cancelled' && (
                   <div className="flex flex-col" style={{ gap: 8 }}>
+                    {normalise(order.status) === 'pending' && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'accepted')}
+                        className="d3-btn-primary"
+                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Accept Order
+                      </button>
+                    )}
+                    {(normalise(order.status) === 'accepted' || normalise(order.status) === 'pending') && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                        className={normalise(order.status) === 'accepted' ? 'd3-btn-primary' : 'd3-btn-quiet'}
+                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Start Preparing
+                      </button>
+                    )}
+                    {normalise(order.status) === 'preparing' && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'ready')}
+                        className="d3-btn-quiet"
+                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Mark Ready
+                      </button>
+                    )}
+                    {normalise(order.status) === 'ready' && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'completed')}
+                        className="d3-btn-quiet"
+                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Complete Order
+                      </button>
+                    )}
+                    {!['completed', 'cancelled'].includes(normalise(order.status)) && (
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={() => handleUpdateStatus(order.id, 'cancelled')}
+                        className="d3-btn-inline d3-btn-danger"
+                        style={{ opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    {/* Payment action hidden for cancelled orders. */}
+                    {normalise(order.status) !== 'cancelled' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {normalise(order.payment_status) === 'unpaid' ? (
+                        <button
+                          type="button"
+                          disabled={updatingOrderIds.has(order.id)}
+                          onClick={() => handleUpdatePaymentStatus(order.id, 'paid')}
+                          className="d3-btn-primary"
+                          style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                        >
+                          Mark as Paid
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={updatingOrderIds.has(order.id)}
+                          onClick={() => handleUpdatePaymentStatus(order.id, 'unpaid')}
+                          className="d3-btn-quiet"
+                          style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                        >
+                          Mark as Unpaid
+                        </button>
+                      )}
+                    </div>
+                    )}
+                  </div>
+                )}
                     {normalise(order.status) === 'pending' && (
                       <button
                         type="button"
@@ -724,7 +811,6 @@ export default function LiveOrdersPage() {
                       )}
                     </div>
                     )}
-                  </div>
               </article>
             );
           })}
