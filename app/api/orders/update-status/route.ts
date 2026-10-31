@@ -92,8 +92,10 @@ export async function POST(request: Request) {
       if (cancelledAtExists) {
         updatePayload.cancelled_at = new Date().toISOString();
       }
-      if (cancellationReasonExists && !updatePayload.cancellation_reason && validated.note) {
+      if (cancellationReasonExists && validated.note) {
         updatePayload.cancellation_reason = validated.note;
+      } else if (cancellationReasonExists && !updatePayload.cancellation_reason) {
+        updatePayload.cancellation_reason = 'Cancelled by hotel';
       }
     }
 
