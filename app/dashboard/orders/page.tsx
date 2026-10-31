@@ -550,7 +550,7 @@ export default function LiveOrdersPage() {
                     {normalise(order.status) === 'cancelled' && (
                       <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} />
                     )}
-                    <PaymentBadge status={order.payment_status} />
+                    {normalise(order.status) !== 'cancelled' && <PaymentBadge status={order.payment_status} />}
                     <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
                   </div>
                 </div>

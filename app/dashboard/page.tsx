@@ -395,9 +395,11 @@ export default function DashboardOverview() {
                     {((order.status || '').toLowerCase() === 'cancelled') && (
                       <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} />
                     )}
-                    <span className="d3-figure" style={{ fontSize: '1rem', color: 'var(--gold)' }}>
-                      {formatPrice(Number(order.total_amount) || 0, hotel?.currency)}
-                    </span>
+                    {((order.status || '').toLowerCase() !== 'cancelled') && (
+                      <span className="d3-figure" style={{ fontSize: '1rem', color: 'var(--gold)' }}>
+                        {formatPrice(Number(order.total_amount) || 0, hotel?.currency)}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
