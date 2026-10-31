@@ -599,33 +599,33 @@ export default function LiveOrdersPage() {
                   {orderItems.length === 0 ? (
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>No item details available</p>
                   ) : (
-                    <div style={{ maxHeight: orderItems.length > 2 ? 160 : 'none', overflowY: orderItems.length > 2 ? 'auto' : 'visible' }}>
+                    <div style={{ maxHeight: orderItems.length > 2 ? 180 : 'none', overflowY: orderItems.length > 2 ? 'auto' : 'visible' }}>
                       {orderItems.map((item: any) => (
                         <div
                           key={item.id}
                           className="flex items-start justify-between"
                           style={{
-                            padding: '0.375rem 0.5rem',
+                            padding: '0.5rem 0.625rem',
                             borderRadius: 6,
                             background: 'var(--bg-surface-2)',
                             border: '1px solid var(--border-subtle)',
-                            marginBottom: orderItems.length > 1 ? 4 : 0,
+                            marginBottom: orderItems.length > 1 ? 6 : 0,
                           }}
                         >
                           <div className="min-w-0">
                             <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
                               {item.quantity} × {item.name}
                             </span>
-                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 1 }}>
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 2 }}>
                               {formatPrice(item.price || 0, hotel?.currency)} per item
                             </span>
                             {item.notes && (
-                              <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 1 }}>
+                              <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 2 }}>
                                 Note: {item.notes}
                               </span>
                             )}
                           </div>
-                          <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: 8, flexShrink: 0 }}>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', fontWeight: 600, marginLeft: 8, flexShrink: 0 }}>
                             {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
                           </span>
                         </div>
