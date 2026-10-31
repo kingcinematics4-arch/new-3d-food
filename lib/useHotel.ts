@@ -78,6 +78,8 @@ export interface Order {
   created_at: string;
   updated_at: string;
   order_items?: OrderItem[];
+  cancellation_reason?: string | null;
+  cancelled_by?: string | null;
 }
 
 export interface OrderItem {

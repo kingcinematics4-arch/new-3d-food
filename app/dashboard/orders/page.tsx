@@ -497,6 +497,36 @@ export default function LiveOrdersPage() {
                   </span>
                 </div>
 
+                {/* Cancellation reason shown only for cancelled orders */}
+                {normalise(order.status) === 'cancelled' && order.cancellation_reason && (
+                  <div
+                    style={{
+                      marginTop: '0.875rem',
+                      padding: '0.625rem 0.75rem',
+                      borderRadius: 5,
+                      background: 'rgba(196,102,88,0.06)',
+                      border: '1px solid rgba(196,102,88,0.18)',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <strong style={{ color: '#C46658', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.625rem', display: 'block', marginBottom: 2 }}>
+                      Cancellation reason
+                    </strong>
+                    <span style={{ color: 'var(--text-secondary)' }}>{order.cancellation_reason}</span>
+                    {order.cancelled_by === 'customer' && (
+                      <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem', marginLeft: 8 }}>
+                        · Cancelled by customer
+                      </span>
+                    )}
+                    {order.cancelled_by === 'restaurant' && (
+                      <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem', marginLeft: 8 }}>
+                        · Cancelled by restaurant
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* Actions — mirror the 5-stage flow shown to customers:
                      pending → accepted → preparing → ready → completed      */}
                   <div className="flex flex-col" style={{ gap: 8 }}>
