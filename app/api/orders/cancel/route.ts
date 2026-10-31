@@ -1,18 +1,38 @@
 // app/api/orders/cancel/route.ts
 // Customer-initiated order cancellation.
-// The customer (guest) has no session, so ownership is verified by
-// matching the customer_phone they provide against the order's stored
-// phone number. Cancellation is only allowed while the order is pending
-// or accepted — once the restaurant starts preparing, it is locked.
+//
+// Ownership is verified by the order id itself: the customer reaches this
+// endpoint from their own order tracking page (`/order/[orderId]`), which is
+// the navigation they receive immediately after placing an order. No phone
+// number is collected or validated anymore.
+//
+// Cancellation is only allowed while the order is pending or accepted — once
+// the restaurant starts preparing, it is locked. A cancelled order cannot be
+// cancelled again (duplicate prevention).
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 
 const CANCEL_STATUSES = ['pending', 'accepted'] as const;
 
+const CANCELLATION_REASONS = [
+  'Dish not needed anymore',
+  'Taking too much time',
+  'Ordered by mistake',
+  'Ordered the wrong item',
+  'Found another option',
+  'Other',
+] as const;
+
 const cancelOrderSchema = z.object({
   order_id: z.string().min(1, 'order_id is required'),
-  customer_phone: z.string().min(1, 'customer_phone is required'),
+  cancellation_reason: z
+    .string()
+    .min(1, 'A cancellation reason is required')
+    .refine((val) => CANCELLATION_REASONS.includes(val as any), {
+      message: 'Invalid cancellation reason',
+    }),
+  other_reason: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -20,11 +40,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validated = cancelOrderSchema.parse(body);
 
-    // Fetch the order to verify existence, ownership and eligibility.
-    // Only columns present since migration 001 are selected:
+    // Resolve the reason text: if "Other" was selected, use the free-text
+    // explanation (falling back to "Other" when blank).
+    const reasonText =
+      validated.cancellation_reason === 'Other' && validated.other_reason
+        ? validated.other_reason.trim() || 'Other'
+        : validated.cancellation_reason;
+
+    // Fetch the order to verify existence and eligibility.
+    // Only columns present since migration 001 are selected, plus the new
+    // cancellation columns added by migration 015.
     const { data: currentOrder, error: fetchError } = await supabaseAdmin
       .from('orders')
-      .select('id, hotel_id, status, customer_phone')
+      .select('id, hotel_id, status, cancellation_reason, cancelled_by')
       .eq('id', validated.order_id)
       .single();
 
@@ -35,41 +63,52 @@ export async function POST(request: Request) {
       });
     }
 
-    // Customer ownership: the phone they provided must match the order's phone.
-    if (currentOrder.customer_phone !== validated.customer_phone) {
-      return new NextResponse(JSON.stringify({ success: false, error: 'Phone number does not match this order.' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      });
+    // Duplicate prevention: an already-cancelled order cannot be cancelled again.
+    const currentStatus = (currentOrder.status || '').trim().toLowerCase();
+    if (currentStatus === 'cancelled') {
+      return new NextResponse(
+        JSON.stringify({ success: false, error: 'This order has already been cancelled.' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        }
+      );
     }
 
     // Eligibility: only pending or accepted orders can be cancelled by the customer.
-    const currentStatus = (currentOrder.status || '').trim().toLowerCase();
     if (!CANCEL_STATUSES.includes(currentStatus as any)) {
-      return new NextResponse(JSON.stringify({
-        success: false,
-        error: `Orders in "${currentStatus}" status cannot be cancelled.`,
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      });
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          error: `Orders in "${currentStatus}" status cannot be cancelled.`,
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        }
+      );
     }
 
-    // Update status to cancelled (updated_at set by trigger)
+    // Update status to cancelled and record the reason + initiator.
+    // updated_at is set by the orders_touch_updated_at trigger (migration 007).
     const { data: updatedOrder, error: updateError } = await supabaseAdmin
       .from('orders')
-      .update({ status: 'cancelled' })
+      .update({
+        status: 'cancelled',
+        cancellation_reason: reasonText,
+        cancelled_by: 'customer',
+      })
       .eq('id', validated.order_id)
       .select()
       .single();
 
     if (updateError) throw updateError;
 
-    // Log the cancellation in history so staff can see it was customer-initiated
+    // Log the cancellation in history so staff can see it was customer-initiated.
     await supabaseAdmin.from('order_status_history').insert({
       order_id: validated.order_id,
       status: 'cancelled',
-      note: 'Cancelled by customer',
+      note: `Cancelled by customer — reason: ${reasonText}`,
     });
 
     return new NextResponse(JSON.stringify({ success: true, order: updatedOrder }), {
