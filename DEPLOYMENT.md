@@ -182,7 +182,7 @@ A separate admin surface for controlling the **public Dine3D website**. It is co
 independent of the Supabase authentication used by restaurant owners: no Supabase session can
 open `/admin`, and an admin session cannot open `/dashboard`.
 
-### Environment variables (server-side only — never prefix with `NEXT_PUBLIC_`)
+### Environment variables (server-side only ï¿½ never prefix with `NEXT_PUBLIC_`)
 
 | Variable | Purpose |
 | --- | --- |
@@ -197,7 +197,7 @@ Changing either value invalidates all existing admin sessions.
 **Vercel does not read `.env.local`.** A local admin login tells you nothing about whether the
 deployed app is configured.
 
-If `/admin/login` on the deployed site shows *"Admin access is not configured…"*, the variable is
+If `/admin/login` on the deployed site shows *"Admin access is not configuredï¿½"*, the variable is
 missing from the deployed environment. The comparison stays server-side; nothing about the
 architecture changes.
 
@@ -217,8 +217,8 @@ architecture changes.
 
 Never prefix these with `NEXT_PUBLIC_`. Next.js inlines any `NEXT_PUBLIC_*` variable into the
 client bundle at build time, which would publish the owner password to every visitor. The app reads
-`DINE3D_ADMIN_PASSWORD` from `process.env` on the server at request time, which is why a redeploy —
-not a cache clear — is what picks up a new value.
+`DINE3D_ADMIN_PASSWORD` from `process.env` on the server at request time, which is why a redeploy ï¿½
+not a cache clear ï¿½ is what picks up a new value.
 
 To confirm the deployed app is configured without revealing anything, open
 `https://<your-domain>/api/admin/auth/session`: `"configured": true` means the variable reached the

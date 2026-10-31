@@ -20,6 +20,7 @@ const updateStatusSchema = z.object({
   order_id: z.string().min(1, 'order_id is required'),
   status: z.enum(VALID_STATUSES),
   note: z.string().optional(),
+  cancellation_reason: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -92,10 +93,14 @@ export async function POST(request: Request) {
       if (cancelledAtExists) {
         updatePayload.cancelled_at = new Date().toISOString();
       }
-      if (cancellationReasonExists && validated.note) {
-        updatePayload.cancellation_reason = validated.note;
-      } else if (cancellationReasonExists && !updatePayload.cancellation_reason) {
-        updatePayload.cancellation_reason = 'Cancelled by hotel';
+      if (cancellationReasonExists) {
+        if (validated.cancellation_reason) {
+          updatePayload.cancellation_reason = validated.cancellation_reason;
+        } else if (validated.note) {
+          updatePayload.cancellation_reason = validated.note;
+        } else if (!updatePayload.cancellation_reason) {
+          updatePayload.cancellation_reason = 'Cancelled by hotel';
+        }
       }
     }
 

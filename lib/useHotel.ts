@@ -247,11 +247,11 @@ export function useOrders(hotelId: string | null) {
   const { data: orders = [], isLoading: loading, error, refetch } = query;
 
   const updateOrderStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+    mutationFn: async ({ orderId, status, cancellationReason }: { orderId: string; status: string; cancellationReason?: string }) => {
       const json = await fetchJson('/api/orders/update-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: orderId, status: status.toLowerCase() }),
+        body: JSON.stringify({ order_id: orderId, status: status.toLowerCase(), cancellation_reason: cancellationReason }),
       });
       if (!json.success) throw new Error(json.error || 'Failed to update order status');
       return json.order as Order;
