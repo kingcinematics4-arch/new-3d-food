@@ -12,6 +12,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
+import { getOrdersSchema } from '@/lib/ordersSchema';
+
+function isStoredReferenceNumber(value: string): boolean {
+  return /^DINE-\d+$/i.test(value);
+}
 
 const CANCEL_STATUSES = ['pending', 'accepted'] as const;
 
@@ -47,13 +52,21 @@ export async function POST(request: Request) {
         ? validated.other_reason.trim() || 'Other'
         : validated.cancellation_reason;
 
+    // Determine whether the incoming order_id is a stored DINE-<digits>
+    // reference number or the raw uuid. The public orders route resolves
+    // the same way: DINE references match orders.order_number, anything
+    // else matches orders.id. This matters because the customer tracking
+    // link can carry either identifier.
+    const schema = await getOrdersSchema();
+    const lookupColumn = schema.orderNumber && isStoredReferenceNumber(validated.order_id)
+      ? 'order_number'
+      : 'id';
+
     // Fetch the order to verify existence and eligibility.
-    // Only columns present since migration 001 are selected, plus the new
-    // cancellation columns added by migration 015.
     const { data: currentOrder, error: fetchError } = await supabaseAdmin
       .from('orders')
       .select('id, hotel_id, status, cancellation_reason, cancelled_by')
-      .eq('id', validated.order_id)
+      .eq(lookupColumn, validated.order_id)
       .single();
 
     if (fetchError || !currentOrder) {
@@ -62,6 +75,9 @@ export async function POST(request: Request) {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });
     }
+
+    // Use the actual row id for all subsequent writes.
+    const orderId = currentOrder.id;
 
     // Duplicate prevention: an already-cancelled order cannot be cancelled again.
     const currentStatus = (currentOrder.status || '').trim().toLowerCase();
@@ -98,7 +114,7 @@ export async function POST(request: Request) {
         cancellation_reason: reasonText,
         cancelled_by: 'customer',
       })
-      .eq('id', validated.order_id)
+      .eq('id', orderId)
       .select()
       .single();
 
@@ -106,7 +122,7 @@ export async function POST(request: Request) {
 
     // Log the cancellation in history so staff can see it was customer-initiated.
     await supabaseAdmin.from('order_status_history').insert({
-      order_id: validated.order_id,
+      order_id: orderId,
       status: 'cancelled',
       note: `Cancelled by customer — reason: ${reasonText}`,
     });
