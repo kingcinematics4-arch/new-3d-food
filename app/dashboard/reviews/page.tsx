@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useMemo } from 'react';
 import { useHotel, useReviews, Review } from '@/lib/useHotel';
 
@@ -156,7 +158,7 @@ export default function ReviewsDashboardPage() {
     return dist;
   }, [reviews]);
 
-  const loading = hotelLoading || reviewsLoading;
+  const loading = hotelLoading;
 
   return (
     <div className="flex flex-col gap-8" style={{ maxWidth: 1180 }}>

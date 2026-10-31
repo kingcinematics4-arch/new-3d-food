@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useHotel } from '@/lib/useHotel';
@@ -238,7 +240,7 @@ export default function CustomThemesPage() {
 
   const activeId = hotel ? activeThemeId : null;
 
-  if (hotelLoading || loading) {
+  if (hotelLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <div className="flex flex-col gap-2 text-center">

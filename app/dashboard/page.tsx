@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 import Link from 'next/link';
 import { useHotel, useOrders, useDashboardStats } from '@/lib/useHotel';
@@ -50,8 +52,8 @@ const STATUS_CLASS: Record<string, string> = {
 
 export default function DashboardOverview() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { orders, loading: ordersLoading } = useOrders(hotel?.id || null);
-  const { stats, loading: statsLoading } = useDashboardStats(hotel?.id || null);
+  const { orders, refetch: refetchOrders } = useOrders(hotel?.id || null);
+  const { stats, refetch: refetchStats } = useDashboardStats(hotel?.id || null);
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
 
@@ -69,7 +71,7 @@ export default function DashboardOverview() {
     )},
   ];
 
-  if (hotelLoading || statsLoading) {
+  if (hotelLoading) {
     return (
       <div className="flex flex-col gap-8" style={{ maxWidth: 1180 }}>
         <div>

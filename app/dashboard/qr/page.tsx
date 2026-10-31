@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { useHotel } from '@/lib/useHotel';
