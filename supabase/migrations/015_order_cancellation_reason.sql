@@ -7,6 +7,7 @@
 -- Columns:
 --   cancellation_reason text   -- free-form reason text (selected reason, or 'Other' explanation)
 --   cancelled_by        text   -- 'customer' or 'restaurant'; defaults to NULL
+--   cancellation_source text   -- 'hotel' or 'customer'; defaults to NULL
 --
 -- Idempotent / safe to re-run: every statement uses IF NOT EXISTS / IF EXISTS.
 -- RLS and existing policies are untouched.
@@ -17,14 +18,21 @@ ALTER TABLE public.orders
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS cancelled_by text;
 
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS cancellation_source text;
+
 -- Index so the dashboard can list cancelled orders by reason/initiator quickly.
 CREATE INDEX IF NOT EXISTS idx_orders_cancelled_by_reason
   ON public.orders (cancelled_by, cancellation_reason)
+  WHERE status = 'cancelled';
+
+CREATE INDEX IF NOT EXISTS idx_orders_cancellation_source
+  ON public.orders (cancellation_source)
   WHERE status = 'cancelled';
 
 -- Verify (read-only, safe to run any time)
 SELECT column_name, data_type, is_nullable
 FROM information_schema.columns
 WHERE table_schema = 'public' AND table_name = 'orders'
-  AND column_name IN ('cancellation_reason', 'cancelled_by')
+  AND column_name IN ('cancellation_reason', 'cancelled_by', 'cancellation_source')
 ORDER BY ordinal_position;

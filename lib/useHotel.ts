@@ -80,6 +80,7 @@ export interface Order {
   order_items?: OrderItem[];
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
+  cancellation_source?: 'hotel' | 'customer' | string | null;
 }
 
 export interface OrderItem {

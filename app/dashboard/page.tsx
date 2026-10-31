@@ -50,6 +50,59 @@ const STATUS_CLASS: Record<string, string> = {
   cancelled: 'd3-status-cancelled',
 };
 
+function StatusBadge({ status, cancellationSource }: { status: string; cancellationSource?: string | null }) {
+  const key = (status || '').toLowerCase();
+  const isCancelled = key === 'cancelled';
+  const source = (cancellationSource || '').toLowerCase().trim();
+  
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span className={`d3-badge ${STATUS_CLASS[key] || STATUS_CLASS.cancelled}`}>
+        {status}
+      </span>
+      {isCancelled && (
+        source === 'hotel' || source === 'restaurant' ? (
+          <span
+            title="Cancelled by Hotel"
+            aria-label="Cancelled by Hotel"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 14,
+              height: 14,
+              color: '#C46658',
+              flexShrink: 0,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 6 6)" />
+            </svg>
+          </span>
+        ) : source === 'customer' ? (
+          <span
+            title="Cancelled by Customer"
+            aria-label="Cancelled by Customer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 14,
+              height: 14,
+              color: '#C46658',
+              flexShrink: 0,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+        ) : null
+      )}
+    </span>
+  );
+}
+
 export default function DashboardOverview() {
   const { hotel, loading: hotelLoading } = useHotel();
   const { orders, refetch: refetchOrders } = useOrders(hotel?.id || null);
@@ -260,9 +313,7 @@ export default function DashboardOverview() {
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                    <span className={`d3-badge ${STATUS_CLASS[(order.status || '').toLowerCase()] || STATUS_CLASS.cancelled}`}>
-                      {order.status}
-                    </span>
+                    <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source || (order as any).cancelled_by} />
                     <span className="d3-figure" style={{ fontSize: '1rem', color: 'var(--gold)' }}>
                       {formatPrice(Number(order.total_amount) || 0, hotel?.currency)}
                     </span>

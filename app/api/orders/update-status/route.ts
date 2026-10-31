@@ -75,9 +75,23 @@ export async function POST(request: Request) {
     }
 
     // 1. Update order status (updated_at will be set by trigger)
+    const updatePayload: Record<string, any> = { status: validated.status };
+
+    // If cancelling, record who initiated the cancellation (hotel/restaurant)
+    if (validated.status === 'cancelled') {
+      const cancellationSourceExists = await columnExists('orders', 'cancellation_source');
+      const cancelledByExists = await columnExists('orders', 'cancelled_by');
+      if (cancellationSourceExists) {
+        updatePayload.cancellation_source = 'hotel';
+      }
+      if (cancelledByExists) {
+        updatePayload.cancelled_by = 'restaurant';
+      }
+    }
+
     const { data: updatedOrder, error: updateError } = await supabaseAdmin
       .from('orders')
-      .update({ status: validated.status })
+      .update(updatePayload)
       .eq('id', validated.order_id)
       .select()
       .single();
@@ -110,5 +124,26 @@ export async function POST(request: Request) {
         'Expires': '0',
       },
     });
+  }
+}
+
+/**
+ * Probe whether a column exists on a table. Returns false gracefully for
+ * missing-column PostgREST codes (42703, PGRST204, PGRST205) instead of
+ * throwing.
+ */
+async function columnExists(table: string, column: string): Promise<boolean> {
+  try {
+    const { error } = await supabaseAdmin
+      .from(table)
+      .select(column)
+      .limit(1);
+    if (!error) return true;
+    if (error.code && ['42703', 'PGRST204', 'PGRST205'].includes(error.code)) return false;
+    console.error(`[update-status] column probe for ${table}.${column} failed:`, error.message);
+    return false;
+  } catch (err: any) {
+    console.error(`[update-status] column probe for ${table}.${column} threw:`, err?.message);
+    return false;
   }
 }

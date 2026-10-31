@@ -35,11 +35,55 @@ const STATUS_CLASS: Record<string, string> = {
   cancelled: 'd3-status-cancelled',
 };
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, cancellationSource }: { status: string; cancellationSource?: string | null }) {
   const key = normalise(status);
+  const isCancelled = key === 'cancelled';
+  const source = (cancellationSource || '').toLowerCase().trim();
+  
   return (
-    <span className={`d3-badge ${STATUS_CLASS[key] || STATUS_CLASS.cancelled}`}>
-      {STATUS_LABEL[key] || key || 'unknown'}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span className={`d3-badge ${STATUS_CLASS[key] || STATUS_CLASS.cancelled}`}>
+        {STATUS_LABEL[key] || key || 'unknown'}
+      </span>
+      {isCancelled && (
+        source === 'hotel' ? (
+          <span
+            title="Cancelled by Hotel"
+            aria-label="Cancelled by Hotel"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 16,
+              height: 16,
+              color: '#C46658',
+              flexShrink: 0,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 6 6)" />
+            </svg>
+          </span>
+        ) : source === 'customer' ? (
+          <span
+            title="Cancelled by Customer"
+            aria-label="Cancelled by Customer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 16,
+              height: 16,
+              color: '#C46658',
+              flexShrink: 0,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+        ) : null
+      )}
     </span>
   );
 }
@@ -424,7 +468,7 @@ export default function LiveOrdersPage() {
                     </p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
-                    <StatusBadge status={order.status} />
+                    <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source || order.cancelled_by} />
                     <PaymentBadge status={order.payment_status} />
                     <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
                   </div>

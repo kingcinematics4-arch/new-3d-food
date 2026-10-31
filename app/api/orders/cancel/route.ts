@@ -140,14 +140,19 @@ export async function POST(request: Request) {
     // Probe whether cancellation columns exist before using them.
     const cancellationReasonExists = await columnExists('orders', 'cancellation_reason');
     const cancelledByExists = await columnExists('orders', 'cancelled_by');
+    const cancellationSourceExists = await columnExists('orders', 'cancellation_source');
     diagnostics.cancellation_reason_exists = cancellationReasonExists;
     diagnostics.cancelled_by_exists = cancelledByExists;
+    diagnostics.cancellation_source_exists = cancellationSourceExists;
 
     if (cancellationReasonExists) {
       updatePayload.cancellation_reason = reasonText;
     }
     if (cancelledByExists) {
       updatePayload.cancelled_by = 'customer';
+    }
+    if (cancellationSourceExists) {
+      updatePayload.cancellation_source = 'customer';
     }
 
     diagnostics.update_payload = updatePayload;
