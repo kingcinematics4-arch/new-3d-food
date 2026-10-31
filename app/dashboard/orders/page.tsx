@@ -226,9 +226,18 @@ export default function LiveOrdersPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+  const [actionsOpen, setActionsOpen] = useState<Record<string, boolean>>({});
 
   const toggleOrderExpanded = useCallback((orderId: string) => {
     setExpandedOrders((prev) => ({
+      ...prev,
+      [orderId]: !prev[orderId],
+    }));
+  }, []);
+
+  const toggleActions = useCallback((orderId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setActionsOpen((prev) => ({
       ...prev,
       [orderId]: !prev[orderId],
     }));
@@ -507,7 +516,7 @@ export default function LiveOrdersPage() {
             return (
               <article
                 key={order.id}
-                className="d3-panel p-5 flex flex-col gap-4"
+                className="d3-panel p-4 flex flex-col gap-3"
                 style={
                   isNew
                     ? {
@@ -531,31 +540,34 @@ export default function LiveOrdersPage() {
                   }}
                   aria-expanded={!!expandedOrders[order.id]}
                 >
-                  <div>
-                    <span
-                      className="d3-figure"
-                      style={{ display: 'block', fontSize: '1.125rem' }}
-                    >
-                      Table {order.table_number || '—'}
-                    </span>
-                    <span
-                      style={{
-                        display: 'block',
-                        marginTop: 4,
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                        fontSize: '0.625rem',
-                        letterSpacing: '0.06em',
-                        color: 'var(--text-dimmed)',
-                      }}
-                    >
-                      #{order.id.slice(0, 8).toUpperCase()}
-                    </span>
-                    <p style={{ margin: '0.375rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {order.customer_name || 'Guest'}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="d3-figure" style={{ fontSize: '1rem' }}>
+                        Table {order.table_number || '—'}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                          fontSize: '0.625rem',
+                          letterSpacing: '0.06em',
+                          color: 'var(--text-dimmed)',
+                        }}
+                      >
+                        #{order.id.slice(0, 8).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
+                      {normalise(order.status) === 'cancelled' && (
+                        <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
+                      )}
+                    </div>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {order.customer_name || 'Guest'} · {minsAgo} min ago
                     </p>
-                    {orderItems.length === 1 && !expandedOrders[order.id] && (
+                    {orderItems.length === 1 && (
                       <div style={{ marginTop: '0.375rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        <span style={{ fontWeight: 600 }}>{orderItems[0].quantity}× {orderItems[0].name}</span>
+                        <span style={{ fontWeight: 600 }}>{orderItems[0].quantity} × {orderItems[0].name}</span>
                         <span style={{ marginLeft: 6, color: 'var(--text-dimmed)' }}>
                           {formatPrice((orderItems[0].price * orderItems[0].quantity) || 0, hotel?.currency)}
                         </span>
@@ -567,17 +579,13 @@ export default function LiveOrdersPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                      <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
-                      {normalise(order.status) === 'cancelled' && (
-                        <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
-                      )}
-                    </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                    <span className="d3-figure" style={{ fontSize: '1rem', color: 'var(--gold)' }}>
+                      {order.total_amount != null ? formatPrice(Number(order.total_amount) || 0, hotel?.currency) : 'N/A'}
+                    </span>
                     {normalise(order.status) !== 'cancelled' && <PaymentBadge status={order.payment_status} />}
-                    <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
                     <span style={{ fontSize: '0.625rem', color: 'var(--gold)' }}>
-                      {expandedOrders[order.id] ? '▲ Collapse' : '▼ Expand'}
+                      {expandedOrders[order.id] ? 'Collapse' : 'Expand'}
                     </span>
                   </div>
                 </div>
@@ -586,40 +594,43 @@ export default function LiveOrdersPage() {
                 {expandedOrders[order.id] && (
                 <div
                   className="flex flex-col gap-1.5"
-                  style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.875rem' }}
+                  style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}
                 >
                   {orderItems.length === 0 ? (
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>No item details available</p>
                   ) : (
-                    orderItems.map((item: any) => (
-                      <div
-                        key={item.id}
-                        className="flex items-start justify-between"
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: 6,
-                          background: 'var(--bg-surface-2)',
-                          border: '1px solid var(--border-subtle)',
-                        }}
-                      >
-                        <div className="min-w-0">
-                          <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
-                            {item.quantity} × {item.name}
-                          </span>
-                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 2 }}>
-                            {formatPrice(item.price || 0, hotel?.currency)} per item
-                          </span>
-                          {item.notes && (
-                            <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 2 }}>
-                              Note: {item.notes}
+                    <div style={{ maxHeight: orderItems.length > 2 ? 160 : 'none', overflowY: orderItems.length > 2 ? 'auto' : 'visible' }}>
+                      {orderItems.map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="flex items-start justify-between"
+                          style={{
+                            padding: '0.375rem 0.5rem',
+                            borderRadius: 6,
+                            background: 'var(--bg-surface-2)',
+                            border: '1px solid var(--border-subtle)',
+                            marginBottom: orderItems.length > 1 ? 4 : 0,
+                          }}
+                        >
+                          <div className="min-w-0">
+                            <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
+                              {item.quantity} × {item.name}
                             </span>
-                          )}
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 1 }}>
+                              {formatPrice(item.price || 0, hotel?.currency)} per item
+                            </span>
+                            {item.notes && (
+                              <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 1 }}>
+                                Note: {item.notes}
+                              </span>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: 8, flexShrink: 0 }}>
+                            {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
+                          </span>
                         </div>
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: 8, flexShrink: 0 }}>
-                          {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
-                        </span>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   )}
                 </div>
                 )}
