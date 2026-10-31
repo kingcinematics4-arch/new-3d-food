@@ -225,6 +225,14 @@ export default function LiveOrdersPage() {
 
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+  const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+
+  const toggleOrderExpanded = useCallback((orderId: string) => {
+    setExpandedOrders((prev) => ({
+      ...prev,
+      [orderId]: !prev[orderId],
+    }));
+  }, []);
 
   const filtered = orders.filter((o: Order) => {
     const statusMatch = activeTab === 'all' || normalise(o.status) === activeTab;
@@ -510,7 +518,19 @@ export default function LiveOrdersPage() {
                 }
               >
                 {/* Order Header */}
-                <div className="flex items-start justify-between gap-3">
+                <div
+                  className="flex items-start justify-between gap-3 cursor-pointer"
+                  onClick={() => toggleOrderExpanded(order.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleOrderExpanded(order.id);
+                    }
+                  }}
+                  aria-expanded={!!expandedOrders[order.id]}
+                >
                   <div>
                     <span
                       className="d3-figure"
@@ -533,6 +553,19 @@ export default function LiveOrdersPage() {
                     <p style={{ margin: '0.375rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {order.customer_name || 'Guest'}
                     </p>
+                    {orderItems.length === 1 && !expandedOrders[order.id] && (
+                      <div style={{ marginTop: '0.375rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontWeight: 600 }}>{orderItems[0].quantity}× {orderItems[0].name}</span>
+                        <span style={{ marginLeft: 6, color: 'var(--text-dimmed)' }}>
+                          {formatPrice((orderItems[0].price * orderItems[0].quantity) || 0, hotel?.currency)}
+                        </span>
+                      </div>
+                    )}
+                    {orderItems.length > 1 && !expandedOrders[order.id] && (
+                      <div style={{ marginTop: '0.375rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {orderItems.length} items
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -543,10 +576,14 @@ export default function LiveOrdersPage() {
                     </div>
                     {normalise(order.status) !== 'cancelled' && <PaymentBadge status={order.payment_status} />}
                     <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
+                    <span style={{ fontSize: '0.625rem', color: 'var(--gold)' }}>
+                      {expandedOrders[order.id] ? '▲ Collapse' : '▼ Expand'}
+                    </span>
                   </div>
                 </div>
 
                 {/* Items */}
+                {expandedOrders[order.id] && (
                 <div
                   className="flex flex-col gap-1.5"
                   style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.875rem' }}
@@ -566,12 +603,12 @@ export default function LiveOrdersPage() {
                         }}
                       >
                         <div className="min-w-0">
-                            <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
-                              {item.quantity} × {item.name}
-                            </span>
-                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 2 }}>
-                              {formatPrice(item.price || 0, hotel?.currency)} per item
-                            </span>
+                          <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
+                            {item.quantity} × {item.name}
+                          </span>
+                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 2 }}>
+                            {formatPrice(item.price || 0, hotel?.currency)} per item
+                          </span>
                           {item.notes && (
                             <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 2 }}>
                               Note: {item.notes}
@@ -585,6 +622,7 @@ export default function LiveOrdersPage() {
                     ))
                   )}
                 </div>
+                )}
 
                 {/* Order total */}
                 {order.notes && (
@@ -647,13 +685,13 @@ export default function LiveOrdersPage() {
                 )}
 
                 {/* Actions */}
-                {normalise(order.status) !== 'cancelled' && (
+                {normalise(order.status) !== 'cancelled' && expandedOrders[order.id] && (
                   <div className="flex flex-col" style={{ gap: 8 }}>
                     {normalise(order.status) === 'pending' && (
                       <button
                         type="button"
                         disabled={updatingOrderIds.has(order.id)}
-                        onClick={() => handleUpdateStatus(order.id, 'accepted')}
+                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'accepted'); }}
                         className="d3-btn-primary"
                         style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                       >
@@ -664,7 +702,7 @@ export default function LiveOrdersPage() {
                       <button
                         type="button"
                         disabled={updatingOrderIds.has(order.id)}
-                        onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'preparing'); }}
                         className={normalise(order.status) === 'accepted' ? 'd3-btn-primary' : 'd3-btn-quiet'}
                         style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                       >
@@ -675,7 +713,7 @@ export default function LiveOrdersPage() {
                       <button
                         type="button"
                         disabled={updatingOrderIds.has(order.id)}
-                        onClick={() => handleUpdateStatus(order.id, 'ready')}
+                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'ready'); }}
                         className="d3-btn-quiet"
                         style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                       >
@@ -686,7 +724,7 @@ export default function LiveOrdersPage() {
                       <button
                         type="button"
                         disabled={updatingOrderIds.has(order.id)}
-                        onClick={() => handleUpdateStatus(order.id, 'completed')}
+                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'completed'); }}
                         className="d3-btn-quiet"
                         style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                       >
@@ -697,21 +735,21 @@ export default function LiveOrdersPage() {
                       <button
                         type="button"
                         disabled={updatingOrderIds.has(order.id)}
-                        onClick={() => handleUpdateStatus(order.id, 'cancelled')}
+                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'cancelled'); }}
                         className="d3-btn-inline d3-btn-danger"
                         style={{ opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                       >
-                        Cancel
+                        Cancel Order
                       </button>
                     )}
                     {/* Payment action hidden for cancelled orders. */}
-                    {normalise(order.status) !== 'cancelled' && (
+                    {normalise(order.status) !== 'cancelled' && expandedOrders[order.id] && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {normalise(order.payment_status) === 'unpaid' ? (
                         <button
                           type="button"
                           disabled={updatingOrderIds.has(order.id)}
-                          onClick={() => handleUpdatePaymentStatus(order.id, 'paid')}
+                          onClick={(e) => { e.stopPropagation(); handleUpdatePaymentStatus(order.id, 'paid'); }}
                           className="d3-btn-primary"
                           style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                         >
@@ -721,7 +759,7 @@ export default function LiveOrdersPage() {
                         <button
                           type="button"
                           disabled={updatingOrderIds.has(order.id)}
-                          onClick={() => handleUpdatePaymentStatus(order.id, 'unpaid')}
+                          onClick={(e) => { e.stopPropagation(); handleUpdatePaymentStatus(order.id, 'unpaid'); }}
                           className="d3-btn-quiet"
                           style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                         >
