@@ -141,9 +141,11 @@ export async function POST(request: Request) {
     const cancellationReasonExists = await columnExists('orders', 'cancellation_reason');
     const cancelledByExists = await columnExists('orders', 'cancelled_by');
     const cancellationSourceExists = await columnExists('orders', 'cancellation_source');
+    const cancelledAtExists = await columnExists('orders', 'cancelled_at');
     diagnostics.cancellation_reason_exists = cancellationReasonExists;
     diagnostics.cancelled_by_exists = cancelledByExists;
     diagnostics.cancellation_source_exists = cancellationSourceExists;
+    diagnostics.cancelled_at_exists = cancelledAtExists;
 
     if (cancellationReasonExists) {
       updatePayload.cancellation_reason = reasonText;
@@ -153,6 +155,9 @@ export async function POST(request: Request) {
     }
     if (cancellationSourceExists) {
       updatePayload.cancellation_source = 'customer';
+    }
+    if (cancelledAtExists) {
+      updatePayload.cancelled_at = new Date().toISOString();
     }
 
     diagnostics.update_payload = updatePayload;

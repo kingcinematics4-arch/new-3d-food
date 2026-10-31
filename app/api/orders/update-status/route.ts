@@ -81,11 +81,19 @@ export async function POST(request: Request) {
     if (validated.status === 'cancelled') {
       const cancellationSourceExists = await columnExists('orders', 'cancellation_source');
       const cancelledByExists = await columnExists('orders', 'cancelled_by');
+      const cancelledAtExists = await columnExists('orders', 'cancelled_at');
+      const cancellationReasonExists = await columnExists('orders', 'cancellation_reason');
       if (cancellationSourceExists) {
         updatePayload.cancellation_source = 'hotel';
       }
       if (cancelledByExists) {
         updatePayload.cancelled_by = 'restaurant';
+      }
+      if (cancelledAtExists) {
+        updatePayload.cancelled_at = new Date().toISOString();
+      }
+      if (cancellationReasonExists && !updatePayload.cancellation_reason && validated.note) {
+        updatePayload.cancellation_reason = validated.note;
       }
     }
 
