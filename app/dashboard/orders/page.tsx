@@ -608,16 +608,12 @@ export default function LiveOrdersPage() {
                   className="flex items-center justify-between"
                   style={{ borderTop: '1px solid var(--border-warm)', paddingTop: '0.875rem' }}
                 >
-                  {normalise(order.status) === 'cancelled' ? null : (
-                    <>
-                      <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
-                        {order.payment_method} · {order.payment_status}
-                      </span>
-                      <span className="d3-figure" style={{ fontSize: '1.125rem', color: 'var(--gold)' }}>
-                        {formatPrice(Number(order.total_amount) || 0, hotel?.currency)}
-                      </span>
-                    </>
-                  )}
+                  <span style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                    TOTAL ORDER AMOUNT
+                  </span>
+                  <span className="d3-figure" style={{ fontSize: '1.25rem', color: 'var(--gold)' }}>
+                    {order.total_amount != null ? formatPrice(Number(order.total_amount) || 0, hotel?.currency) : 'N/A'}
+                  </span>
                 </div>
 
                 {/* Cancellation reason shown only for cancelled orders */}
