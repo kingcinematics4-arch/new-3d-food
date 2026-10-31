@@ -609,17 +609,23 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   position: 'fixed', inset: 0, zIndex: 50,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'rgba(0,0,0,0.55)',
+                  overflowX: 'hidden',
+                  overflowY: 'auto',
                 }}
               >
                 <div
                   style={{
+                    boxSizing: 'border-box',
                     background: 'var(--bg-surface)',
                     border: '1px solid var(--border-warm)',
                     borderRadius: 16,
                     padding: '1.5rem',
-                    maxWidth: '320px',
-                    width: '90vw',
+                    maxWidth: '340px',
+                    width: 'min(92vw, 340px)',
                     color: 'var(--text-primary)',
+                    maxHeight: 'min(90vh, 520px)',
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
                   }}
                 >
                   <h3 style={{ margin: '0 0 1rem', fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -639,6 +645,8 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                         }}
                         disabled={cancelling}
                         style={{
+                          boxSizing: 'border-box',
+                          width: '100%',
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           padding: '0.75rem 1rem', borderRadius: 10, fontSize: '0.875rem',
                           border: `1px solid ${cancellationReason === reason ? 'var(--gold)' : 'var(--border-warm)'}`,
@@ -666,6 +674,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                           placeholder="e.g. I found a better option nearby"
                           rows={3}
                           style={{
+                            boxSizing: 'border-box',
                             width: '100%', padding: '0.625rem 0.875rem', borderRadius: 8,
                             border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)',
                             color: 'var(--text-primary)', fontSize: '0.875rem',
@@ -675,12 +684,16 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       </div>
                     )}
                   </div>
-                  <div style={{ marginTop: '1.5rem', display: 'flex', gap: 0.75 }}>
+                  <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                     <button
                       type="button"
                       onClick={() => setShowCancelDialog(false)}
                       className="d3-btn-quiet"
-                      style={{ flex: 1, padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 600 }}
+                      style={{
+                        boxSizing: 'border-box',
+                        width: '100%',
+                        padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 600,
+                      }}
                     >
                       Keep Order
                     </button>
@@ -696,7 +709,12 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       }}
                       disabled={cancelling || !cancellationReason}
                       className="d3-btn-primary d3-btn-danger"
-                      style={{ flex: 1, padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 600, opacity: (!cancellationReason || cancelling) ? 0.6 : 1 }}
+                      style={{
+                        boxSizing: 'border-box',
+                        width: '100%',
+                        padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 600,
+                        opacity: (!cancellationReason || cancelling) ? 0.6 : 1,
+                      }}
                     >
                       {cancelling ? 'Cancelling…' : 'Confirm Cancellation'}
                     </button>
