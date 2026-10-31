@@ -567,13 +567,10 @@ export default function LiveOrdersPage() {
                       >
                         <div className="min-w-0">
                             <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
-                              {item.quantity} x {item.name}
+                              {item.quantity} × {item.name}
                             </span>
                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 2 }}>
-                              {item.quantity} x {formatPrice(item.price || 0, hotel?.currency)} = {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
-                            </span>
-                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 2 }}>
-                              {item.quantity} x {formatPrice(item.price || 0, hotel?.currency)} = {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
+                              {formatPrice(item.price || 0, hotel?.currency)} per item
                             </span>
                           {item.notes && (
                             <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 2 }}>
