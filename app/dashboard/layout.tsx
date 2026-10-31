@@ -96,6 +96,14 @@ const navItems = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <DashboardLayoutBody>{children}</DashboardLayoutBody>
+    </QueryClientProvider>
+  );
+}
+
+function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -159,11 +167,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <div
-        className="min-h-screen flex"
-        style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)' }}
-      >
+    <div
+      className="min-h-screen flex"
+      style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)' }}
+    >
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -441,7 +448,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
-      </div>
-      </QueryClientProvider>
-    );
+    </div>
+  );
 }
