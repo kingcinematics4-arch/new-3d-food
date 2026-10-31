@@ -784,33 +784,7 @@ export default function LiveOrdersPage() {
                       >
                         Cancel
                       </button>
-                    )}
-                    {/* Payment action — independent of order preparation status. Hidden for cancelled orders. */}
-                    {normalise(order.status) !== 'cancelled' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {normalise(order.payment_status) === 'unpaid' ? (
-                        <button
-                          type="button"
-                          disabled={updatingOrderIds.has(order.id)}
-                          onClick={() => handleUpdatePaymentStatus(order.id, 'paid')}
-                          className="d3-btn-primary"
-                          style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                        >
-                          Mark as Paid
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={updatingOrderIds.has(order.id)}
-                          onClick={() => handleUpdatePaymentStatus(order.id, 'unpaid')}
-                          className="d3-btn-quiet"
-                          style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                        >
-                          Mark as Unpaid
-                        </button>
-                      )}
-                    </div>
-                    )}
+                )}
               </article>
             );
           })}
