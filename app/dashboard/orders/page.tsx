@@ -35,18 +35,96 @@ const STATUS_CLASS: Record<string, string> = {
   cancelled: 'd3-status-cancelled',
 };
 
-function StatusBadge({ status, cancellationSource }: { status: string; cancellationSource?: string | null }) {
+function CancellationSourceLabel({ cancellationSource, cancelledBy }: { cancellationSource?: string | null; cancelledBy?: string | null }) {
+  const source = (cancellationSource || cancelledBy || '').toLowerCase().trim();
+  if (source === 'hotel' || source === 'restaurant') {
+    return (
+      <span
+        title="Cancelled by Hotel"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '0.125rem 0.375rem',
+          borderRadius: 4,
+          background: 'rgba(196,102,88,0.08)',
+          border: '1px solid rgba(196,102,88,0.25)',
+          color: '#D9A79E',
+          fontSize: '0.5625rem',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 6 6)" />
+        </svg>
+        CANCELLED BY HOTEL
+      </span>
+    );
+  } else if (source === 'customer') {
+    return (
+      <span
+        title="Cancelled by Customer"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '0.125rem 0.375rem',
+          borderRadius: 4,
+          background: 'rgba(196,102,88,0.06)',
+          border: '1px solid rgba(196,102,88,0.2)',
+          color: '#C46658',
+          fontSize: '0.5625rem',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        CANCELLED BY CUSTOMER
+      </span>
+    );
+  }
+  return (
+    <span
+      title="Cancellation source unknown"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '0.125rem 0.375rem',
+        borderRadius: 4,
+        background: 'rgba(148,163,184,0.08)',
+        border: '1px solid rgba(148,163,184,0.2)',
+        color: 'var(--text-dimmed)',
+        fontSize: '0.5625rem',
+        fontWeight: 600,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      CANCELLATION SOURCE UNKNOWN
+    </span>
+  );
+}
+
+function StatusBadge({ status, cancellationSource, cancelledBy }: { status: string; cancellationSource?: string | null; cancelledBy?: string | null }) {
   const key = normalise(status);
   const isCancelled = key === 'cancelled';
-  const source = (cancellationSource || '').toLowerCase().trim();
+  const source = (cancellationSource || cancelledBy || '').toLowerCase().trim();
   
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
       <span className={`d3-badge ${STATUS_CLASS[key] || STATUS_CLASS.cancelled}`}>
         {STATUS_LABEL[key] || key || 'unknown'}
       </span>
       {isCancelled && (
-        source === 'hotel' ? (
+        source === 'hotel' || source === 'restaurant' ? (
           <span
             title="Cancelled by Hotel"
             aria-label="Cancelled by Hotel"
@@ -468,7 +546,10 @@ export default function LiveOrdersPage() {
                     </p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
-                    <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source || order.cancelled_by} />
+                    <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} />
+                    {normalise(order.status) === 'cancelled' && (
+                      <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} />
+                    )}
                     <PaymentBadge status={order.payment_status} />
                     <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
                   </div>

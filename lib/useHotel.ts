@@ -77,6 +77,7 @@ export interface Order {
   total_amount: number;
   created_at: string;
   updated_at: string;
+  cancelled_at?: string | null;
   order_items?: OrderItem[];
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
