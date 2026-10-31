@@ -390,15 +390,46 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
             {/* Cancelled banner */}
             {isCancelled && (
               <div style={{ padding: '1.25rem 1.5rem', textAlign: 'center', border: '1px solid rgba(196,102,88,0.2)', borderRadius: 16, background: 'rgba(196,102,88,0.04)', marginBottom: '1.5rem' }}>
-                <p style={{ margin: 0, fontSize: '0.8125rem', color: '#D9A79E', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>
-                  This order was cancelled
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <p style={{ margin: 0, fontSize: '0.8125rem', color: '#D9A79E', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>
+                    This order was cancelled
+                  </p>
+                  {(() => {
+                    const source = ((order as any).cancellation_source || (order as any).cancelled_by || '').toLowerCase().trim();
+                    if (source === 'hotel' || source === 'restaurant') {
+                      return (
+                        <span
+                          title="Cancelled by Hotel"
+                          aria-label="Cancelled by Hotel"
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#D9A79E' }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 6 6)" />
+                          </svg>
+                        </span>
+                      );
+                    } else if (source === 'customer') {
+                      return (
+                        <span
+                          title="Cancelled by Customer"
+                          aria-label="Cancelled by Customer"
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#D9A79E' }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
                 {order.cancellation_reason && (
                   <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     Reason: {order.cancellation_reason}
                   </p>
                 )}
-                {order.cancelled_by === 'customer' && (
+                {order.cancelled_by === 'customer' && !(order as any).cancellation_source && (
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.6875rem', color: 'var(--text-dimmed)', lineHeight: 1.5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     Cancelled by you
                   </p>
