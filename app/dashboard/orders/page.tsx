@@ -238,13 +238,16 @@ export default function LiveOrdersPage() {
 
   const getOrderItems = (order: Order) => {
     if (order.order_items && Array.isArray(order.order_items)) {
-      return order.order_items.map((item: any) => ({
-        id: item.id,
-        name: item.name || item.menu_item?.name || 'Unknown',
-        quantity: item.quantity || 1,
-        price: item.price || 0,
-        notes: item.notes,
-      }));
+      return order.order_items.map((item: any) => {
+        const price = item.price_at_time !== undefined && item.price_at_time !== null ? item.price_at_time : (item.price !== undefined && item.price !== null ? item.price : (item.menu_item?.price !== undefined && item.menu_item?.price !== null ? item.menu_item.price : 0));
+        return {
+          id: item.id,
+          name: item.name || item.menu_item?.name || 'Unknown',
+          quantity: item.quantity || 1,
+          price: price,
+          notes: item.notes,
+        };
+      });
     }
     return [];
   };
@@ -563,9 +566,15 @@ export default function LiveOrdersPage() {
                         }}
                       >
                         <div className="min-w-0">
-                          <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
-                            {item.quantity}× {item.name}
-                          </span>
+                            <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', display: 'block' }}>
+                              {item.quantity} x {item.name}
+                            </span>
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 2 }}>
+                              {item.quantity} x {formatPrice(item.price || 0, hotel?.currency)} = {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
+                            </span>
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 2 }}>
+                              {item.quantity} x {formatPrice(item.price || 0, hotel?.currency)} = {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
+                            </span>
                           {item.notes && (
                             <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', display: 'block', marginTop: 2 }}>
                               Note: {item.notes}

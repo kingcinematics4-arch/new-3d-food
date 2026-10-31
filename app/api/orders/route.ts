@@ -34,7 +34,7 @@ export async function GET(request: Request) {
           quantity,
           price_at_time,
           notes,
-          menu_items ( name )
+          menu_items ( name, price )
         )
       `)
       .eq('hotel_id', hotelId)
@@ -51,10 +51,15 @@ export async function GET(request: Request) {
     // Transform order_items to have menu_item (singular) with name for frontend compatibility
     const transformedOrders = (orders || []).map((order: any) => ({
       ...order,
-      order_items: (order.order_items || []).map((item: any) => ({
-        ...item,
-        menu_item: item.menu_items ? { name: item.menu_items.name } : null,
-      })),
+      order_items: (order.order_items || []).map((item: any) => {
+        const priceAtTime = item.price_at_time !== undefined && item.price_at_time !== null ? item.price_at_time : (item.menu_items?.price !== undefined && item.menu_items?.price !== null ? item.menu_items.price : 0);
+        return {
+          ...item,
+          price_at_time: priceAtTime,
+          price: priceAtTime,
+          menu_item: item.menu_items ? { name: item.menu_items.name, price: item.menu_items.price } : null,
+        };
+      }),
     }));
 
     return new NextResponse(JSON.stringify({ success: true, orders: transformedOrders }), {
