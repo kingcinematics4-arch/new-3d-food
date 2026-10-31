@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       .from('orders')
       .update(updatePayload)
       .eq('id', validated.order_id)
-      .select()
+      .select('*, order_items(*)')
       .single();
 
     if (updateError) throw updateError;

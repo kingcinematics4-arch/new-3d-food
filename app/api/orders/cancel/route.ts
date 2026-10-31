@@ -167,7 +167,7 @@ export async function POST(request: Request) {
       .from('orders')
       .update(updatePayload)
       .eq('id', orderId)
-      .select()
+      .select('*, order_items(*)')
       .single();
 
     diagnostics.update_error = updateError?.message;
