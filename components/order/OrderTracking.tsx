@@ -112,6 +112,12 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const [error, setError]           = useState<string | null>(null);
   const [realtimeOk, setRealtimeOk] = useState(false);
 
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmCancellation, setConfirmCancellation] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
+  const [customerPhone, setCustomerPhone] = useState('');
+
   // Stable ref so effect closures can read the latest order id / status
   // without being recreated on every render.
   const orderRef = useRef<LiveOrder | null>(null);
@@ -144,6 +150,36 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       if (!silent) setLoading(false);
     }
   }, [orderId]);
+
+  // -----------------------------------------------------------------------
+  // Customer-initiated cancellation
+  // -----------------------------------------------------------------------
+  const handleCancelOrder = useCallback(async () => {
+    if (!customerPhone.trim()) {
+      setCancelError('Please enter your phone number to confirm cancellation.');
+      return;
+    }
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const res = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId, customer_phone: customerPhone.trim() }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || 'Failed to cancel order');
+      }
+      setCancelling(false);
+      setConfirmCancellation(false);
+      setCustomerPhone('');
+      setCancelSuccess('Your order has been cancelled.');
+    } catch (err: any) {
+      setCancelling(false);
+      setCancelError(err.message || 'Failed to cancel order');
+    }
+  }, [orderId, customerPhone]);
 
   // Initial load
   useEffect(() => { loadOrder(false); }, [loadOrder]);
@@ -310,6 +346,24 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   {realtimeOk ? 'Live updates' : 'Auto-refresh'}
                 </div>
               )}
+              {(!isCancelled && (status === 'pending' || status === 'accepted')) && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmCancellation(true)}
+                  disabled={cancelling}
+                  className="d3-btn-quiet d3-btn-danger"
+                  style={{
+                    flex: 1,
+                    opacity: cancelling ? 0.6 : 1,
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    borderRadius: 10,
+                  }}
+                >
+                  {cancelling ? 'Cancelling…' : 'Cancel Order'}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -467,8 +521,135 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 )}
               </div>
             </div>
-          </>
-        ) : null}
+            {/* Cancellation notifications and dialog */}
+            {cancelError && (
+              <div
+                style={{
+                  padding: '0.875rem 1.25rem',
+                  marginBottom: '1.5rem',
+                  background: 'rgba(196,102,88,0.06)',
+                  border: '1px solid rgba(196,102,88,0.25)',
+                  borderRadius: 10,
+                  color: '#C46658',
+                  fontSize: '0.8125rem',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}
+              >
+                <span style={{ width: 14, height: 14, flexShrink: 0 }}>
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="7" cy="7" r="5.5" />
+                    <line x1="7" y1="3" x2="7" y2="7" />
+                  </svg>
+                </span>
+                <span>{cancelError}</span>
+                <button
+                  type="button"
+                  onClick={() => setCancelError(null)}
+                  style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            {/* Cancellation success notification */}
+            {cancelSuccess && (
+              <div
+                style={{
+                  padding: '0.875rem 1.25rem',
+                  marginBottom: '1.5rem',
+                  background: 'rgba(16,185,129,0.08)',
+                  border: '1px solid rgba(16,185,129,0.25)',
+                  borderRadius: 10,
+                  color: '#10b981',
+                  fontSize: '0.8125rem',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}
+              >
+                <span style={{ width: 14, height: 14, flexShrink: 0 }}>
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 6 4 9 9 2" />
+                  </svg>
+                </span>
+                <span>{cancelSuccess}</span>
+                <button
+                  type="button"
+                  onClick={() => setCancelSuccess(null)}
+                  style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            {/* Cancellation confirmation dialog */}
+            {confirmCancellation && (
+              <div
+                style={{
+                  position: 'fixed', inset: 0, zIndex: 50,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.55)',
+                }}
+              >
+                <div
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-warm)',
+                    borderRadius: 16,
+                    padding: '1.5rem',
+                    maxWidth: '320px',
+                    width: '90vw',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <h3 style={{ margin: '0 0 1rem', fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Cancel Order?
+                  </h3>
+                  <p style={{ margin: '0 0 1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                    Are you sure you want to cancel this order? This cannot be undone.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmCancellation(false)}
+                      className="d3-btn-quiet"
+                      style={{ flex: 1 }}
+                    >
+                      Keep Order
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelOrder}
+                      disabled={cancelling}
+                      className="d3-btn-primary d3-btn-danger"
+                      style={{ flex: 1, opacity: cancelling ? 0.6 : 1 }}
+                    >
+                      {cancelling ? 'Cancelling…' : 'Confirm Cancellation'}
+                    </button>
+                  </div>
+                  {customerPhone && !cancelling && (
+                    <div style={{ marginTop: '0.75rem', fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
+                      Phone: {customerPhone}
+                    </div>
+                  )}
+                  {!customerPhone && !cancelling && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-dimmed)', marginBottom: 0.5 }}>
+                        Phone number (to confirm it’s your order)
+                      </label>
+                      <input
+                        type="tel"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="Enter your phone number"
+                        autoFocus
+                        className="w-full bg-neutral-950 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#E5A93C]"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            </>
+          ) : null}
       </div>
 
       {/* Back link */}
