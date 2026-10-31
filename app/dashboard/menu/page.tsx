@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useMemo, useState } from 'react';
 import DishCard from '@/components/menu/DishCard';
 import DishFormModal, { type DishPayload } from '@/components/menu/DishFormModal';
@@ -11,7 +13,7 @@ const ALL_CATEGORIES = 'All';
 
 export default function MenuManagementPage() {
   const { hotel, loading: hotelLoading, refetch: refetchHotel } = useHotel();
-  const { items: menuItems, loading, error: loadError, refetch: refetchItems } = useMenuItems(hotel?.id || null);
+  const { items: menuItems, loading: itemsLoading, refetch: refetchItems } = useMenuItems(hotel?.id || null);
   const { categories: categoryList, refetch: refetchCategories, createCategory } = useCategories(
     hotel?.id || null
   );
@@ -154,7 +156,7 @@ export default function MenuManagementPage() {
 
   /* ---------------- render ---------------- */
 
-  const hasNoDishesAtAll = !loading && menuItems.length === 0;
+  const hasNoDishesAtAll = menuItems.length === 0;
 
   return (
     <div className="flex flex-col gap-8 max-w-[1200px] mx-auto">
@@ -208,7 +210,7 @@ export default function MenuManagementPage() {
       </header>
 
       {/* ================= At-a-glance ================= */}
-      {!hasNoDishesAtAll && !loading && (
+      {!hasNoDishesAtAll && !itemsLoading && (
         <div
           style={{
             display: 'flex',
@@ -315,7 +317,7 @@ export default function MenuManagementPage() {
       )}
 
       {/* ================= Grid ================= */}
-      {loading ? (
+      {itemsLoading ? (
         <div
           className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
           aria-busy="true"
@@ -339,13 +341,6 @@ export default function MenuManagementPage() {
             </div>
           ))}
         </div>
-      ) : loadError ? (
-        <EmptyPanel
-          title="Could not load your menu"
-          body={loadError}
-          actionLabel="Try again"
-          onAction={() => refetchItems()}
-        />
       ) : !hotelLoading && !hotel ? (
         /* ---------- Account without a restaurant ---------- */
         <EmptyPanel

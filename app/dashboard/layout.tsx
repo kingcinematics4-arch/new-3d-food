@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { supabaseClient } from '@/lib/supabaseClient';
-import { useHotel } from '@/lib/useHotel';
+import { useHotel, clearDashboardCache } from '@/lib/useHotel';
 import { useAuth } from '@/lib/authContext';
 import Dine3DLogo from '@/components/Dine3DLogo';
 
@@ -115,9 +117,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const loading = authLoading || hotelLoading || (!hotel && !!user);
 
   const handleSignOut = async () => {
+    clearDashboardCache();
     await supabaseClient.auth.signOut();
     router.push('/login');
   };
+
+  // Clear cache when switching hotels/accounts
+  const prevHotelId = useRef<string | null>(null);
+  useEffect(() => {
+    const currentHotelId = hotel?.id || null;
+    if (prevHotelId.current !== null && prevHotelId.current !== currentHotelId) {
+      clearDashboardCache();
+    }
+    prevHotelId.current = currentHotelId;
+  }, [hotel?.id]);
 
   const currentPage = navItems.find((n) => n.href === pathname)?.label || 'Dashboard';
 
@@ -146,10 +159,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)' }}
-    >
+    <QueryClientProvider client={queryClient}>
+      <div
+        className="min-h-screen flex"
+        style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)' }}
+      >
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -427,6 +441,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
-    </div>
-  );
+      </div>
+      </QueryClientProvider>
+    );
 }

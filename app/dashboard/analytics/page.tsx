@@ -1,12 +1,14 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useMemo, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import dynamicChart from 'next/dynamic';
 import { useHotel, useOrders, useMenuItems } from '@/lib/useHotel';
 import { Order } from '@/lib/useHotel';
 import { formatPrice } from '@/lib/menu';
 
-const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
+const Chart = dynamicChart(() => import('react-apexcharts'), { ssr: false });
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -91,8 +93,8 @@ function PanelHeading({
 
 export default function AnalyticsDashboardPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { orders, loading: ordersLoading } = useOrders(hotel?.id || null);
-  const { items: menuItems, loading: itemsLoading } = useMenuItems(hotel?.id || null);
+  const { orders, refetch: refetchOrders } = useOrders(hotel?.id || null);
+  const { items: menuItems, refetch: refetchItems } = useMenuItems(hotel?.id || null);
   const [isMounted, setIsMounted] = useState(false);
   const [timeRange, setTimeRange] = useState<'today' | '7days' | '30days'>('7days');
 
@@ -291,7 +293,7 @@ export default function AnalyticsDashboardPage() {
     tooltip: { theme: 'dark', style: { fontSize: '12px' }, shared: true },
   };
 
-  const loading = hotelLoading || ordersLoading || itemsLoading;
+  const loading = hotelLoading;
   const featuredCount = menuItems.filter((m: any) => m.is_featured || m.is_popular).length;
 
   const RANGE_LABELS: Record<string, string> = {

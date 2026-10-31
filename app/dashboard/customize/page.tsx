@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useHotel, useHotelCustomization, useMenuItems } from '@/lib/useHotel';
@@ -57,7 +59,7 @@ export default function CustomizeMenuPage() {
   const patch = (next: Partial<typeof customization>) =>
     setCustomization({ ...customization, ...next });
 
-  if (hotelLoading || customizationLoading) {
+  if (hotelLoading) {
     return (
       <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
         Loading the design studio…

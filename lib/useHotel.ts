@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './authContext';
+import { queryClient } from './queryClient';
 
 export interface Hotel {
   id: string;
@@ -55,6 +57,7 @@ export interface MenuItem {
   preparation_time_mins: number | null;
   ingredients: string[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface Order {
@@ -109,353 +112,384 @@ export interface DashboardStats {
   qrScansToday: number;
 }
 
-export function useHotel() {
-  const { user, session, loading: authLoading } = useAuth();
-  const [hotel, setHotel] = useState<Hotel | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchHotel = useCallback(async () => {
-    if (!user) {
-      setHotel(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // Resolve the hotel through a server route so the auth->hotel lookup
-      // runs with the request's authenticated session (RLS-safe). The browser
-      // client cannot query hotels / hotel_users directly.
-      const res = await fetch('/api/hotel/me');
-      const json = await res.json();
-      if (!res.ok || !json.success || !json.hotel) {
-        setHotel(null);
-        return;
-      }
-      setHotel(json.hotel as Hotel);
-    } catch (err: any) {
-      console.error('Error fetching hotel:', err);
-      setError(err.message);
-      setHotel(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, session]);
-
-  useEffect(() => {
-    if (!authLoading) {
-      fetchHotel();
-    }
-  }, [authLoading, fetchHotel]);
-
-  return { hotel, loading, error, refetch: fetchHotel };
+export interface Category {
+  id: string;
+  hotel_id: string;
+  name: string;
+  position: number;
+  created_at: string;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Query keys                                                        */
+/* ------------------------------------------------------------------ */
+
+export const queryKeys = {
+  hotel: ['hotel'] as const,
+  menu: (hotelId: string | null) => ['menu', hotelId] as const,
+  orders: (hotelId: string | null) => ['orders', hotelId] as const,
+  stats: (hotelId: string | null) => ['stats', hotelId] as const,
+  reviews: (hotelId: string | null) => ['reviews', hotelId] as const,
+  customization: (hotelId: string | null) => ['customization', hotelId] as const,
+  categories: (hotelId: string | null) => ['categories', hotelId] as const,
+};
+
+/* ------------------------------------------------------------------ */
+/*  SSR guard                                                         */
+/* ------------------------------------------------------------------ */
+
+const isServer = typeof window === 'undefined';
+
+function ssrFallback<T>(data: T) {
+  return { data, isLoading: false, error: null, refetch: async () => ({}) as any };
+}
+
+async function fetchJson(input: RequestInfo | URL, init?: RequestInit): Promise<any> {
+  const res = await fetch(input, init);
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json.error || `Request failed (${res.status})`);
+  }
+  return json;
+}
+
+/* ------------------------------------------------------------------ */
+/*  useHotel                                                          */
+/* ------------------------------------------------------------------ */
+
+export function useHotel() {
+  const { user, session } = useAuth();
+
+  if (isServer) {
+    return { hotel: null, loading: false, error: null, refetch: async () => {} };
+  }
+
+  const query = useQuery({
+    queryKey: queryKeys.hotel,
+    queryFn: async () => {
+      if (!user) return null;
+      const json = await fetchJson('/api/hotel/me');
+      if (!json.success || !json.hotel) return null;
+      return json.hotel as Hotel;
+    },
+    enabled: !!user,
+    staleTime: 300_000,
+    gcTime: 600_000,
+  });
+
+  const { data: hotel, isLoading: loading, error, refetch } = query;
+
+  return { hotel, loading, error: error?.message || null, refetch };
+}
+
+/* ------------------------------------------------------------------ */
+/*  useMenuItems                                                      */
+/* ------------------------------------------------------------------ */
 
 export function useMenuItems(hotelId: string | null) {
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  if (isServer) {
+    return { items: [], loading: false, error: null, refetch: async () => {} };
+  }
 
-  const fetchItems = useCallback(async () => {
-    // `hotelId` is optional: /api/menu resolves the caller's own hotel from the
-    // authenticated session when the query param is absent. Fetching therefore
-    // never depends on the client-side hotel lookup having finished first.
-    try {
-      setLoading(true);
-      const res = await fetch(
-        hotelId ? `/api/menu?hotel_id=${hotelId}` : '/api/menu'
-      );
-      const json = await res.json();
-      if (json.success) {
-        setItems(json.menuItems || []);
-      } else {
-        throw new Error(json.error || 'Failed to fetch menu items');
-      }
-    } catch (err: any) {
-      console.error('Error fetching menu items:', err);
-      setError(err.message);
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [hotelId]);
+  const query = useQuery({
+    queryKey: queryKeys.menu(hotelId),
+    queryFn: async () => {
+      const url = hotelId ? `/api/menu?hotel_id=${hotelId}` : '/api/menu';
+      const json = await fetchJson(url);
+      return (json.menuItems || []) as MenuItem[];
+    },
+    enabled: !!hotelId,
+    staleTime: 300_000,
+    gcTime: 600_000,
+  });
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+  const { data: items = [], isLoading: loading, error, refetch } = query;
 
-  return { items, loading, error, refetch: fetchItems };
+  return { items, loading, error: error?.message || null, refetch: refetch };
 }
 
+/* ------------------------------------------------------------------ */
+/*  useOrders                                                         */
+/* ------------------------------------------------------------------ */
+
 export function useOrders(hotelId: string | null) {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const isInitialLoad = useRef(true);
-  const updatingOrderIds = useRef<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
-  const fetchOrders = useCallback(async (isBackground = false) => {
-    if (!hotelId) {
-      setOrders([]);
-      setLoading(false);
-      return;
-    }
+  if (isServer) {
+    return {
+      orders: [],
+      loading: false,
+      error: null,
+      refetch: async () => {},
+      updateOrderStatus: async () => {},
+      updatePaymentStatus: async () => {},
+      updatingOrderIds: new Set<string>(),
+    };
+  }
 
-    try {
-      if (!isBackground) {
-        setLoading(true);
-      }
-      const res = await fetch(`/api/orders?hotel_id=${hotelId}`);
-      const json = await res.json();
-      if (json.success) {
-        setOrders(json.orders || []);
-      } else {
-        throw new Error(json.error || 'Failed to fetch orders');
-      }
-    } catch (err: any) {
-      console.error('Error fetching orders:', err);
-      setError(err.message);
-      setOrders([]);
-    } finally {
-      setLoading(false);
-      isInitialLoad.current = false;
-    }
-  }, [hotelId]);
+  const query = useQuery({
+    queryKey: queryKeys.orders(hotelId),
+    queryFn: async () => {
+      if (!hotelId) return [] as Order[];
+      const json = await fetchJson(`/api/orders?hotel_id=${hotelId}`);
+      return (json.orders || []) as Order[];
+    },
+    enabled: !!hotelId,
+    staleTime: 15_000,
+    gcTime: 600_000,
+    refetchInterval: 3000,
+  });
 
-  useEffect(() => {
-    fetchOrders(false);
-  }, [fetchOrders]);
+  const { data: orders = [], isLoading: loading, error, refetch } = query;
 
-  // Poll for new orders and status changes every 3 seconds (background, no loading spinner)
-  useEffect(() => {
-    if (!hotelId) return;
-    const timer = setInterval(() => fetchOrders(true), 3000);
-    return () => clearInterval(timer);
-  }, [hotelId, fetchOrders]);
-
-  const updateOrderStatus = async (orderId: string, status: string) => {
-    // Prevent duplicate clicks while this order is being updated
-    if (updatingOrderIds.current.has(orderId)) return;
-    updatingOrderIds.current.add(orderId);
-
-    const previousOrders = orders; // snapshot for rollback
-
-    // Optimistic update: reflect the new status immediately in the UI
-    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
-
-    try {
-      const res = await fetch('/api/orders/update-status', {
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+      const json = await fetchJson('/api/orders/update-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order_id: orderId, status: status.toLowerCase() }),
       });
-      const json = await res.json();
-      if (!json.success) {
-        // API rejected — rollback to the previous state
-        setOrders(previousOrders);
-        throw new Error(json.error || 'Failed to update order status');
+      if (!json.success) throw new Error(json.error || 'Failed to update order status');
+      return json.order as Order;
+    },
+    onMutate: async ({ orderId, status }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.orders(hotelId) });
+      const previous = queryClient.getQueryData<Order[]>(queryKeys.orders(hotelId));
+      queryClient.setQueryData<Order[]>(queryKeys.orders(hotelId), (old: Order[] | undefined) =>
+        old ? old.map((o) => (o.id === orderId ? { ...o, status } : o)) : old
+      );
+      return { previous };
+    },
+    onError: (err, { orderId }, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.orders(hotelId), context.previous);
       }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders(hotelId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats(hotelId) });
+    },
+  });
 
-      // API confirmed — sync with the server's version of this order
-      if (json.order) {
-        setOrders((prev) => prev.map((o) => o.id === orderId ? (json.order as Order) : o));
-      }
-    } catch (err: any) {
-      console.error('Error updating order status:', err);
-      // Rollback: restore the pre-click state
-      setOrders(previousOrders);
-      setError(err.message || 'Failed to update order status');
-      throw err;
-    } finally {
-      updatingOrderIds.current.delete(orderId);
-    }
-  };
-
-  const updatePaymentStatus = async (orderId: string, paymentStatus: 'paid' | 'unpaid') => {
-    // Prevent duplicate clicks while this order is being updated
-    if (updatingOrderIds.current.has(orderId)) return;
-    updatingOrderIds.current.add(orderId);
-
-    const previousOrders = orders; // snapshot for rollback
-
-    // Optimistic update: reflect the new payment status immediately
-    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, payment_status: paymentStatus } : o));
-
-    try {
-      const res = await fetch('/api/orders/update-payment-status', {
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: async ({ orderId, paymentStatus }: { orderId: string; paymentStatus: 'paid' | 'unpaid' }) => {
+      const json = await fetchJson('/api/orders/update-payment-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order_id: orderId, payment_status: paymentStatus }),
       });
-      const json = await res.json();
-      if (!json.success) {
-        setOrders(previousOrders);
-        throw new Error(json.error || 'Failed to update payment status');
+      if (!json.success) throw new Error(json.error || 'Failed to update payment status');
+      return json.order as Order;
+    },
+    onMutate: async ({ orderId, paymentStatus }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.orders(hotelId) });
+      const previous = queryClient.getQueryData<Order[]>(queryKeys.orders(hotelId));
+      queryClient.setQueryData<Order[]>(queryKeys.orders(hotelId), (old: Order[] | undefined) =>
+        old ? old.map((o) => (o.id === orderId ? { ...o, payment_status: paymentStatus } : o)) : old
+      );
+      return { previous };
+    },
+    onError: (err, { orderId }, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.orders(hotelId), context.previous);
       }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders(hotelId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats(hotelId) });
+    },
+  });
 
-      if (json.order) {
-        setOrders((prev) => prev.map((o) => o.id === orderId ? (json.order as Order) : o));
+  const updatingOrderIds = useRef<Set<string>>(new Set());
+
+  const handleUpdateStatus = useCallback(
+    async (id: string, status: string) => {
+      if (updatingOrderIds.current.has(id)) return;
+      updatingOrderIds.current.add(id);
+      try {
+        await updateOrderStatusMutation.mutateAsync({ orderId: id, status });
+      } finally {
+        updatingOrderIds.current.delete(id);
       }
-    } catch (err: any) {
-      console.error('Error updating payment status:', err);
-      setOrders(previousOrders);
-      setError(err.message || 'Failed to update payment status');
-      throw err;
-    } finally {
-      updatingOrderIds.current.delete(orderId);
-    }
+    },
+    [updateOrderStatusMutation]
+  );
+
+  const handleUpdatePaymentStatus = useCallback(
+    async (id: string, paymentStatus: 'paid' | 'unpaid') => {
+      if (updatingOrderIds.current.has(id)) return;
+      updatingOrderIds.current.add(id);
+      try {
+        await updatePaymentStatusMutation.mutateAsync({ orderId: id, paymentStatus });
+      } finally {
+        updatingOrderIds.current.delete(id);
+      }
+    },
+    [updatePaymentStatusMutation]
+  );
+
+  return {
+    orders,
+    loading,
+    error: error?.message || null,
+    refetch,
+    updateOrderStatus: handleUpdateStatus,
+    updatePaymentStatus: handleUpdatePaymentStatus,
+    updatingOrderIds: updatingOrderIds.current,
   };
-
-  return { orders, loading, error, refetch: fetchOrders, updateOrderStatus, updatePaymentStatus, updatingOrderIds: updatingOrderIds.current };
 }
 
+/* ------------------------------------------------------------------ */
+/*  useDashboardStats                                                 */
+/* ------------------------------------------------------------------ */
+
 export function useDashboardStats(hotelId: string | null) {
-  const [stats, setStats] = useState<DashboardStats>({
-    ordersToday: 0,
-    revenueToday: 0,
-    menuItemsCount: 0,
-    qrScansToday: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  if (isServer) {
+    return {
+      stats: { ordersToday: 0, revenueToday: 0, menuItemsCount: 0, qrScansToday: 0 },
+      loading: false,
+      error: null,
+      refetch: async () => {},
+    };
+  }
 
-  const fetchStats = useCallback(async () => {
-    if (!hotelId) {
-      setStats({ ordersToday: 0, revenueToday: 0, menuItemsCount: 0, qrScansToday: 0 });
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
+  const query = useQuery({
+    queryKey: queryKeys.stats(hotelId),
+    queryFn: async () => {
+      if (!hotelId) {
+        return { ordersToday: 0, revenueToday: 0, menuItemsCount: 0, qrScansToday: 0 } as DashboardStats;
+      }
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayISO = today.toISOString();
 
-      const [ordersRes, itemsRes] = await Promise.all([
-        fetch(`/api/orders?hotel_id=${hotelId}&since=${todayISO}`),
-        fetch(`/api/menu?hotel_id=${hotelId}`),
+      const [ordersJson, itemsJson] = await Promise.all([
+        fetchJson(`/api/orders?hotel_id=${hotelId}&since=${todayISO}`),
+        fetchJson(`/api/menu?hotel_id=${hotelId}`),
       ]);
 
-      const ordersJson = await ordersRes.json();
-      const itemsJson = await itemsRes.json();
+      const orders = (ordersJson.orders || []) as Order[];
+      const items = (itemsJson.menuItems || []) as MenuItem[];
 
-      const orders = ordersJson.success ? (ordersJson.orders || []) : [];
-      const items = itemsJson.success ? (itemsJson.menuItems || []) : [];
+      const revenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
-      const revenue = orders.reduce((sum: number, o: Order) => sum + (o.total_amount || 0), 0);
-
-      setStats({
+      return {
         ordersToday: orders.length,
         revenueToday: revenue,
         menuItemsCount: items.length,
         qrScansToday: 0,
-      });
-    } catch (err) {
-      console.error('Error fetching dashboard stats:', err);
-      setStats({ ordersToday: 0, revenueToday: 0, menuItemsCount: 0, qrScansToday: 0 });
-    } finally {
-      setLoading(false);
-    }
-  }, [hotelId]);
+      } as DashboardStats;
+    },
+    enabled: !!hotelId,
+    staleTime: 60_000,
+    gcTime: 600_000,
+  });
 
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+  const { data: stats, isLoading: loading, error, refetch } = query;
 
-  return { stats, loading, refetch: fetchStats };
+  return {
+    stats: stats || { ordersToday: 0, revenueToday: 0, menuItemsCount: 0, qrScansToday: 0 },
+    loading,
+    error: error?.message || null,
+    refetch,
+  };
 }
+
+/* ------------------------------------------------------------------ */
+/*  useReviews                                                        */
+/* ------------------------------------------------------------------ */
 
 export function useReviews(hotelId: string | null) {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  if (isServer) {
+    return { reviews: [], loading: false, error: null, refetch: async () => {} };
+  }
 
-  const fetchReviews = useCallback(async () => {
-    if (!hotelId) {
-      setReviews([]);
-      setLoading(false);
-      return;
-    }
+  const query = useQuery({
+    queryKey: queryKeys.reviews(hotelId),
+    queryFn: async () => {
+      if (!hotelId) return [] as Review[];
+      const json = await fetchJson(`/api/reviews?hotel_id=${hotelId}`);
+      return (json.reviews || []) as Review[];
+    },
+    enabled: !!hotelId,
+    staleTime: 300_000,
+    gcTime: 600_000,
+  });
 
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/reviews?hotel_id=${hotelId}`);
-      const json = await res.json();
-      if (json.success) {
-        setReviews(json.reviews || []);
-      } else {
-        throw new Error(json.error || 'Failed to fetch reviews');
-      }
-    } catch (err: any) {
-      console.error('Error fetching reviews:', err);
-      setError(err.message);
-      setReviews([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [hotelId]);
+  const { data: reviews = [], isLoading: loading, error, refetch } = query;
 
-  useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
-
-  return { reviews, loading, error, refetch: fetchReviews };
+  return { reviews, loading, error: error?.message || null, refetch };
 }
 
+/* ------------------------------------------------------------------ */
+/*  useHotelCustomization                                             */
+/* ------------------------------------------------------------------ */
+
 export function useHotelCustomization(hotelId: string | null) {
-  const [customization, setCustomization] = useState({
-    logo_url: '',
-    primary_color: '#f59e0b',
-    secondary_color: '#10b981',
-    menu_style: 'cards',
-    card_style: 'glassmorphic',
-    dark_mode: true,
-    typography: 'Inter',
-    welcome_banner: 'Experience our menu in 3D!',
-    menu_theme: 'classic-luxury',
+  const queryClient = useQueryClient();
+
+  if (isServer) {
+    const emptyCustomization = {
+      logo_url: '',
+      primary_color: '#f59e0b',
+      secondary_color: '#10b981',
+      menu_style: 'cards',
+      card_style: 'glassmorphic',
+      dark_mode: true,
+      typography: 'Inter',
+      welcome_banner: 'Experience our menu in 3D!',
+      menu_theme: 'classic-luxury',
+    };
+    return {
+      customization: emptyCustomization,
+      loading: false,
+      error: null,
+      refetch: async () => {},
+      saveCustomization: async () => {},
+      setCustomization: () => {},
+    };
+  }
+
+  const query = useQuery({
+    queryKey: queryKeys.customization(hotelId),
+    queryFn: async () => {
+      if (!hotelId) return null;
+      const json = await fetchJson(`/api/hotel/${hotelId}`);
+      if (!json.success || !json.hotel) return null;
+      const h = json.hotel;
+      return {
+        logo_url: h.logo_url || '',
+        primary_color: h.primary_color || '#f59e0b',
+        secondary_color: h.secondary_color || '#10b981',
+        menu_style: h.menu_style || 'cards',
+        card_style: h.card_style || 'glassmorphic',
+        dark_mode: h.dark_mode !== false,
+        typography: h.typography || 'Inter',
+        welcome_banner: h.welcome_text || 'Experience our menu in 3D!',
+        menu_theme: h.menu_theme || 'classic-luxury',
+      };
+    },
+    enabled: !!hotelId,
+    staleTime: 300_000,
+    gcTime: 600_000,
   });
-  const [loading, setLoading] = useState(true);
 
-  const fetchCustomization = useCallback(async () => {
-    if (!hotelId) {
-      setLoading(false);
-      return;
-    }
+  const { data: customization, isLoading: loading, error, refetch } = query;
 
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/hotel/${hotelId}`);
-      const json = await res.json();
-      if (json.success && json.hotel) {
-        const h = json.hotel;
-        setCustomization({
-          logo_url: h.logo_url || '',
-          primary_color: h.primary_color || '#f59e0b',
-          secondary_color: h.secondary_color || '#10b981',
-          menu_style: h.menu_style || 'cards',
-          card_style: h.card_style || 'glassmorphic',
-          dark_mode: h.dark_mode !== false,
-          typography: h.typography || 'Inter',
-          welcome_banner: h.welcome_text || 'Experience our menu in 3D!',
-          menu_theme: h.menu_theme || 'classic-luxury',
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching hotel customization:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [hotelId]);
-
-  useEffect(() => {
-    fetchCustomization();
-  }, [fetchCustomization]);
-
-  const saveCustomization = async (data: typeof customization) => {
-    if (!hotelId) return;
-    try {
-       const res = await fetch('/api/hotel/update', {
+  const saveCustomizationMutation = useMutation({
+    mutationFn: async (data: {
+      logo_url: string;
+      primary_color: string;
+      secondary_color: string;
+      menu_style: string;
+      card_style: string;
+      dark_mode: boolean;
+      typography: string;
+      welcome_banner: string;
+      menu_theme: string;
+    }) => {
+      if (!hotelId) throw new Error('No hotel ID');
+      const json = await fetchJson('/api/hotel/update', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -471,75 +505,140 @@ export function useHotelCustomization(hotelId: string | null) {
           menu_theme: data.menu_theme,
         }),
       });
-      const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed to save customization');
-      setCustomization(data);
-    } catch (err) {
-      console.error('Error saving customization:', err);
-      throw err;
-    }
+      return data;
+    },
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.customization(hotelId) });
+      const previous = queryClient.getQueryData(queryKeys.customization(hotelId));
+      queryClient.setQueryData(queryKeys.customization(hotelId), data);
+      return { previous };
+    },
+    onError: (err, data, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(queryKeys.customization(hotelId), context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.customization(hotelId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.hotel });
+    },
+  });
+
+  const handleSaveCustomization = useCallback(
+    async (data: {
+      logo_url: string;
+      primary_color: string;
+      secondary_color: string;
+      menu_style: string;
+      card_style: string;
+      dark_mode: boolean;
+      typography: string;
+      welcome_banner: string;
+      menu_theme: string;
+    }) => {
+      await saveCustomizationMutation.mutateAsync(data);
+    },
+    [saveCustomizationMutation]
+  );
+
+  return {
+    customization: customization || {
+      logo_url: '',
+      primary_color: '#f59e0b',
+      secondary_color: '#10b981',
+      menu_style: 'cards',
+      card_style: 'glassmorphic',
+      dark_mode: true,
+      typography: 'Inter',
+      welcome_banner: 'Experience our menu in 3D!',
+      menu_theme: 'classic-luxury',
+    },
+    loading,
+    saveCustomization: handleSaveCustomization,
+    setCustomization: (data: {
+      logo_url: string;
+      primary_color: string;
+      secondary_color: string;
+      menu_style: string;
+      card_style: string;
+      dark_mode: boolean;
+      typography: string;
+      welcome_banner: string;
+      menu_theme: string;
+    }) => {
+      queryClient.setQueryData(queryKeys.customization(hotelId), data);
+    },
+    refetch,
   };
-
-  return { customization, loading, saveCustomization, setCustomization, refetch: fetchCustomization };
 }
 
-export interface Category {
-  id: string;
-  hotel_id: string;
-  name: string;
-  position: number;
-  created_at: string;
-}
+/* ------------------------------------------------------------------ */
+/*  useCategories                                                     */
+/* ------------------------------------------------------------------ */
 
 export function useCategories(hotelId: string | null) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchCategories = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(
-        hotelId ? `/api/categories?hotel_id=${hotelId}` : '/api/categories'
-      );
-      const json = await res.json();
-      if (json.success) {
-        setCategories(json.categories || []);
-      } else {
-        throw new Error(json.error || 'Failed to fetch categories');
-      }
-    } catch (err: any) {
-      console.error('Error fetching categories:', err);
-      setError(err.message);
-      setCategories([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [hotelId]);
+  if (isServer) {
+    return {
+      categories: [],
+      loading: false,
+      error: null,
+      refetch: async () => {},
+      createCategory: async () => null,
+    };
+  }
 
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+  const query = useQuery({
+    queryKey: queryKeys.categories(hotelId),
+    queryFn: async () => {
+      if (!hotelId) return [] as Category[];
+      const json = await fetchJson(`/api/categories?hotel_id=${hotelId}`);
+      return (json.categories || []) as Category[];
+    },
+    enabled: !!hotelId,
+    staleTime: 300_000,
+    gcTime: 600_000,
+  });
 
-  const createCategory = async (name: string) => {
-    try {
-      // The server derives the hotel from the session, so no id is sent here.
-      const res = await fetch('/api/categories', {
+  const { data: categories = [], isLoading: loading, error, refetch } = query;
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const json = await fetchJson('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
       });
-      const json = await res.json();
-      if (json.success) {
-        setCategories((prev) => [...prev, json.category]);
-        return json.category;
-      }
-      throw new Error(json.error || 'Failed to create category');
-    } catch (err) {
-      console.error('Error creating category:', err);
-      return null;
-    }
-  };
+      if (!json.success) throw new Error(json.error || 'Failed to create category');
+      return json.category as Category;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories(hotelId) });
+    },
+  });
 
-  return { categories, loading, error, refetch: fetchCategories, createCategory };
+  const handleCreateCategory = useCallback(
+    async (name: string) => {
+      return await createCategoryMutation.mutateAsync(name);
+    },
+    [createCategoryMutation]
+  );
+
+  return {
+    categories,
+    loading,
+    error: error?.message || null,
+    refetch,
+    createCategory: handleCreateCategory,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Cache clearing                                                    */
+/* ------------------------------------------------------------------ */
+
+export function clearDashboardCache() {
+  queryClient.clear();
 }

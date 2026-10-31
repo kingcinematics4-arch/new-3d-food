@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useCallback } from 'react';
 import { useHotel, useOrders, Order } from '@/lib/useHotel';
 import { formatPrice } from '@/lib/menu';
@@ -75,7 +77,7 @@ const PAYMENT_LABEL: Record<string, string> = {
 
 export default function LiveOrdersPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { orders, loading: ordersLoading, refetch: refetchOrders, updateOrderStatus, updatePaymentStatus, updatingOrderIds, error: ordersError } = useOrders(hotel?.id || null);
+  const { orders, refetch: refetchOrders, updateOrderStatus, updatePaymentStatus, updatingOrderIds, error: ordersError } = useOrders(hotel?.id || null);
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
   const [activeTab, setActiveTab] = useState('all');
@@ -139,7 +141,7 @@ export default function LiveOrdersPage() {
     return [];
   };
 
-  if (hotelLoading || ordersLoading) {
+  if (hotelLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <div
