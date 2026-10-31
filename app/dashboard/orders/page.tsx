@@ -39,19 +39,19 @@ function CancellationSourceLabel({ cancellationSource, cancelledBy, order }: { c
   const source = (
     cancellationSource || 
     cancelledBy || 
+    order?.cancellation_source || 
     order?.cancellationSource || 
     order?.cancelled_by_source ||
-    order?.cancellation_source_by ||
+    order?.canceled_by ||
     ''
-  ).toLowerCase().trim();
+  ).toString().toLowerCase().trim();
   if (source === 'hotel' || source === 'restaurant') {
     return (
       <span
-        title="Cancelled by Hotel"
+        title="Hotel/Restaurant"
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 4,
           padding: '0.125rem 0.375rem',
           borderRadius: 4,
           background: 'rgba(196,102,88,0.08)',
@@ -64,20 +64,16 @@ function CancellationSourceLabel({ cancellationSource, cancelledBy, order }: { c
           whiteSpace: 'nowrap',
         }}
       >
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 6 6)" />
-        </svg>
-        CANCELLED BY HOTEL
+        HOTEL
       </span>
     );
   } else if (source === 'customer') {
     return (
       <span
-        title="Cancelled by Customer"
+        title="Customer"
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 4,
           padding: '0.125rem 0.375rem',
           borderRadius: 4,
           background: 'rgba(196,102,88,0.06)',
@@ -90,34 +86,11 @@ function CancellationSourceLabel({ cancellationSource, cancelledBy, order }: { c
           whiteSpace: 'nowrap',
         }}
       >
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        CANCELLED BY CUSTOMER
+        CUSTOMER
       </span>
     );
   }
-  return (
-    <span
-      title="Cancellation source unknown"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '0.125rem 0.375rem',
-        borderRadius: 4,
-        background: 'rgba(148,163,184,0.08)',
-        border: '1px solid rgba(148,163,184,0.2)',
-        color: 'var(--text-dimmed)',
-        fontSize: '0.5625rem',
-        fontWeight: 600,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      CANCELLATION SOURCE UNKNOWN
-    </span>
-  );
+  return null;
 }
 
 function StatusBadge({ status, cancellationSource, cancelledBy, order }: { status: string; cancellationSource?: string | null; cancelledBy?: string | null; order?: any }) {
@@ -558,11 +531,13 @@ export default function LiveOrdersPage() {
                       {order.customer_name || 'Guest'}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
-                    <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
-                    {normalise(order.status) === 'cancelled' && (
-                      <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
-                    )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <StatusBadge status={order.status} cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
+                      {normalise(order.status) === 'cancelled' && (
+                        <CancellationSourceLabel cancellationSource={(order as any).cancellation_source} cancelledBy={(order as any).cancelled_by} order={order} />
+                      )}
+                    </div>
                     {normalise(order.status) !== 'cancelled' && <PaymentBadge status={order.payment_status} />}
                     <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>{minsAgo} min ago</span>
                   </div>
