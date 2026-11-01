@@ -27,7 +27,7 @@ function StatCard({ label, value, change, icon, loading }: { label: string; valu
         <span style={{ color: 'var(--text-dimmed)', flexShrink: 0 }}>{icon}</span>
       </div>
       <div>
-        <span className="d3-figure" style={{ fontSize: '2rem', display: 'block' }}>
+        <span className="d3-figure" style={{ fontSize: '2rem', display: 'block', fontWeight: 700 }}>
           {value}
         </span>
         <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', marginTop: 6, display: 'block' }}>

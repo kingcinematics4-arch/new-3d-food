@@ -528,11 +528,13 @@ body {
   color: var(--text-primary);
 }
 
-/* Serif figure used for metrics */
+/* Numeric figures used for metrics */
 .d3-figure {
-  font-family: var(--font-display);
-  font-weight: 500;
-  letter-spacing: -0.025em;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   line-height: 1;
   color: var(--text-primary);
 }
