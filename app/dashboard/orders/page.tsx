@@ -106,6 +106,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
   const { order, item } = modal;
   const status = normalise(order.status);
   const isUpdating = updatingOrderIds.has(order.id);
+  const itemIsCancelled = ((item as any).status || '').toLowerCase() === 'cancelled';
 
   const [cancelStep, setCancelStep] = useState<'none' | 'reason' | 'confirm'>(modal.forceCancel ? 'reason' : 'none');
   const [cancelReason, setCancelReason] = useState<CancelReason | ''>('');
@@ -256,7 +257,33 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
                 {isUpdating ? 'Updating\u2026' : btn.label}
               </button>
             ))}
-            {isCancellable && (
+            {!itemIsCancelled && status !== 'cancelled' && (
+              <button
+                type="button"
+                disabled={isUpdating || cancelLoading}
+                onClick={async () => {
+                  if (!confirm('Cancel only this food item?')) return;
+                  const reason = prompt('Reason for cancelling this item (optional):') || '';
+                  try {
+                    setCancelLoading(true);
+                    const res = await fetch('/api/orders/cancel-item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: order.id, order_item_id: item.id, reason }) });
+                    const json = await res.json();
+                    if (!res.ok || !json.success) throw new Error(json.error || 'Failed');
+                    onClose();
+                    if (typeof window !== 'undefined') window.location.reload();
+                  } catch (e: any) {
+                    alert(e?.message || 'Failed');
+                  } finally {
+                    setCancelLoading(false);
+                  }
+                }}
+                className="d3-btn-inline"
+                style={{ marginTop: 4, opacity: (isUpdating || cancelLoading) ? 0.55 : 1, borderColor: '#C46658', color: '#C46658' }}
+              >
+                {cancelLoading ? 'Cancelling...' : 'Cancel Item'}
+              </button>
+            )}
+            {isCancellable && !modal.forceCancel && (
               <button
                 type="button"
                 disabled={isUpdating}
@@ -393,7 +420,9 @@ export default function LiveOrdersPage() {
 
   const getOrderItems = (order: Order): NormalisedItem[] => {
     if (!order.order_items || !Array.isArray(order.order_items)) return [];
-    return order.order_items.map((item: any) => {
+    return order.order_items
+      .filter((item: any) => (item.status || '').toLowerCase() !== 'cancelled')
+      .map((item: any) => {
       const price =
         item.price_at_time != null ? item.price_at_time
         : item.price != null ? item.price
