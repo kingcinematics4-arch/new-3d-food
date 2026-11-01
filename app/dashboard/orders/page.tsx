@@ -215,7 +215,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
             SELECTED ITEM
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</span>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: itemIsCancelled ? '#C46658' : 'var(--text-primary)' }}>{item.name} {itemIsCancelled ? '(CANCELLED)' : ''}</span>
             <span style={{ fontSize: '0.8125rem', color: 'var(--gold)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {formatPrice(item.price * item.quantity, currency)}
             </span>
