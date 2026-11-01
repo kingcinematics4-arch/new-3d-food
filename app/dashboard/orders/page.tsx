@@ -625,6 +625,54 @@ export default function LiveOrdersPage() {
                   )}
 
                   {/* Total — pinned */}
+                  {/* Quick Process */}
+                  {normalise(order.status) !== 'cancelled' && normalise(order.status) !== 'completed' && (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
+                      {(() => {
+                        const s = normalise(order.status);
+                        let nextStatus = '';
+                        let label = '';
+                        if (s === 'pending' || s === 'placed') { nextStatus = 'accepted'; label = 'ACCEPT ORDER'; }
+                        else if (s === 'accepted') { nextStatus = 'preparing'; label = 'START PREPARING'; }
+                        else if (s === 'preparing') { nextStatus = 'ready'; label = 'MARK AS READY'; }
+                        else if (s === 'ready') { nextStatus = 'completed'; label = 'COMPLETE ORDER'; }
+                        else { return null; }
+                        return (
+                          <button
+                            type="button"
+                            disabled={updatingOrderIds.has(order.id)}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await updateOrderStatus(order.id, nextStatus);
+                              } catch (err: any) {
+                                setUpdateError(err?.message || 'Failed to update order');
+                              }
+                            }}
+                            className="d3-btn-primary"
+                            style={{ flex: 1, fontSize: '0.75rem', padding: '0.375rem 0.625rem', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                          >
+                            {updatingOrderIds.has(order.id) ? 'Updating...' : 'QUICK PROCESS • ' + label}
+                          </button>
+                        );
+                      })()}
+                      <button
+                        type="button"
+                        disabled={updatingOrderIds.has(order.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const firstItem = orderItems[0] || { id: order.id, name: orderItems.length > 0 ? orderItems.length + ' items' : 'Order', quantity: 1, price: 0, notes: null };
+                          setModal({ order, item: firstItem, orderItems });
+                        }}
+                        className="d3-btn-quiet"
+                        style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                        title="More options"
+                      >
+                        ⋯
+                      </button>
+                    </div>
+                  )}
+
                   <div style={{
                     flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
