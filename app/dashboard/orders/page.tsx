@@ -62,6 +62,7 @@ interface ModalState {
   order: Order;
   item: NormalisedItem;
   orderItems: NormalisedItem[];
+  forceCancel?: boolean;
 }
 
 /* ─── Sub-components ─────────────────────────────────────────────────── */
@@ -106,7 +107,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
   const status = normalise(order.status);
   const isUpdating = updatingOrderIds.has(order.id);
 
-  const [cancelStep, setCancelStep] = useState<'none' | 'reason' | 'confirm'>('none');
+  const [cancelStep, setCancelStep] = useState<'none' | 'reason' | 'confirm'>(modal.forceCancel ? 'reason' : 'none');
   const [cancelReason, setCancelReason] = useState<CancelReason | ''>('');
   const [cancelOther, setCancelOther] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -625,7 +626,7 @@ export default function LiveOrdersPage() {
                   )}
 
                   {/* Total — pinned */}
-                  {/* Quick Process */}
+                  {/* Quick Process & Cancel */}
                   {normalise(order.status) !== 'cancelled' && normalise(order.status) !== 'completed' && (
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
                       {(() => {
@@ -650,9 +651,9 @@ export default function LiveOrdersPage() {
                               }
                             }}
                             className="d3-btn-primary"
-                            style={{ flex: 1, fontSize: '0.75rem', padding: '0.375rem 0.625rem', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                            style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                           >
-                            {updatingOrderIds.has(order.id) ? 'Updating...' : 'QUICK PROCESS • ' + label}
+                            {updatingOrderIds.has(order.id) ? 'Updating...' : 'QUICK PROCESS'}
                           </button>
                         );
                       })()}
@@ -661,14 +662,12 @@ export default function LiveOrdersPage() {
                         disabled={updatingOrderIds.has(order.id)}
                         onClick={(e) => {
                           e.stopPropagation();
-                          const firstItem = orderItems[0] || { id: order.id, name: orderItems.length > 0 ? orderItems.length + ' items' : 'Order', quantity: 1, price: 0, notes: null };
-                          setModal({ order, item: firstItem, orderItems });
+                          setModal({ order, item: orderItems[0] || { id: order.id, name: orderItems.length > 0 ? orderItems.length + ' items' : 'Order', quantity: 1, price: 0, notes: null }, orderItems, forceCancel: true });
                         }}
-                        className="d3-btn-quiet"
-                        style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                        title="More options"
+                        className="d3-btn-inline d3-btn-danger"
+                        style={{ fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                       >
-                        ⋯
+                        CANCEL ORDER
                       </button>
                     </div>
                   )}
