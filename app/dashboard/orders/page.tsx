@@ -2,17 +2,14 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHotel, useOrders, Order } from '@/lib/useHotel';
 import { formatPrice } from '@/lib/menu';
 
-/* The statuses the app actually stores (see app/api/orders/update-status).
-   They are written lowercase, so every comparison here normalises case rather
-   than assuming one. */
+/* ─── Helpers ────────────────────────────────────────────────────────── */
 
 const normalise = (status: string) => (status || '').trim().toLowerCase();
 
-/* Customer-facing labels that match the 5-stage tracker shown to diners. */
 const STATUS_LABEL: Record<string, string> = {
   pending:   'Order Placed',
   placed:    'Order Placed',
@@ -23,8 +20,6 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-/* Statuses read as one monochrome family — only the newest
-   order carries the champagne accent. */
 const STATUS_CLASS: Record<string, string> = {
   placed:    'd3-status-placed',
   pending:   'd3-status-placed',
@@ -35,170 +30,342 @@ const STATUS_CLASS: Record<string, string> = {
   cancelled: 'd3-status-cancelled',
 };
 
-function CancellationSourceLabel({ cancellationSource, cancelledBy, order }: { cancellationSource?: string | null; cancelledBy?: string | null; order?: any }) {
-  const source = (
-    cancellationSource || 
-    cancelledBy || 
-    order?.cancellation_source || 
-    order?.cancellationSource || 
-    order?.cancelled_by_source ||
-    order?.canceled_by ||
-    ''
-  ).toString().toLowerCase().trim();
-  if (source === 'hotel' || source === 'restaurant') {
-    return (
-      <span
-        title="Hotel/Restaurant"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          padding: '0.125rem 0.375rem',
-          borderRadius: 4,
-          background: 'rgba(196,102,88,0.08)',
-          border: '1px solid rgba(196,102,88,0.25)',
-          color: '#D9A79E',
-          fontSize: '0.5625rem',
-          fontWeight: 600,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        HOTEL
-      </span>
-    );
-  } else if (source === 'customer') {
-    return (
-      <span
-        title="Customer"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          padding: '0.125rem 0.375rem',
-          borderRadius: 4,
-          background: 'rgba(196,102,88,0.06)',
-          border: '1px solid rgba(196,102,88,0.2)',
-          color: '#C46658',
-          fontSize: '0.5625rem',
-          fontWeight: 600,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        CUSTOMER
-      </span>
-    );
-  }
-  return null;
-}
-
-function StatusBadge({ status, cancellationSource, cancelledBy, order }: { status: string; cancellationSource?: string | null; cancelledBy?: string | null; order?: any }) {
-  const key = normalise(status);
-  const isCancelled = key === 'cancelled';
-  const source = (
-    cancellationSource || 
-    cancelledBy || 
-    order?.cancellationSource || 
-    order?.cancelled_by_source ||
-    ''
-  ).toLowerCase().trim();
-  
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-      <span className={`d3-badge ${STATUS_CLASS[key] || STATUS_CLASS.cancelled}`}>
-        {STATUS_LABEL[key] || key || 'unknown'}
-      </span>
-      {isCancelled && (
-        source === 'hotel' || source === 'restaurant' ? (
-          <span
-            title="Cancelled by Hotel"
-            aria-label="Cancelled by Hotel"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 16,
-              height: 16,
-              color: '#C46658',
-              flexShrink: 0,
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 6 6)" />
-            </svg>
-          </span>
-        ) : source === 'customer' ? (
-          <span
-            title="Cancelled by Customer"
-            aria-label="Cancelled by Customer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 16,
-              height: 16,
-              color: '#C46658',
-              flexShrink: 0,
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-        ) : null
-      )}
-    </span>
-  );
-}
-
-function PaymentBadge({ status }: { status: string }) {
-  const key = normalise(status);
-  const paid = key === 'paid';
-  return (
-    <span
-      className="d3-badge px-2 py-0.5 rounded text-[0.65rem] font-bold tracking-tighter uppercase"
-      style={{
-        backgroundColor: paid ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
-        borderColor: paid ? 'rgba(16,185,129,0.45)' : 'rgba(239,68,68,0.45)',
-        color: paid ? '#10b981' : '#ef4444',
-      }}
-    >
-      {paid ? '🟢 PAID' : '🔴 UNPAID'}
-    </span>
-  );
-}
+const CANCEL_REASONS = [
+  'Item unavailable',
+  'Kitchen closed',
+  'Unable to prepare',
+  'Restaurant too busy',
+  'Customer requested cancellation',
+  'Other',
+] as const;
+type CancelReason = (typeof CANCEL_REASONS)[number];
 
 function getMinutesAgo(dateStr: string) {
   return Math.max(1, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
 }
 
 const TABS = ['all', 'pending', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
-
 const PAYMENT_FILTERS = ['all', 'paid', 'unpaid'];
+const PAYMENT_LABEL: Record<string, string> = { all: 'All', paid: 'Paid', unpaid: 'Unpaid' };
 
-const PAYMENT_LABEL: Record<string, string> = {
-  all: 'All',
-  paid: 'Paid',
-  unpaid: 'Unpaid',
-};
+/* ─── Types ──────────────────────────────────────────────────────────── */
+
+interface NormalisedItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  notes?: string | null;
+}
+
+interface ModalState {
+  order: Order;
+  item: NormalisedItem;
+  orderItems: NormalisedItem[];
+}
+
+/* ─── Sub-components ─────────────────────────────────────────────────── */
+
+function StatusBadge({ status, order }: { status: string; order?: any }) {
+  const key = normalise(status);
+  const isCancelled = key === 'cancelled';
+  const source = (
+    order?.cancellation_source ||
+    order?.cancelled_by_source ||
+    ''
+  ).toLowerCase().trim();
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <span className={`d3-badge ${STATUS_CLASS[key] || STATUS_CLASS.cancelled}`}>
+        {STATUS_LABEL[key] || key || 'unknown'}
+      </span>
+      {isCancelled && (source === 'hotel' || source === 'restaurant') && (
+        <span style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.06em', color: '#D9A79E', textTransform: 'uppercase' }}>HOTEL</span>
+      )}
+      {isCancelled && source === 'customer' && (
+        <span style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.06em', color: '#C46658', textTransform: 'uppercase' }}>CUSTOMER</span>
+      )}
+    </span>
+  );
+}
+
+/* ─── Item-Action Modal ──────────────────────────────────────────────── */
+
+interface ItemModalProps {
+  modal: ModalState;
+  currency: string | undefined;
+  updatingOrderIds: Set<string>;
+  onClose: () => void;
+  onStatusUpdate: (orderId: string, status: string, cancellationReason?: string) => Promise<void>;
+  onError: (msg: string) => void;
+}
+
+function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate, onError }: ItemModalProps) {
+  const { order, item } = modal;
+  const status = normalise(order.status);
+  const isUpdating = updatingOrderIds.has(order.id);
+
+  const [cancelStep, setCancelStep] = useState<'none' | 'reason' | 'confirm'>('none');
+  const [cancelReason, setCancelReason] = useState<CancelReason | ''>('');
+  const [cancelOther, setCancelOther] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const handleAction = async (newStatus: string) => {
+    try {
+      await onStatusUpdate(order.id, newStatus);
+      onClose();
+    } catch (err: any) {
+      onError(err.message || 'Failed to update order status');
+    }
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelReason) return;
+    const reason = cancelReason === 'Other' ? (cancelOther.trim() || 'Other') : cancelReason;
+    setCancelLoading(true);
+    try {
+      await onStatusUpdate(order.id, 'cancelled', reason);
+      onClose();
+    } catch (err: any) {
+      onError(err.message || 'Failed to cancel order');
+      setCancelLoading(false);
+    }
+  };
+
+  const isCancellable = !['completed', 'cancelled'].includes(status);
+
+  const actionButtons: Array<{ label: string; newStatus: string; primary: boolean; condition: boolean }> = [
+    { label: 'Accept Order',    newStatus: 'accepted',  primary: true,  condition: status === 'pending' },
+    { label: 'Start Preparing', newStatus: 'preparing', primary: status === 'accepted', condition: status === 'accepted' || status === 'pending' },
+    { label: 'Mark as Ready',   newStatus: 'ready',     primary: false, condition: status === 'preparing' },
+    { label: 'Complete Order',  newStatus: 'completed', primary: false, condition: status === 'ready' },
+  ];
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.65)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1rem',
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Order item actions"
+        style={{
+          position: 'relative',
+          width: '100%', maxWidth: 420,
+          background: 'var(--bg-surface, #1a1a1a)',
+          border: '1px solid var(--border-warm, rgba(201,169,110,0.18))',
+          borderRadius: 14,
+          padding: '1.5rem',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+          display: 'flex', flexDirection: 'column', gap: '1rem',
+          maxHeight: '90vh', overflowY: 'auto',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: 'absolute', top: 14, right: 14,
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6, width: 28, height: 28,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'var(--text-muted)',
+            fontSize: '0.75rem', lineHeight: 1,
+          }}
+        >
+          &#x2715;
+        </button>
+
+        {/* Order context */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dimmed)' }}>
+            TABLE {order.table_number || '\u2014'} &middot; <span style={{ fontFamily: 'ui-monospace, monospace' }}>{order.id.slice(0, 8).toUpperCase()}</span>
+          </div>
+          <StatusBadge status={order.status} order={order} />
+        </div>
+
+        {/* Selected item highlight */}
+        <div style={{ padding: '0.875rem 1rem', borderRadius: 8, background: 'rgba(201,169,110,0.08)', border: '1px solid rgba(201,169,110,0.22)' }}>
+          <div style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dimmed)', marginBottom: 6 }}>
+            SELECTED ITEM
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</span>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--gold)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              {formatPrice(item.price * item.quantity, currency)}
+            </span>
+          </div>
+          <div style={{ marginTop: 4, display: 'flex', gap: 16, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            <span>Qty: <strong style={{ color: 'var(--text-primary)' }}>{item.quantity}</strong></span>
+            <span>Unit: <strong style={{ color: 'var(--text-primary)' }}>{formatPrice(item.price, currency)}</strong></span>
+          </div>
+          {item.notes && (
+            <div style={{ marginTop: 6, fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              Note: {item.notes}
+            </div>
+          )}
+        </div>
+
+        <hr style={{ border: 'none', borderTop: '1px solid var(--border-warm, rgba(255,255,255,0.08))', margin: 0 }} />
+
+        {/* Actions */}
+        {cancelStep === 'none' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dimmed)', marginBottom: 2 }}>
+              ORDER ACTIONS
+            </div>
+            {status === 'completed' && (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem 0' }}>This order is already completed.</p>
+            )}
+            {status === 'cancelled' && (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem 0' }}>This order has been cancelled.</p>
+            )}
+            {actionButtons.filter(b => b.condition).map(btn => (
+              <button
+                key={btn.newStatus}
+                type="button"
+                disabled={isUpdating}
+                onClick={() => handleAction(btn.newStatus)}
+                className={btn.primary ? 'd3-btn-primary' : 'd3-btn-quiet'}
+                style={{ opacity: isUpdating ? 0.55 : 1 }}
+              >
+                {isUpdating ? 'Updating\u2026' : btn.label}
+              </button>
+            ))}
+            {isCancellable && (
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={() => setCancelStep('reason')}
+                className="d3-btn-inline d3-btn-danger"
+                style={{ marginTop: 4, opacity: isUpdating ? 0.55 : 1 }}
+              >
+                Cancel Order
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Step 1: choose reason */}
+        {cancelStep === 'reason' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#C46658', marginBottom: 2 }}>
+              CANCELLATION REASON
+            </div>
+            {CANCEL_REASONS.map(r => (
+              <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: '0.8125rem', color: cancelReason === r ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                <input
+                  type="radio"
+                  name="cancel_reason"
+                  value={r}
+                  checked={cancelReason === r}
+                  onChange={() => setCancelReason(r)}
+                  style={{ accentColor: 'var(--gold)', width: 14, height: 14 }}
+                />
+                {r}
+              </label>
+            ))}
+            {cancelReason === 'Other' && (
+              <textarea
+                placeholder="Describe the reason..."
+                value={cancelOther}
+                onChange={e => setCancelOther(e.target.value)}
+                rows={2}
+                style={{
+                  marginTop: 4, width: '100%', boxSizing: 'border-box',
+                  background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
+                  border: '1px solid var(--border-warm, rgba(255,255,255,0.12))',
+                  borderRadius: 6, padding: '0.5rem 0.75rem',
+                  color: 'var(--text-primary)', fontSize: '0.8125rem',
+                  resize: 'vertical', outline: 'none',
+                }}
+              />
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <button type="button" onClick={() => { setCancelStep('none'); setCancelReason(''); setCancelOther(''); }} className="d3-btn-quiet" style={{ flex: 1 }}>Back</button>
+              <button type="button" disabled={!cancelReason} onClick={() => setCancelStep('confirm')} className="d3-btn-inline d3-btn-danger" style={{ flex: 1, opacity: cancelReason ? 1 : 0.45 }}>Next</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: confirm */}
+        {cancelStep === 'confirm' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ padding: '0.875rem', borderRadius: 8, background: 'rgba(196,102,88,0.07)', border: '1px solid rgba(196,102,88,0.22)', fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+              <strong style={{ color: '#C46658', display: 'block', marginBottom: 4, fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Confirm Cancellation</strong>
+              Reason: <strong style={{ color: 'var(--text-primary)' }}>{cancelReason === 'Other' ? (cancelOther.trim() || 'Other') : cancelReason}</strong>
+              <br />This will cancel the entire order and cannot be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => setCancelStep('reason')} className="d3-btn-quiet" style={{ flex: 1 }} disabled={cancelLoading}>Back</button>
+              <button type="button" onClick={handleCancelConfirm} className="d3-btn-inline d3-btn-danger" style={{ flex: 1, opacity: cancelLoading ? 0.6 : 1 }} disabled={cancelLoading}>
+                {cancelLoading ? 'Cancelling\u2026' : 'Confirm Cancel'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Page ───────────────────────────────────────────────────────────── */
 
 export default function LiveOrdersPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { orders, refetch: refetchOrders, updateOrderStatus, updatePaymentStatus, updatingOrderIds, error: ordersError } = useOrders(hotel?.id || null);
+  const { orders, updateOrderStatus, updatePaymentStatus, updatingOrderIds } = useOrders(hotel?.id || null);
+
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
+
   const [activeTab, setActiveTab] = useState('all');
   const [activePaymentFilter, setActivePaymentFilter] = useState('all');
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+  const [modal, setModal] = useState<ModalState | null>(null);
 
   const handleUpdateStatus = useCallback(
-    async (id: string, status: string) => {
+    async (id: string, status: string, cancellationReason?: string) => {
       setUpdateError(null);
       try {
-        await updateOrderStatus(id, status);
+        if (status === 'cancelled' && cancellationReason) {
+          const resp = await fetch('/api/orders/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: id, status: 'cancelled', cancellation_reason: cancellationReason }),
+          });
+          const json = await resp.json();
+          if (!json.success) throw new Error(json.error || 'Failed to cancel order');
+        } else {
+          await updateOrderStatus(id, status);
+        }
       } catch (err: any) {
         setUpdateError(err.message || 'Failed to update order status');
+        throw err;
       }
     },
     [updateOrderStatus]
@@ -220,28 +387,25 @@ export default function LiveOrdersPage() {
         setPaymentError(err.message || 'Failed to update payment status');
       }
     },
-    [updatePaymentStatus]
+    [updatePaymentStatus, orders]
   );
 
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
-  const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
-  const [itemActionsOpen, setItemActionsOpen] = useState<Record<string, boolean>>({});
-
-  const toggleItemActions = useCallback((orderId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setItemActionsOpen((prev) => ({ ...prev, [orderId]: !prev[orderId] }));
-    setExpandedOrders((prev) => ({ ...prev, [orderId]: true }));
-  }, []);
-
-  const toggleOrderExpanded = useCallback((orderId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setItemActionsOpen((prev: Record<string, boolean>) => ({
-      ...prev,
-      [orderId]: !prev[orderId],
-    }));
-    setExpandedOrders((prev) => ({ ...prev, [orderId]: true }));
-  }, []);
+  const getOrderItems = (order: Order): NormalisedItem[] => {
+    if (!order.order_items || !Array.isArray(order.order_items)) return [];
+    return order.order_items.map((item: any) => {
+      const price =
+        item.price_at_time != null ? item.price_at_time
+        : item.price != null ? item.price
+        : item.menu_item?.price ?? 0;
+      return {
+        id: item.id,
+        name: item.name || item.menu_item?.name || 'Unknown',
+        quantity: item.quantity || 1,
+        price,
+        notes: item.notes,
+      };
+    });
+  };
 
   const filtered = orders.filter((o: Order) => {
     const statusMatch = activeTab === 'all' || normalise(o.status) === activeTab;
@@ -253,298 +417,135 @@ export default function LiveOrdersPage() {
     return statusMatch && paymentMatch;
   });
 
-  const getOrderItems = (order: Order) => {
-    if (order.order_items && Array.isArray(order.order_items)) {
-      return order.order_items.map((item: any) => {
-        const price = item.price_at_time !== undefined && item.price_at_time !== null ? item.price_at_time : (item.price !== undefined && item.price !== null ? item.price : (item.menu_item?.price !== undefined && item.menu_item?.price !== null ? item.menu_item.price : 0));
-        return {
-          id: item.id,
-          name: item.name || item.menu_item?.name || 'Unknown',
-          quantity: item.quantity || 1,
-          price: price,
-          notes: item.notes,
-        };
-      });
-    }
-    return [];
-  };
-
   if (hotelLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <div
-          style={{
-            width: 40, height: 40, borderRadius: '50%',
-            border: '2px solid rgba(201,169,110,0.2)',
-            borderTop: '2px solid var(--gold)',
-            animation: 'spin 1s linear infinite',
-          }}
-        />
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(201,169,110,0.2)', borderTop: '2px solid var(--gold)', animation: 'spin 1s linear infinite' }} />
         <p style={{ color: 'var(--text-dimmed)', fontSize: '0.875rem' }}>Loading orders...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8" style={{ maxWidth: 1180 }}>
-
-      {/* Header */}
-      <header
-        className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5"
-      >
-        <div>
-          <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
-            Service
-          </span>
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2rem, 4vw, 2.75rem)',
-              fontWeight: 500,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.025em',
-              lineHeight: 1.1,
-              margin: '0.5rem 0 0',
-            }}
-          >
-            Live Orders
-          </h1>
-          <p
-            style={{
-              margin: '0.5rem 0 0',
-              fontSize: '0.875rem',
-              lineHeight: 1.6,
-              color: 'var(--text-muted)',
-              maxWidth: '54ch',
-            }}
-          >
-            The real-time order stream for your kitchen and floor staff.
-          </p>
-        </div>
-
-        {/* Service counters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-          {[
-            { label: 'New', count: orders.filter((o: Order) => normalise(o.status) === 'pending').length },
-            { label: 'In Kitchen', count: orders.filter((o: Order) => normalise(o.status) === 'preparing').length },
-            { label: 'Ready', count: orders.filter((o: Order) => normalise(o.status) === 'ready').length },
-          ].map((stat) => (
-            <div key={stat.label}>
-              <span className="d3-figure" style={{ display: 'block', fontSize: '1.5rem' }}>
-                {stat.count}
-              </span>
-              <span
-                style={{
-                  display: 'block',
-                  marginTop: 5,
-                  fontSize: '0.5625rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-dimmed)',
-                }}
-              >
-                {stat.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      </header>
-
-      {/* Update error notification */}
-      {updateError && (
-        <div
-          style={{
-            padding: '0.875rem 1.25rem',
-            marginBottom: 1,
-            background: 'rgba(196,102,88,0.06)',
-            border: '1px solid rgba(196,102,88,0.25)',
-            borderRadius: 10,
-            color: '#C46658',
-            fontSize: '0.8125rem',
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}
-        >
-          <span style={{ width: 14, height: 14, flexShrink: 0 }}>
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="7" cy="7" r="5.5" />
-              <line x1="7" y1="3" x2="7" y2="7" />
-            </svg>
-          </span>
-          <span>{updateError}</span>
-          <button
-            type="button"
-            onClick={() => setUpdateError(null)}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
-          >
-            ✕
-          </button>
-        </div>
+    <>
+      {modal && (
+        <ItemModal
+          modal={modal}
+          currency={hotel?.currency}
+          updatingOrderIds={updatingOrderIds}
+          onClose={() => setModal(null)}
+          onStatusUpdate={handleUpdateStatus}
+          onError={setUpdateError}
+        />
       )}
 
-      {/* Payment error notification */}
-      {paymentError && (
-        <div
-          style={{
-            padding: '0.875rem 1.25rem',
-            marginBottom: 1,
-            background: 'rgba(196,102,88,0.06)',
-            border: '1px solid rgba(196,102,88,0.25)',
-            borderRadius: 10,
-            color: '#C46658',
-            fontSize: '0.8125rem',
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}
-        >
-          <span style={{ width: 14, height: 14, flexShrink: 0 }}>
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="7" cy="7" r="5.5" />
-              <line x1="7" y1="3" x2="7" y2="7" />
-            </svg>
-          </span>
-          <span>{paymentError}</span>
-          <button
-            type="button"
-            onClick={() => setPaymentError(null)}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      <div className="flex flex-col gap-8" style={{ maxWidth: 1180 }}>
 
-      {/* Payment success notification */}
-      {paymentSuccess && (
-        <div
-          style={{
-            padding: '0.875rem 1.25rem',
-            marginBottom: 1,
-            background: 'rgba(16,185,129,0.08)',
-            border: '1px solid rgba(16,185,129,0.25)',
-            borderRadius: 10,
-            color: '#10b981',
-            fontSize: '0.8125rem',
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}
-        >
-          <span style={{ width: 14, height: 14, flexShrink: 0 }}>
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="1 6 4 9 9 2" />
-            </svg>
-          </span>
-          <span>{paymentSuccess}</span>
-          <button
-            type="button"
-            onClick={() => setPaymentSuccess(null)}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5">
+          <div>
+            <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>Service</span>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 4vw, 2.75rem)', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.025em', lineHeight: 1.1, margin: '0.5rem 0 0' }}>
+              Live Orders
+            </h1>
+            <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', lineHeight: 1.6, color: 'var(--text-muted)', maxWidth: '54ch' }}>
+              The real-time order stream for your kitchen and floor staff.
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+            {[
+              { label: 'New',        count: orders.filter((o: Order) => normalise(o.status) === 'pending').length },
+              { label: 'In Kitchen', count: orders.filter((o: Order) => normalise(o.status) === 'preparing').length },
+              { label: 'Ready',      count: orders.filter((o: Order) => normalise(o.status) === 'ready').length },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <span className="d3-figure" style={{ display: 'block', fontSize: '1.5rem' }}>{stat.count}</span>
+                <span style={{ display: 'block', marginTop: 5, fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-dimmed)' }}>{stat.label}</span>
+              </div>
+            ))}
+          </div>
+        </header>
 
-      {/* Tab filter */}
-      <div className="d3-segment" role="group" aria-label="Filter orders by status">
-        {TABS.map((tab) => {
-          const count = orders.filter((o: Order) => tab === 'all' ? true : normalise(o.status) === tab).length;
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              className="d3-segment-item"
-              data-active={isActive}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab} ({count})
-            </button>
-          );
-        })}
-      </div>
+        {/* Banners */}
+        {updateError && (
+          <div style={{ padding: '0.875rem 1.25rem', background: 'rgba(196,102,88,0.06)', border: '1px solid rgba(196,102,88,0.25)', borderRadius: 10, color: '#C46658', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>{updateError}</span>
+            <button type="button" onClick={() => setUpdateError(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', padding: 0 }}>&#x2715;</button>
+          </div>
+        )}
+        {paymentError && (
+          <div style={{ padding: '0.875rem 1.25rem', background: 'rgba(196,102,88,0.06)', border: '1px solid rgba(196,102,88,0.25)', borderRadius: 10, color: '#C46658', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>{paymentError}</span>
+            <button type="button" onClick={() => setPaymentError(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', padding: 0 }}>&#x2715;</button>
+          </div>
+        )}
+        {paymentSuccess && (
+          <div style={{ padding: '0.875rem 1.25rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, color: '#10b981', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>{paymentSuccess}</span>
+            <button type="button" onClick={() => setPaymentSuccess(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: 0 }}>&#x2715;</button>
+          </div>
+        )}
 
-      {/* Payment filter */}
-      <div className="d3-segment" role="group" aria-label="Filter orders by payment status">
-        {PAYMENT_FILTERS.map((pf) => {
-          const count = orders.filter((o: Order) => pf === 'all' || normalise(o.payment_status) === pf).length;
-          const isActive = activePaymentFilter === pf;
-          return (
-            <button
-              key={pf}
-              type="button"
-              className="d3-segment-item"
-              data-active={isActive}
-              onClick={() => setActivePaymentFilter(pf)}
-            >
-              {PAYMENT_LABEL[pf]} ({count})
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Orders Grid */}
-      {filtered.length === 0 ? (
-        <div className="d3-empty">
-          <svg width="38" height="38" viewBox="0 0 40 40" fill="none" style={{ opacity: 0.45 }} aria-hidden="true">
-            <rect x="6" y="9" width="28" height="22" rx="3" stroke="currentColor" strokeWidth="1.1" />
-            <path d="M13 17H27M13 22H21" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-          </svg>
-          <h3 className="d3-empty-title">
-            {activeTab === 'all' ? 'No orders yet' : `No ${activeTab} orders`}
-          </h3>
-          <p className="d3-empty-body">
-            {orders.length === 0
-              ? 'Orders placed from your guest menu land here instantly.'
-              : 'Nothing is in this state right now.'}
-            {hotelSlug ? (
-              <>
-                {' '}
-                Open{' '}
-                <a href={menuHref} target="_blank" style={{ color: 'var(--gold)' }}>
-                  /menu/{hotelSlug}
-                </a>{' '}
-                to place one.
-              </>
-            ) : null}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filtered.map((order: Order) => {
-            const minsAgo = getMinutesAgo(order.created_at);
-            const isNew = normalise(order.status) === 'pending';
-            const orderItems = getOrderItems(order);
+        {/* Tab filter */}
+        <div className="d3-segment" role="group" aria-label="Filter orders by status">
+          {TABS.map((tab) => {
+            const count = orders.filter((o: Order) => tab === 'all' ? true : normalise(o.status) === tab).length;
             return (
-              <article
-                key={order.id}
-                className="d3-panel p-4 flex flex-col gap-3"
-                style={
-                  isNew
-                    ? {
-                        borderColor: 'rgba(184,164,122,0.28)',
-                        background: 'var(--bg-surface-2)',
-                      }
-                    : undefined
-                }
-              >
-                {/* Order Header */}
-                <div
-                  className="flex items-start justify-between gap-3 cursor-pointer"
-                  onClick={() => toggleOrderExpanded(order.id)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggleOrderExpanded(order.id);
-                    }
+              <button key={tab} type="button" className="d3-segment-item" data-active={activeTab === tab} onClick={() => setActiveTab(tab)}>
+                {tab} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Payment filter */}
+        <div className="d3-segment" role="group" aria-label="Filter orders by payment status">
+          {PAYMENT_FILTERS.map((pf) => {
+            const count = orders.filter((o: Order) => pf === 'all' || normalise(o.payment_status) === pf).length;
+            return (
+              <button key={pf} type="button" className="d3-segment-item" data-active={activePaymentFilter === pf} onClick={() => setActivePaymentFilter(pf)}>
+                {PAYMENT_LABEL[pf]} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Orders grid */}
+        {filtered.length === 0 ? (
+          <div className="d3-empty">
+            <svg width="38" height="38" viewBox="0 0 40 40" fill="none" style={{ opacity: 0.45 }} aria-hidden="true">
+              <rect x="6" y="9" width="28" height="22" rx="3" stroke="currentColor" strokeWidth="1.1" />
+              <path d="M13 17H27M13 22H21" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+            </svg>
+            <h3 className="d3-empty-title">{activeTab === 'all' ? 'No orders yet' : `No ${activeTab} orders`}</h3>
+            <p className="d3-empty-body">
+              {orders.length === 0 ? 'Orders placed from your guest menu land here instantly.' : 'Nothing is in this state right now.'}
+              {hotelSlug && <> Open <a href={menuHref} target="_blank" style={{ color: 'var(--gold)' }}>/menu/{hotelSlug}</a> to place one.</>}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filtered.map((order: Order) => {
+              const minsAgo    = getMinutesAgo(order.created_at);
+              const isNew      = normalise(order.status) === 'pending';
+              const orderItems = getOrderItems(order);
+
+              return (
+                <article
+                  key={order.id}
+                  className="d3-panel p-4"
+                  style={{
+                    height: 340,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0,
+                    ...(isNew ? { borderColor: 'rgba(184,164,122,0.28)', background: 'var(--bg-surface-2)' } : {}),
                   }}
-                  aria-expanded={!!expandedOrders[order.id]}
                 >
-                  <div className="min-w-0">
-                    <div className="flex items-center">
-                      <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        Table {order.table_number || '—'}
-                      </span>
+                  {/* Card header */}
+                  <div style={{ flexShrink: 0, marginBottom: 10 }}>
+                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Table {order.table_number || '\u2014'}
                     </div>
                     <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.625rem', color: 'var(--text-dimmed)', marginTop: 2 }}>
                       {order.id.slice(0, 8).toUpperCase()}
@@ -555,155 +556,105 @@ export default function LiveOrdersPage() {
                       </span>
                     </div>
                     <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {order.customer_name || 'Guest'} · {minsAgo} min ago
+                      {order.customer_name || 'Guest'} &middot; {minsAgo} min ago
                     </p>
                   </div>
-                </div>
 
-                {/* Food Items */}
-                <div>
-                  <div style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dimmed)', marginBottom: 6 }}>
+                  {/* Items label */}
+                  <div style={{ flexShrink: 0, fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dimmed)', marginBottom: 5 }}>
                     ORDER ITEMS
+                    <span style={{ marginLeft: 6, fontSize: '0.5625rem', color: 'var(--text-dimmed)', textTransform: 'none', letterSpacing: 0, fontWeight: 400, opacity: 0.7 }}>
+                      (tap to manage)
+                    </span>
                   </div>
-                  <div style={{ maxHeight: orderItems.length > 3 ? 150 : 'none', overflowY: orderItems.length > 3 ? 'auto' : 'visible', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {orderItems.map((item: any) => (
-                      <div key={item.id} onClick={(e) => { e.stopPropagation(); toggleItemActions(order.id); }} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, cursor: 'pointer' }}>
+
+                  {/* Scrollable items list */}
+                  <div
+                    style={{
+                      flex: 1,
+                      overflowY: 'auto',
+                      overflowX: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 3,
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: 'rgba(201,169,110,0.2) transparent',
+                      paddingRight: 2,
+                      marginRight: -2,
+                      minHeight: 0,
+                    }}
+                  >
+                    {orderItems.length === 0 ? (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)', fontStyle: 'italic' }}>No items</span>
+                    ) : orderItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setModal({ order, item, orderItems })}
+                        style={{
+                          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+                          gap: 8, width: '100%', background: 'transparent', border: 'none',
+                          borderRadius: 5, padding: '0.3125rem 0.375rem',
+                          cursor: 'pointer', textAlign: 'left',
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,169,110,0.07)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
                         <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)' }}>
-                          {item.quantity} × {item.name}
+                          {item.quantity} &times; {item.name}
                         </span>
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', fontWeight: 500, flexShrink: 0 }}>
                           {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
-                </div>
 
-                {/* Order total */}
-                {order.notes && (
-                  <div
-                    style={{
-                      padding: '0.625rem 0.75rem',
-                      borderRadius: 5,
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-warm)',
-                      fontSize: '0.75rem',
-                      lineHeight: 1.6,
-                      color: 'var(--text-secondary)',
-                    }}
-                  >
-                    <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Chef note:</strong>{' '}
-                    {order.notes}
+                  {/* Chef note (compact, fixed) */}
+                  {order.notes && (
+                    <div style={{
+                      flexShrink: 0, marginTop: 8,
+                      padding: '0.4375rem 0.625rem', borderRadius: 5,
+                      background: 'var(--bg-secondary)', border: '1px solid var(--border-warm)',
+                      fontSize: '0.6875rem', lineHeight: 1.5, color: 'var(--text-secondary)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Note:</strong> {order.notes}
+                    </div>
+                  )}
+
+                  {/* Total — pinned */}
+                  <div style={{
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    borderTop: '1px solid var(--border-warm)', paddingTop: '0.75rem', marginTop: 8,
+                  }}>
+                    <span style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>TOTAL ORDER AMOUNT</span>
+                    <span className="d3-figure" style={{ fontSize: '1.25rem', color: 'var(--gold)' }}>
+                      {order.total_amount != null ? formatPrice(Number(order.total_amount) || 0, hotel?.currency) : 'N/A'}
+                    </span>
                   </div>
-                )}
 
-                <div
-                  className="flex items-center justify-between"
-                  style={{ borderTop: '1px solid var(--border-warm)', paddingTop: '0.875rem', marginTop: 'auto' }}
-                >
-                  <span style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-                    TOTAL ORDER AMOUNT
-                  </span>
-                  <span className="d3-figure" style={{ fontSize: '1.25rem', color: 'var(--gold)' }}>
-                    {order.total_amount != null ? formatPrice(Number(order.total_amount) || 0, hotel?.currency) : 'N/A'}
-                  </span>
-                </div>
-
-                {/* Cancellation reason shown only for cancelled orders */}
-                {normalise(order.status) === 'cancelled' && order.cancellation_reason && (
-                  <div
-                    style={{
-                      marginTop: '0.875rem',
-                      padding: '0.625rem 0.75rem',
-                      borderRadius: 5,
-                      background: 'rgba(196,102,88,0.06)',
-                      border: '1px solid rgba(196,102,88,0.18)',
-                      fontSize: '0.75rem',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <strong style={{ color: '#C46658', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.625rem', display: 'block', marginBottom: 2 }}>
-                      Cancellation reason
-                    </strong>
-                    <span style={{ color: 'var(--text-secondary)' }}>{order.cancellation_reason}</span>
-                    {order.cancelled_by === 'customer' && (
-                      <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem', marginLeft: 8 }}>
-                        · Cancelled by customer
-                      </span>
-                    )}
-                    {order.cancelled_by === 'restaurant' && (
-                      <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem', marginLeft: 8 }}>
-                        · Cancelled by restaurant
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Actions */}
-                {normalise(order.status) !== 'cancelled' && itemActionsOpen[order.id] && (
-                  <div className="flex flex-col" style={{ gap: 8 }}>
-                    {normalise(order.status) === 'pending' && (
-                      <button
-                        type="button"
-                        disabled={updatingOrderIds.has(order.id)}
-                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'accepted'); setItemActionsOpen(prev => ({ ...prev, [order.id]: false })); }}
-                        className="d3-btn-primary"
-                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                      >
-                        Accept Order
-                      </button>
-                    )}
-                    {(normalise(order.status) === 'accepted' || normalise(order.status) === 'pending') && (
-                      <button
-                        type="button"
-                        disabled={updatingOrderIds.has(order.id)}
-                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'preparing'); setItemActionsOpen(prev => ({ ...prev, [order.id]: false })); }}
-                        className={normalise(order.status) === 'accepted' ? 'd3-btn-primary' : 'd3-btn-quiet'}
-                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                      >
-                        Start Preparing
-                      </button>
-                    )}
-                    {normalise(order.status) === 'preparing' && (
-                      <button
-                        type="button"
-                        disabled={updatingOrderIds.has(order.id)}
-                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'ready'); setItemActionsOpen(prev => ({ ...prev, [order.id]: false })); }}
-                        className="d3-btn-quiet"
-                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                      >
-                        Mark as Ready
-                      </button>
-                    )}
-                    {normalise(order.status) === 'ready' && (
-                      <button
-                        type="button"
-                        disabled={updatingOrderIds.has(order.id)}
-                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'completed'); setItemActionsOpen(prev => ({ ...prev, [order.id]: false })); }}
-                        className="d3-btn-quiet"
-                        style={{ flex: 1, opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                      >
-                        Complete Order
-                      </button>
-                    )}
-                    {!['completed', 'cancelled'].includes(normalise(order.status)) && (
-                      <button
-                        type="button"
-                        disabled={updatingOrderIds.has(order.id)}
-                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'cancelled'); setItemActionsOpen(prev => ({ ...prev, [order.id]: false })); }}
-                        className="d3-btn-inline d3-btn-danger"
-                        style={{ opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                      >
-                        Cancel Order
-                      </button>
-                    )}
-                  </div>
-                )}
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </div>
+                  {/* Cancellation reason inline (cancelled orders) */}
+                  {normalise(order.status) === 'cancelled' && order.cancellation_reason && (
+                    <div style={{
+                      flexShrink: 0, marginTop: 6,
+                      padding: '0.4375rem 0.625rem', borderRadius: 5,
+                      background: 'rgba(196,102,88,0.06)', border: '1px solid rgba(196,102,88,0.18)',
+                      fontSize: '0.6875rem', lineHeight: 1.45,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      <strong style={{ color: '#C46658', fontWeight: 500 }}>Reason:</strong>{' '}
+                      <span style={{ color: 'var(--text-secondary)' }}>{order.cancellation_reason}</span>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
