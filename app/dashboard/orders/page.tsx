@@ -234,12 +234,13 @@ export default function LiveOrdersPage() {
     setExpandedOrders((prev) => ({ ...prev, [orderId]: true }));
   }, []);
 
-  const toggleActions = useCallback((orderId: string, e?: React.MouseEvent) => {
+  const toggleOrderExpanded = useCallback((orderId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setActionsOpen((prev) => ({
+    setItemActionsOpen((prev: Record<string, boolean>) => ({
       ...prev,
       [orderId]: !prev[orderId],
     }));
+    setExpandedOrders((prev) => ({ ...prev, [orderId]: true }));
   }, []);
 
   const filtered = orders.filter((o: Order) => {
@@ -689,7 +690,7 @@ export default function LiveOrdersPage() {
                       <button
                         type="button"
                         disabled={updatingOrderIds.has(order.id)}
-                        onClick={(e) => { e.stopPropagation(); handleCancelClick(order.id); setItemActionsOpen(prev => ({ ...prev, [order.id]: false })); }}
+                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'cancelled'); setItemActionsOpen(prev => ({ ...prev, [order.id]: false })); }}
                         className="d3-btn-inline d3-btn-danger"
                         style={{ opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                       >
