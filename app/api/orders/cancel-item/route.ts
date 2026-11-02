@@ -6,8 +6,8 @@ import { requireOwnedHotelId } from '@/lib/hotelAccess';
 const cancelItemSchema = z.object({
   order_id: z.string().min(1),
   order_item_id: z.string().min(1),
-  reason: z.string().min(1).optional(),
-  note: z.string().optional(),
+  reason: z.string().optional().nullable(),
+  note: z.string().optional().nullable(),
 });
 
 async function columnExists(table: string, column: string): Promise<boolean> {
@@ -45,8 +45,14 @@ export async function POST(request: Request) {
     }
 
     const updatePayload: Record<string, any> = { status: 'cancelled', cancelled_at: new Date().toISOString() };
-    const reasonText = validated.reason || validated.note || 'Cancelled by hotel';
-    if (await columnExists('order_items', 'cancellation_reason')) updatePayload.cancellation_reason = reasonText;
+    const reasonText = validated.reason || validated.note || undefined;
+    if (await columnExists('order_items', 'cancellation_reason')) {
+      if (reasonText && String(reasonText).trim()) {
+        updatePayload.cancellation_reason = String(reasonText).trim();
+      } else {
+        updatePayload.cancellation_reason = null;
+      }
+    }
     if (await columnExists('order_items', 'cancelled_by')) updatePayload.cancelled_by = 'restaurant';
 
     const { error: updErr } = await supabaseAdmin.from('order_items').update(updatePayload).eq('id', validated.order_item_id).eq('order_id', validated.order_id);
@@ -60,12 +66,18 @@ export async function POST(request: Request) {
         if (await columnExists('orders', 'cancellation_source')) cancelPayload.cancellation_source = 'hotel';
         if (await columnExists('orders', 'cancelled_by')) cancelPayload.cancelled_by = 'restaurant';
         if (await columnExists('orders', 'cancelled_at')) cancelPayload.cancelled_at = new Date().toISOString();
-        if (await columnExists('orders', 'cancellation_reason')) cancelPayload.cancellation_reason = reasonText;
+        if (await columnExists('orders', 'cancellation_reason')) {
+          if (reasonText && String(reasonText).trim()) {
+            cancelPayload.cancellation_reason = String(reasonText).trim();
+          } else {
+            cancelPayload.cancellation_reason = null;
+          }
+        }
         await supabaseAdmin.from('orders').update(cancelPayload).eq('id', validated.order_id);
       }
     }
 
-    await supabaseAdmin.from('order_status_history').insert({ order_id: validated.order_id, status: 'item_cancelled', note: 'Item ' + validated.order_item_id + ' cancelled: ' + reasonText });
+    await supabaseAdmin.from('order_status_history').insert({ order_id: validated.order_id, status: 'item_cancelled', note: reasonText && String(reasonText).trim() ? 'Item ' + validated.order_item_id + ' cancelled: ' + String(reasonText).trim() : 'Item ' + validated.order_item_id + ' cancelled' });
 
     return new NextResponse(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (error: any) {

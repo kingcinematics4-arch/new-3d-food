@@ -262,18 +262,17 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
                 type="button"
                 disabled={isUpdating || cancelLoading}
                 onClick={async () => {
-                  if (!confirm('Cancel only this food item?')) return;
-                  const reason = prompt('Reason for cancelling this item (optional):') || '';
                   try {
                     setCancelLoading(true);
-                    const res = await fetch('/api/orders/cancel-item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: order.id, order_item_id: item.id, reason }) });
+                    onError?.('');
+                    const body: any = { order_id: order.id, order_item_id: item.id };
+                    const res = await fetch('/api/orders/cancel-item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
                     const json = await res.json();
-                    if (!res.ok || !json.success) throw new Error(json.error || 'Failed');
+                    if (!res.ok || !json.success) throw new Error(json.error || 'Failed to cancel item');
                     onClose();
                     if (typeof window !== 'undefined') window.location.reload();
                   } catch (e: any) {
-                    alert(e?.message || 'Failed');
-                  } finally {
+                    onError?.(e?.message || 'Failed to cancel item');
                     setCancelLoading(false);
                   }
                 }}
