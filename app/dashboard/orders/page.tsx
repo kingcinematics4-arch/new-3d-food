@@ -270,7 +270,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
                     const json = await res.json();
                     if (!res.ok || !json.success) throw new Error(json.error || 'Failed to cancel item');
                     onClose();
-                    if (typeof window !== 'undefined') window.location.reload();
+                    // rely on query invalidation/refetch
                   } catch (e: any) {
                     onError?.(e?.message || 'Failed to cancel item');
                     setCancelLoading(false);
@@ -286,7 +286,16 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
               <button
                 type="button"
                 disabled={isUpdating}
-                onClick={() => setCancelStep('reason')}
+                onClick={async () => {
+                  try {
+                    onError?.('');
+                    await onStatusUpdate(order.id, 'cancelled', undefined);
+                    onClose();
+                    // rely on query invalidation/refetch
+                  } catch (err: any) {
+                    onError?.(err?.message || 'Failed to cancel order');
+                  }
+                }}
                 className="d3-btn-inline d3-btn-danger"
                 style={{ marginTop: 4, opacity: isUpdating ? 0.55 : 1 }}
               >
@@ -419,19 +428,21 @@ export default function LiveOrdersPage() {
 
   const getOrderItems = (order: Order): NormalisedItem[] => {
     if (!order.order_items || !Array.isArray(order.order_items)) return [];
-    return order.order_items.map((item: any) => {
-      const price =
-        item.price_at_time != null ? item.price_at_time
-        : item.price != null ? item.price
-        : item.menu_item?.price ?? 0;
-      return {
-        id: item.id,
-        name: item.name || item.menu_item?.name || 'Unknown',
-        quantity: item.quantity || 1,
-        price,
-        notes: item.notes,
-      };
-    });
+    return order.order_items
+      .filter((item: any) => (item.status || '').toLowerCase() !== 'cancelled')
+      .map((item: any) => {
+        const price =
+          item.price_at_time != null ? item.price_at_time
+          : item.price != null ? item.price
+          : item.menu_item?.price ?? 0;
+        return {
+          id: item.id,
+          name: item.name || item.menu_item?.name || 'Unknown',
+          quantity: item.quantity || 1,
+          price,
+          notes: item.notes,
+        };
+      });
   };
 
   const filtered = orders.filter((o: Order) => {

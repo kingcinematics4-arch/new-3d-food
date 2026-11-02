@@ -44,7 +44,10 @@ export async function POST(request: Request) {
       return new NextResponse(JSON.stringify({ success: false, error: 'Order item not found' }), { status: 404, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
 
-    const updatePayload: Record<string, any> = { status: 'cancelled', cancelled_at: new Date().toISOString() };
+    const updatePayload: Record<string, any> = { status: 'cancelled' };
+    if (await columnExists('order_items', 'cancelled_at')) {
+      updatePayload.cancelled_at = new Date().toISOString();
+    }
     const reasonText = validated.reason || validated.note || undefined;
     if (await columnExists('order_items', 'cancellation_reason')) {
       if (reasonText && String(reasonText).trim()) {
@@ -58,7 +61,14 @@ export async function POST(request: Request) {
     const { error: updErr } = await supabaseAdmin.from('order_items').update(updatePayload).eq('id', validated.order_item_id).eq('order_id', validated.order_id);
     if (updErr) throw updErr;
 
-    const { data: allItems } = await supabaseAdmin.from('order_items').select('id, status').eq('order_id', validated.order_id);
+    let allItems: any[] = [];
+    const itemsRes = await supabaseAdmin.from('order_items').select('id, status').eq('order_id', validated.order_id);
+    if (itemsRes.error && (itemsRes.error.code === '42703' || itemsRes.error.message?.includes('status'))) {
+      const { data: allItems2 } = await supabaseAdmin.from('order_items').select('id').eq('order_id', validated.order_id);
+      allItems = (allItems2||[]).map((it:any)=>({id:it.id, status: it.id === validated.order_item_id ? 'cancelled' : 'active'}));
+    } else {
+      allItems = itemsRes.data || [];
+    }
     if (allItems && allItems.length > 0) {
       const allCancelled = allItems.every((it: any) => (it.status || '').toLowerCase() === 'cancelled');
       if (allCancelled && order.status !== 'cancelled') {

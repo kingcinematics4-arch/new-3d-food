@@ -92,6 +92,14 @@ export interface OrderItem {
   price_at_time: number;
   notes: string | null;
   created_at: string;
+  /** Added by migration 017 / 018. 'active' | 'cancelled'. Default: 'active'. */
+  status?: string | null;
+  /** Added by migration 017 / 018. Timestamp when this item was cancelled. */
+  cancelled_at?: string | null;
+  /** Added by migration 017 / 018. Free-form reason text for cancellation. */
+  cancellation_reason?: string | null;
+  /** Added by migration 017 / 018. Who cancelled: 'restaurant' | 'customer'. */
+  cancelled_by?: string | null;
   menu_item?: {
     name: string;
   };
