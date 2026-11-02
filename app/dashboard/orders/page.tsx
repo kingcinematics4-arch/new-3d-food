@@ -441,7 +441,9 @@ export default function LiveOrdersPage() {
     const paymentMatch =
       activePaymentFilter === 'all'
         ? true
-        : !isCancelled && normalise(o.payment_status) === activePaymentFilter;
+        : isCancelled
+          ? true
+          : normalise(o.payment_status) === activePaymentFilter;
     return statusMatch && paymentMatch;
   });
 
