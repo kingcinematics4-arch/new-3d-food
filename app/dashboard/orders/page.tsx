@@ -245,7 +245,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
             {status === 'cancelled' && (
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem 0' }}>This order has been cancelled.</p>
             )}
-            {actionButtons.filter(b => b.condition).map(btn => (
+            {!modal.forceCancel && actionButtons.filter(b => b.condition).map(btn => (
               <button
                 key={btn.newStatus}
                 type="button"
@@ -254,10 +254,10 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
                 className={btn.primary ? 'd3-btn-primary' : 'd3-btn-quiet'}
                 style={{ opacity: isUpdating ? 0.55 : 1 }}
               >
-                {isUpdating ? 'Updating\u2026' : btn.label}
+                {isUpdating ? 'Updating…' : btn.label}
               </button>
             ))}
-            {!itemIsCancelled && status !== 'cancelled' && (
+            {!itemIsCancelled && status !== 'cancelled' && !modal.forceCancel && (
               <button
                 type="button"
                 disabled={isUpdating || cancelLoading}
@@ -280,10 +280,10 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
                 className="d3-btn-inline"
                 style={{ marginTop: 4, opacity: (isUpdating || cancelLoading) ? 0.55 : 1, borderColor: '#C46658', color: '#C46658' }}
               >
-                {cancelLoading ? 'Cancelling...' : 'Cancel Item'}
+                {cancelLoading ? 'Cancelling...' : 'CANCEL ITEM'}
               </button>
             )}
-            {isCancellable && !modal.forceCancel && (
+            {isCancellable && modal.forceCancel && (
               <button
                 type="button"
                 disabled={isUpdating}
@@ -420,9 +420,7 @@ export default function LiveOrdersPage() {
 
   const getOrderItems = (order: Order): NormalisedItem[] => {
     if (!order.order_items || !Array.isArray(order.order_items)) return [];
-    return order.order_items
-      .filter((item: any) => (item.status || '').toLowerCase() !== 'cancelled')
-      .map((item: any) => {
+    return order.order_items.map((item: any) => {
       const price =
         item.price_at_time != null ? item.price_at_time
         : item.price != null ? item.price
