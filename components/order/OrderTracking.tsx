@@ -122,6 +122,8 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
   const [itemCancelling, setItemCancelling] = useState<string | null>(null);
   const [showItemCancelDialog, setShowItemCancelDialog] = useState<string | null>(null);
+  const [itemQtyUpdating, setItemQtyUpdating] = useState<string | null>(null);
+  const [itemQtyError, setItemQtyError] = useState<string | null>(null);
 
   const CANCELLATION_REASONS = [
     'Dish not needed anymore',
@@ -216,7 +218,26 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   }, [orderId, loadOrder]);
 
 
-  // -----------------------------------------------------------------------
+  const handleUpdateItemQuantity = useCallback(async (itemId: string, quantity: number) => {
+    if (quantity < 1) return;
+    setItemQtyUpdating(itemId);
+    setItemQtyError(null);
+    try {
+      const res = await fetch('/api/orders/update-item-quantity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId, order_item_id: itemId, quantity }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to update quantity');
+      setOrder(json.order as LiveOrder);
+      setError(null);
+    } catch (err: any) {
+      setItemQtyError(err.message || 'Failed to update quantity');
+    } finally {
+      setItemQtyUpdating(null);
+    }
+  }, [orderId]);
   // Initial load — fires once on mount. Without this the page stays on
   // `loading=true` forever because every other effect below guards on
   // `order` being non-null first.
@@ -568,6 +589,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   order.items.map((item) => {
                     const cancelled = (item.status || '').toLowerCase() === 'cancelled';
                     const canCancel = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
+                    const canEditQty = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
                     const unitPrice = Number(item.price_at_time);
                     const lineTotal = unitPrice * item.quantity;
                     return (
@@ -581,6 +603,27 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                             <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                               {formatINR(lineTotal)}
                             </span>
+                            {canEditQty && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateItemQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
+                                  disabled={itemQtyUpdating === item.id}
+                                  style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '0.75rem', lineHeight: 1 }}
+                                >
+                                  −
+                                </button>
+                                <span style={{ fontSize: '0.75rem', minWidth: 16, textAlign: 'center' }}>{item.quantity}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateItemQuantity(item.id, (item.quantity || 1) + 1)}
+                                  disabled={itemQtyUpdating === item.id}
+                                  style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '0.75rem', lineHeight: 1 }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
                             {canCancel && (
                               <button
                                 type="button"
@@ -661,6 +704,11 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   </div>
                 )}
               </div>
+              {itemQtyError && (
+                <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(196,102,88,0.06)', border: '1px solid rgba(196,102,88,0.25)', borderRadius: 8, color: '#C46658', fontSize: '0.75rem' }}>
+                  {itemQtyError}
+                </div>
+              )}
             </div>
             {/* Cancellation notifications and dialog */}
             {cancelError && (
