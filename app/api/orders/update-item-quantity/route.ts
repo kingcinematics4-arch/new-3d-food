@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 
@@ -20,6 +20,21 @@ async function columnExists(table: string, column: string): Promise<boolean> {
     return false;
   } catch {
     return false;
+  }
+}
+
+async function getHotelThemeForOrder(orderId: string) {
+  try {
+    const { data } = await supabaseAdmin
+      .from('orders')
+      .select('hotels(id, menu_theme, slug)')
+      .eq('id', orderId)
+      .single();
+    const hotel: any = (data as any)?.hotels;
+    if (hotel?.menu_theme) return hotel.menu_theme;
+    return undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -67,7 +82,8 @@ export async function POST(request: Request) {
           notes: it.notes,
           status: itemSchemaHasStatus ? (it.status ?? 'active') : 'active',
         }));
-        return new NextResponse(JSON.stringify({ success: true, order: { ...(fullOrder||{}), items } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+        const hotelTheme = await getHotelThemeForOrder(orderId);
+        return new NextResponse(JSON.stringify({ success: true, order: { ...(fullOrder||{}), items, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
       }
     } catch (e) {
       // continue
@@ -138,7 +154,8 @@ export async function POST(request: Request) {
       status: itemSchemaHasStatus ? (it.status ?? 'active') : 'active',
     }));
 
-    return new NextResponse(JSON.stringify({ success: true, order: { ...(fullOrder||{}), items } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    const hotelTheme = await getHotelThemeForOrder(orderId);
+    return new NextResponse(JSON.stringify({ success: true, order: { ...(fullOrder||{}), items, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (error: any) {
     return new NextResponse(JSON.stringify({ success: false, error: error.message || 'Failed to update quantity' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }

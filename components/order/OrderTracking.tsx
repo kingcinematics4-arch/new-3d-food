@@ -222,6 +222,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
     if (quantity < 1) return;
     setItemQtyUpdating(itemId);
     setItemQtyError(null);
+    const prevOrder = orderRef.current;
     try {
       const res = await fetch('/api/orders/update-item-quantity', {
         method: 'POST',
@@ -230,7 +231,12 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed to update quantity');
-      setOrder(json.order as LiveOrder);
+      const updatedOrder = json.order as LiveOrder;
+      if (prevOrder) {
+        updatedOrder.hotel_theme = updatedOrder.hotel_theme || prevOrder.hotel_theme;
+        updatedOrder.hotel_slug = updatedOrder.hotel_slug || prevOrder.hotel_slug;
+      }
+      setOrder(updatedOrder);
       setError(null);
     } catch (err: any) {
       setItemQtyError(err.message || 'Failed to update quantity');
