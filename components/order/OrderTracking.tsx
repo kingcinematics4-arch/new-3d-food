@@ -15,6 +15,7 @@ interface LiveOrderItem {
   quantity: number;
   price_at_time: number;
   notes: string | null;
+  status?: string | null;
 }
 
 interface LiveOrder {
@@ -119,6 +120,8 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const [otherReason, setOtherReason] = useState('');
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
+  const [itemCancelling, setItemCancelling] = useState<string | null>(null);
+  const [showItemCancelDialog, setShowItemCancelDialog] = useState<string | null>(null);
 
   const CANCELLATION_REASONS = [
     'Dish not needed anymore',
@@ -192,8 +195,26 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
     [orderId]
   );
 
-  // Initial load
-  useEffect(() => { loadOrder(false); }, [loadOrder]);
+  const handleCancelItem = useCallback(async (itemId: string) => {
+    setItemCancelling(itemId);
+    setCancelError(null);
+    try {
+      const res = await fetch('/api/orders/cancel-item-customer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId, order_item_id: itemId, reason: 'Cancelled by customer' }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed to cancel item');
+      setShowItemCancelDialog(null);
+      await loadOrder(true);
+    } catch (err: any) {
+      setCancelError(err.message || 'Failed to cancel item');
+    } finally {
+      setItemCancelling(null);
+    }
+  }, [orderId, loadOrder]);
+
 
   // -----------------------------------------------------------------------
   // Supabase Realtime subscription
@@ -519,16 +540,44 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 {order.items.length === 0 ? (
                   <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-dimmed)' }}>No items recorded</p>
                 ) : (
-                  order.items.map((item) => (
-                    <div key={item.id} className="flex items-baseline justify-between gap-4">
-                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                        {item.quantity} × {item.name || 'Item'}
-                      </span>
-                      <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                        {formatINR(Number(item.price_at_time) * item.quantity)}
-                      </span>
-                    </div>
-                  ))
+                  order.items.map((item) => {
+                    const cancelled = (item.status || '').toLowerCase() === 'cancelled';
+                    const canCancel = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
+                    return (
+                      <div key={item.id} className="flex items-baseline justify-between gap-4">
+                        <span style={{ fontSize: '0.875rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-secondary)', lineHeight: 1.4, textDecoration: cancelled ? 'line-through' : 'none' }}>
+                          {item.quantity} × {item.name || 'Item'}
+                          {cancelled && <span style={{ marginLeft: 6, color: '#C46658', fontWeight: 700 }}>C</span>}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                            {formatINR(Number(item.price_at_time) * item.quantity)}
+                          </span>
+                          {canCancel && (
+                            <button
+                              type="button"
+                              onClick={() => setShowItemCancelDialog(item.id)}
+                              disabled={itemCancelling === item.id}
+                              style={{ fontSize: '0.7rem', color: '#C46658', background: 'none', border: '1px solid rgba(196,102,88,0.4)', borderRadius: 6, padding: '0.15rem 0.4rem', cursor: 'pointer' }}
+                            >
+                              {itemCancelling === item.id ? '…' : 'Cancel'}
+                            </button>
+                          )}
+                        </div>
+                        {showItemCancelDialog === item.id && (
+                          <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)' }}>
+                            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-warm)', borderRadius: 16, padding: '1.5rem', maxWidth: 320, width: '90%' }}>
+                              <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>Cancel this dish?</p>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button onClick={() => setShowItemCancelDialog(null)} style={{ flex: 1, padding: '0.5rem', borderRadius: 8, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: 'pointer' }}>No</button>
+                                <button onClick={() => handleCancelItem(item.id)} style={{ flex: 1, padding: '0.5rem', borderRadius: 8, border: 'none', background: '#C46658', color: '#fff', cursor: 'pointer' }}>Yes, cancel</button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
 
@@ -537,7 +586,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
               <div className="flex items-baseline justify-between gap-4">
                 <span style={{ fontSize: '0.6875rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Total</span>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 500 }}>
-                  {formatINR(order.total_amount)}
+                  {formatINR(order.items.filter(i => (i.status || 'active').toLowerCase() !== 'cancelled').reduce((s, i) => s + Number(i.price_at_time) * i.quantity, 0))}
                 </span>
               </div>
 
