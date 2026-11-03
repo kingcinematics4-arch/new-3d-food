@@ -217,6 +217,16 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
 
 
   // -----------------------------------------------------------------------
+  // Initial load — fires once on mount. Without this the page stays on
+  // `loading=true` forever because every other effect below guards on
+  // `order` being non-null first.
+  // -----------------------------------------------------------------------
+  useEffect(() => {
+    loadOrder(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
+
+  // -----------------------------------------------------------------------
   // Supabase Realtime subscription
   //
   // We subscribe to postgres_changes on the specific order row so the page
@@ -312,6 +322,9 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const status     = (order?.status || '').trim().toLowerCase();
   const stageIndex = statusToStageIndex(status);
   const isCancelled = status === 'cancelled';
+  const originalTotal = order ? order.items.reduce((s, i) => s + Number(i.price_at_time) * i.quantity, 0) : 0;
+  const activeTotal   = order ? order.items.filter(i => (i.status || 'active').toLowerCase() !== 'cancelled').reduce((s, i) => s + Number(i.price_at_time) * i.quantity, 0) : 0;
+  const statusColor = status === 'cancelled' ? '#C46658' : status === 'completed' || status === 'delivered' ? '#4ade80' : status === 'accepted' ? '#b8a47a' : status === 'preparing' ? '#fbbf24' : '#b8a47a';
 
   return (
     <div
@@ -355,6 +368,18 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 </span>
                 {placedAt && <>{' · '}{formatDateTime(placedAt)}</>}
               </p>
+
+              {/* Current order status */}
+              <span
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '0.2rem 0.625rem', borderRadius: 100, fontSize: '0.7rem', fontWeight: 700,
+                  letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+                  background: 'var(--bg-surface-2)', border: '1px solid var(--border-warm)', color: statusColor,
+                }}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </span>
 
               {/* Live / auto-refresh indicator */}
               {!isCancelled && !isTerminal(status) && (
@@ -543,26 +568,34 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   order.items.map((item) => {
                     const cancelled = (item.status || '').toLowerCase() === 'cancelled';
                     const canCancel = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
+                    const unitPrice = Number(item.price_at_time);
+                    const lineTotal = unitPrice * item.quantity;
                     return (
-                      <div key={item.id} className="flex items-baseline justify-between gap-4">
-                        <span style={{ fontSize: '0.875rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-secondary)', lineHeight: 1.4, textDecoration: cancelled ? 'line-through' : 'none' }}>
-                          {item.quantity} × {item.name || 'Item'}
-                          {cancelled && <span style={{ marginLeft: 6, color: '#C46658', fontWeight: 700 }}>C</span>}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                            {formatINR(Number(item.price_at_time) * item.quantity)}
+                      <div key={item.id} style={{ opacity: cancelled ? 0.6 : 1 }}>
+                        <div className="flex items-baseline justify-between gap-4">
+                          <span style={{ fontSize: '0.875rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-secondary)', lineHeight: 1.4, textDecoration: cancelled ? 'line-through' : 'none' }}>
+                            {item.quantity} × {item.name || 'Item'}
+                            {cancelled && <span style={{ marginLeft: 6, color: '#C46658', fontWeight: 700 }}>C</span>}
                           </span>
-                          {canCancel && (
-                            <button
-                              type="button"
-                              onClick={() => setShowItemCancelDialog(item.id)}
-                              disabled={itemCancelling === item.id}
-                              style={{ fontSize: '0.7rem', color: '#C46658', background: 'none', border: '1px solid rgba(196,102,88,0.4)', borderRadius: 6, padding: '0.15rem 0.4rem', cursor: 'pointer' }}
-                            >
-                              {itemCancelling === item.id ? '…' : 'Cancel'}
-                            </button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                              {formatINR(lineTotal)}
+                            </span>
+                            {canCancel && (
+                              <button
+                                type="button"
+                                onClick={() => setShowItemCancelDialog(item.id)}
+                                disabled={itemCancelling === item.id}
+                                style={{ fontSize: '0.7rem', color: '#C46658', background: 'none', border: '1px solid rgba(196,102,88,0.4)', borderRadius: 6, padding: '0.15rem 0.4rem', cursor: 'pointer' }}
+                              >
+                                {itemCancelling === item.id ? '…' : 'Cancel'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-baseline justify-between gap-4" style={{ marginTop: 2 }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-dimmed)' }}>Unit price</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>{formatINR(unitPrice)} each</span>
                         </div>
                         {showItemCancelDialog === item.id && (
                           <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)' }}>
@@ -584,9 +617,16 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
               <div className="d3-divider" style={{ margin: '1.25rem 0' }} />
 
               <div className="flex items-baseline justify-between gap-4">
-                <span style={{ fontSize: '0.6875rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Total</span>
+                <span style={{ fontSize: '0.6875rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Original Total</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', color: 'var(--text-dimmed)', fontWeight: 500, textDecoration: activeTotal < originalTotal ? 'line-through' : 'none' }}>
+                  {formatINR(originalTotal)}
+                </span>
+              </div>
+
+              <div className="flex items-baseline justify-between gap-4">
+                <span style={{ fontSize: '0.6875rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Current Total</span>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 500 }}>
-                  {formatINR(order.items.filter(i => (i.status || 'active').toLowerCase() !== 'cancelled').reduce((s, i) => s + Number(i.price_at_time) * i.quantity, 0))}
+                  {formatINR(activeTotal)}
                 </span>
               </div>
 
