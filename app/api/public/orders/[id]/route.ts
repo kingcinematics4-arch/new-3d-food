@@ -18,7 +18,7 @@
 // broke this page entirely.
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getOrdersSchema } from '@/lib/ordersSchema';
+import { getOrdersSchema, getOrderItemsSchema } from '@/lib/ordersSchema';
 import { getHotelSchema } from '@/lib/hotelSchema';
 import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
 import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
@@ -50,6 +50,7 @@ export async function GET(
 
     const schema = await getOrdersSchema();
     const hotelSchema = await getHotelSchema();
+    const itemSchema = await getOrderItemsSchema();
 
     // A stored DINE-<digits> reference is resolved against
     // orders.order_number (indexed, unique). Anything else is the
@@ -61,7 +62,7 @@ export async function GET(
     // The select list is assembled from the detected schema, so its
     // shape cannot be inferred statically; the row is read as untyped
     // data below.
-    const selectColumns = [
+    const orderSelectColumns = [
       'id',
       'status',
       'payment_status',
@@ -75,7 +76,22 @@ export async function GET(
       `hotels (id, ${hotelSchema.menuTheme ? 'menu_theme, ' : ''}slug)`,
       ...(schema.orderNumber ? ['order_number'] : []),
       ...(schema.updatedAt ? ['updated_at'] : []),
-      'order_items (id, menu_item_id, quantity, price_at_time, notes, menu_items (name))',
+    ];
+
+    // order_items cancellation columns only exist once migration 017
+    // has been applied. Selecting a missing column makes Postgres fail
+    // the whole query (42703), so they are added only when present.
+    const itemSelectColumns = [
+      'id',
+      'menu_item_id',
+      'quantity',
+      'price_at_time',
+      'notes',
+      ...(itemSchema.status ? ['status'] : []),
+      ...(itemSchema.cancelledAt ? ['cancelled_at'] : []),
+      ...(itemSchema.cancellationReason ? ['cancellation_reason'] : []),
+      ...(itemSchema.cancelledBy ? ['cancelled_by'] : []),
+      'menu_items (name)',
     ];
 
     // The select list is assembled from the detected schema, so
@@ -83,7 +99,7 @@ export async function GET(
     // as untyped data below.
     const { data: rawOrder, error } = await supabaseAdmin
       .from('orders')
-      .select(selectColumns.join(', '))
+      .select([...orderSelectColumns, `order_items (${itemSelectColumns.join(', ')})`].join(', '))
       .eq(column, orderId)
       .maybeSingle();
 
@@ -98,13 +114,18 @@ export async function GET(
       });
     }
 
-    // Transform order_items to have menu_item (singular) with name for frontend compatibility
+    // Transform order_items to have menu_item (singular) with name for frontend compatibility.
+    // Cancellation fields are passed through only when the deployed schema has them.
     const items = ((order as any).order_items || []).map((item: any) => ({
       id: item.id,
       name: item.menu_items?.name || null,
       quantity: item.quantity,
       price_at_time: item.price_at_time,
       notes: item.notes,
+      ...(itemSchema.status ? { status: item.status ?? 'active' } : {}),
+      ...(itemSchema.cancelledAt ? { cancelled_at: item.cancelled_at ?? null } : {}),
+      ...(itemSchema.cancellationReason ? { cancellation_reason: item.cancellation_reason ?? null } : {}),
+      ...(itemSchema.cancelledBy ? { cancelled_by: item.cancelled_by ?? null } : {}),
     }));
 
     // The reference shown to the customer: the stored order_number
