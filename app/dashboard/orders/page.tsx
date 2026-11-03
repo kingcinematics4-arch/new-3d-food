@@ -56,6 +56,7 @@ interface NormalisedItem {
   quantity: number;
   price: number;
   notes?: string | null;
+  status?: string | null;
 }
 
 interface ModalState {
@@ -429,7 +430,6 @@ export default function LiveOrdersPage() {
   const getOrderItems = (order: Order): NormalisedItem[] => {
     if (!order.order_items || !Array.isArray(order.order_items)) return [];
     return order.order_items
-      .filter((item: any) => (item.status || '').toLowerCase() !== 'cancelled')
       .map((item: any) => {
         const price =
           item.price_at_time != null ? item.price_at_time
@@ -441,7 +441,8 @@ export default function LiveOrdersPage() {
           quantity: item.quantity || 1,
           price,
           notes: item.notes,
-        };
+          status: item.status || (item.is_cancelled ? 'cancelled' : 'active'),
+        } as NormalisedItem;
       });
   };
 
@@ -626,7 +627,9 @@ export default function LiveOrdersPage() {
                   >
                     {orderItems.length === 0 ? (
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)', fontStyle: 'italic' }}>No items</span>
-                    ) : orderItems.map((item) => (
+                    ) : orderItems.map((item) => {
+                      const itemIsCancelled = normalise((item as any).status || '') === 'cancelled';
+                      return (
                       <button
                         key={item.id}
                         type="button"
@@ -641,14 +644,14 @@ export default function LiveOrdersPage() {
                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,169,110,0.07)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)' }}>
-                          {item.quantity} &times; {item.name}
+                        <span style={{ fontSize: '0.8125rem', color: itemIsCancelled ? '#C46658' : 'var(--text-primary)' }}>
+                          {item.quantity} &times; {item.name}{itemIsCancelled ? ' [C]' : ''}
                         </span>
                         <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', fontWeight: 500, flexShrink: 0 }}>
                           {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
                         </span>
                       </button>
-                    ))}
+                    )})}
                   </div>
 
                   {/* Chef note (compact, fixed) */}
@@ -716,9 +719,16 @@ export default function LiveOrdersPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     borderTop: '1px solid var(--border-warm)', paddingTop: '0.75rem', marginTop: 8,
                   }}>
-                    <span style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>TOTAL ORDER AMOUNT</span>
+                    <span style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>ACTIVE ORDER TOTAL</span>
                     <span className="d3-figure" style={{ fontSize: '1.25rem', color: 'var(--gold)' }}>
-                      {order.total_amount != null ? formatPrice(Number(order.total_amount) || 0, hotel?.currency) : 'N/A'}
+                      {(() => {
+                        const activeTotal = orderItems.reduce((sum, item) => {
+                          const itemIsCancelled = normalise((item as any).status || '') === 'cancelled';
+                          if (itemIsCancelled) return sum;
+                          return sum + ((item.price || 0) * (item.quantity || 0));
+                        }, 0);
+                        return formatPrice(activeTotal, hotel?.currency);
+                      })()}
                     </span>
                   </div>
 

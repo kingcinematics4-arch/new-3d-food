@@ -34,6 +34,10 @@ export async function GET(request: Request) {
           quantity,
           price_at_time,
           notes,
+          status,
+          cancelled_at,
+          cancellation_reason,
+          cancelled_by,
           menu_items ( name, price )
         )
       `)
