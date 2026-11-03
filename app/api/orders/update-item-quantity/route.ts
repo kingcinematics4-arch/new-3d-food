@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
           : 'id, menu_item_id, quantity, price_at_time, notes, menu_items(name)';
         const { data: fullOrder } = await supabaseAdmin
           .from('orders')
-          .select(id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items())
+        .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect})`)
           .eq('id', orderId)
           .single();
         const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
@@ -119,12 +119,12 @@ export async function POST(request: Request) {
       .update(updateOrdersPayload)
       .eq('id', orderId);
 
-    const itemSelect = itemSchemaHasStatus
+    const itemSelect2 = itemSchemaHasStatus
       ? 'id, menu_item_id, quantity, price_at_time, notes, status, menu_items(name)'
       : 'id, menu_item_id, quantity, price_at_time, notes, menu_items(name)';
     const { data: fullOrder, error: fullErr } = await supabaseAdmin
       .from('orders')
-      .select(id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items())
+      .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect2})`)
       .eq('id', orderId)
       .single();
     if (fullErr) throw fullErr;
