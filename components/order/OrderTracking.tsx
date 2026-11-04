@@ -387,6 +387,29 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
           </h1>
 
           {order && !loading && (
+            <div style={{ marginTop: '1rem' }}>
+              <Link
+                href={`/menu/${order.hotel_slug || hotelSlug}?addToOrder=${encodeURIComponent(order.id)}&orderNumber=${encodeURIComponent(order.order_number)}${order.table_number ? `&table=${encodeURIComponent(order.table_number)}` : ''}`}
+                className="d3-btn-primary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.625rem 1.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  borderRadius: 10,
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                ADD ANOTHER DISH
+              </Link>
+            </div>
+          )}
+
+          {order && !loading && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', letterSpacing: '0.02em' }}>
                 Ref{' '}

@@ -387,6 +387,8 @@ function CartDrawer({
   hotelId,
   slug,
   router,
+  addToOrderId,
+  addToOrderNumber,
 }: {
   cart: CartItem[];
   currency: string | null;
@@ -398,6 +400,8 @@ function CartDrawer({
   hotelId: string;
   slug: string;
   router: any;
+  addToOrderId?: string | null;
+  addToOrderNumber?: string | null;
 }) {
   const [customerName, setCustomerName] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
@@ -411,6 +415,29 @@ function CartDrawer({
     setError(null);
 
     try {
+      if (addToOrderId) {
+        const res = await fetch('/api/orders/add-items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_id: addToOrderId,
+            items: cart.map((c) => ({
+              menu_item_id: c.menuItem.id,
+              quantity: c.quantity,
+              notes: c.notes || undefined,
+            })),
+          }),
+        });
+        const json = await res.json();
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'We could not add items to the order. Please try again.');
+        }
+
+        router.push(`/order/${encodeURIComponent(addToOrderId)}?slug=${encodeURIComponent(slug)}`);
+        return;
+      }
+
       const res = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -462,10 +489,11 @@ function CartDrawer({
         >
           <div>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-              Your Order
+              {addToOrderId ? 'Add to Existing Order' : 'Your Order'}
             </h3>
             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
               {cart.reduce((s, c) => s + c.quantity, 0)} item{cart.reduce((s, c) => s + c.quantity, 0) === 1 ? '' : 's'}
+              {addToOrderNumber && <> · Order #{addToOrderNumber}</>}
             </span>
           </div>
           <button
@@ -632,9 +660,9 @@ function CartDrawer({
                   <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
                   <path d="M8 2A6 6 0 0 1 14 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-                Sending Order...
+                {addToOrderId ? 'Adding to Order...' : 'Sending Order...'}
               </>
-            ) : 'Place Order →'}
+            ) : addToOrderId ? 'Add to Order →' : 'Place Order →'}
           </button>
         </div>
       </div>
@@ -907,6 +935,8 @@ export default function MenuContent({
   initialItems,
   initialCategories,
   initialError,
+  addToOrderId,
+  addToOrderNumber,
 }: {
   slug: string;
   initialTableNumber: string;
@@ -914,6 +944,8 @@ export default function MenuContent({
   initialItems: PublicMenuItem[];
   initialCategories: PublicCategory[];
   initialError: string | null;
+  addToOrderId?: string | null;
+  addToOrderNumber?: string | null;
 }) {
   const router = useRouter();
 
@@ -1164,6 +1196,8 @@ export default function MenuContent({
             hotelId={hotel.id}
             slug={hotel.slug}
             router={router}
+            addToOrderId={addToOrderId}
+            addToOrderNumber={addToOrderNumber}
           />
         )}
 

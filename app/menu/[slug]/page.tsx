@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 
 interface PageProps {
   params: { slug: string };
-  searchParams: { table?: string };
+  searchParams: { table?: string; addToOrder?: string; orderNumber?: string; existingOrderId?: string };
 }
 
 export default async function MenuPage({ params, searchParams }: PageProps) {
@@ -23,6 +23,8 @@ export default async function MenuPage({ params, searchParams }: PageProps) {
       initialItems={data.menuItems}
       initialCategories={data.categories}
       initialError={data.error}
+      addToOrderId={searchParams.addToOrder || searchParams.existingOrderId || null}
+      addToOrderNumber={searchParams.orderNumber || null}
     />
   );
 }
