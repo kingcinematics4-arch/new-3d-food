@@ -18,7 +18,7 @@ export default function MenuManagementPage() {
     hotel?.id || null
   );
 
-  const currencyLabel = resolveCurrency(hotel?.currency).symbol.trim() || '$';
+  const currencyLabel = resolveCurrency(hotel?.currency).symbol.trim() || '₹';
 
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES);
   const [isFormOpen, setIsFormOpen] = useState(false);

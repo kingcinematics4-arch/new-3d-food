@@ -17,6 +17,7 @@ const MOCK_ORDER = {
     updated_at: '2026-11-04T14:42:00Z',
     hotel_theme: 'classic-luxury',
     hotel_slug: 'demo-restaurant',
+    currency: 'INR (₹)',
     items: [
       { id: 'item-1', name: 'Vada Pav', quantity: 2, price_at_time: 10, notes: null, status: 'active' },
       { id: 'item-2', name: 'Cheese Burger', quantity: 1, price_at_time: 30, notes: null, status: 'active' },
@@ -43,11 +44,14 @@ test.describe('Customer order-tracking page', () => {
 
       const pageText = await page.locator('body').innerText();
       expect(pageText).toContain('Vada Pav');
-      expect(pageText).toMatch(/Unit price: ₹10 each/);
-      expect(pageText).toMatch(/₹20/);
-      expect(pageText).toMatch(/₹30/);
+      expect(pageText).toMatch(/Unit price: ₹10\.00 each/);
+      expect(pageText).toMatch(/₹20\.00/);
+      expect(pageText).toMatch(/₹30\.00/);
       expect(pageText).toContain('Cancel Item');
       expect(pageText).not.toMatch(/Last updated/);
+
+      // INR currency symbol must be used everywhere; no USD sign.
+      expect(pageText).not.toMatch(/\$/);
 
       for (const title of ['Order Placed', 'Accepted by Restaurant', 'Preparing', 'Ready', 'Completed']) {
         expect(pageText).toContain(title);
@@ -64,7 +68,7 @@ test.describe('Customer order-tracking page', () => {
       const gap = stageBox!.y - (headingBox!.y + headingBox!.height);
       expect(gap).toBeGreaterThan(4);
 
-      const unitPriceEl = await page.locator('text=Unit price: ₹10 each').first();
+      const unitPriceEl = await page.locator('text=Unit price: ₹10.00 each').first();
       const unitBox = await unitPriceEl.boundingBox();
       expect(unitBox).not.toBeNull();
       expect(unitBox!.height).toBeLessThan(30);
@@ -81,9 +85,47 @@ test.describe('Customer order-tracking page', () => {
     await page.goto(`${BASE}/order/DINE-4821`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1500);
 
-    const unitPrice = await page.locator('text=Unit price: ₹10 each').first();
+    const unitPrice = await page.locator('text=Unit price: ₹10.00 each').first();
     const box = await unitPrice.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.height).toBeLessThan(30);
+  });
+
+  test('uses INR formatting for totals', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto(`${BASE}/order/DINE-4821`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
+
+    const pageText = await page.locator('body').innerText();
+    // Active total = 2×10 + 1×30 = 50, cancelled item excluded.
+    expect(pageText).toMatch(/₹50\.00/);
+    expect(pageText).not.toMatch(/\$/);
+  });
+
+test('INR Indian number formatting', async ({ page }) => {
+    // Override the default mock with a single high-price item so we
+    // can assert Indian grouping (₹1,500.00) on the rendered page.
+    await page.route('**/api/public/orders/*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          order: {
+            ...MOCK_ORDER.order,
+            items: [
+              { id: 'item-1', name: 'Big Dish', quantity: 1, price_at_time: 1500, notes: null, status: 'active' },
+            ],
+          },
+        }),
+      });
+    });
+
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto(`${BASE}/order/DINE-4821`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
+    const bigText = await page.locator('body').innerText();
+    expect(bigText).toMatch(/₹1,500\.00/);
+    expect(bigText).not.toMatch(/\$/);
   });
 });

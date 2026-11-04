@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { menuThemeClass } from '@/lib/menuThemes';
+import { formatPrice } from '@/lib/menu';
 import { supabaseClient, isSupabaseConfigured } from '@/lib/supabaseBrowser';
 
 // ---------------------------------------------------------------------------
@@ -34,6 +35,7 @@ interface LiveOrder {
   items: LiveOrderItem[];
   hotel_theme: string | null;
   hotel_slug: string | null;
+  currency?: string | null;
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
 }
@@ -89,12 +91,6 @@ function isTerminal(status: string): boolean {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatINR(amount: number): string {
-  const value = Number(amount || 0);
-  if (value === 0) return '₹0';
-  return `₹${value.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-}
 
 function formatDateTime(iso: string): string {
   try {
@@ -633,9 +629,9 @@ const last = i === order.items.length - 1;
                                  {item.name || 'Item'}
                                </span>
                              </div>
-                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
-                               Unit price: {formatINR(unitPrice)} each
-                             </span>
+<span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
+                                Unit price: {formatPrice(unitPrice, order?.currency)} each
+                              </span>
                              {cancelled && (
                                <span style={{ fontSize: '0.625rem', color: '#C46658', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                                  CANCELLED
@@ -644,7 +640,7 @@ const last = i === order.items.length - 1;
                            </div>
                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
                              <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 600, fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                               {formatINR(lineTotal)}
+                               {formatPrice(lineTotal, order?.currency)}
                              </span>
                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                                {canEditQty ? (
@@ -713,7 +709,7 @@ const last = i === order.items.length - 1;
                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
                    <span style={{ fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Order Total</span>
                    <span style={{ fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 600 }}>
-                     {formatINR(activeTotal)}
+                     {formatPrice(activeTotal, order?.currency)}
                    </span>
                  </div>
                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>

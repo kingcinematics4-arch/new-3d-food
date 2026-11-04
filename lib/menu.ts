@@ -58,7 +58,14 @@ export interface MenuItem {
 // The hotel's `currency` column stores a free-text value such as
 // "USD ($)" or "INR (₹)". We resolve it to a symbol so prices render
 // in whatever currency the restaurant actually set in Supabase.
+//
+// DEFAULT: Indian Rupees (₹). Dine3D is built for the Indian
+// F&B market, so a restaurant that has not explicitly set a currency
+// is always shown in INR with Indian number formatting
+// (e.g. ₹1,500.00). Stored numeric prices are never converted.
 // ============================================================
+
+const DEFAULT_CURRENCY = 'INR';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: '₹',
@@ -109,9 +116,24 @@ const ZERO_DECIMAL_CURRENCIES = new Set([
   'JPY', 'KRW', 'VND', 'CLP', 'COP', 'ISK', 'IDR', 'PYG', 'RWF', 'UGX', 'XOF', 'XAF',
 ]);
 
+// Indian-style grouping (1,50,000) for INR; Western grouping otherwise.
+function formatWithLocale(value: number, decimals: number, currency: string): string {
+  const upper = (currency || '').toUpperCase();
+  if (upper === 'INR' || upper === 'Rs' || upper === 'NPR' || upper === 'LKR' || upper === 'PKR' || upper === 'BDT') {
+    return value.toLocaleString('en-IN', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
 export function resolveCurrency(code?: string | null): { symbol: string; decimals: number } {
   const raw = (code || '').trim();
-  if (!raw) return { symbol: '$', decimals: 2 };
+  if (!raw) return { symbol: CURRENCY_SYMBOLS[DEFAULT_CURRENCY], decimals: 2 };
 
   const key = raw.split(/[\s(\[]/)[0].toUpperCase();
   const symbol =
@@ -123,7 +145,7 @@ export function resolveCurrency(code?: string | null): { symbol: string; decimal
 }
 
 export function formatPrice(price: number, currency?: string | null): string {
-  const { symbol, decimals } = resolveCurrency(currency);
+  const { symbol, decimals } = resolveCurrency(currency || DEFAULT_CURRENCY);
   const value = typeof price === 'number' && Number.isFinite(price) ? price : 0;
-  return `${symbol}${value.toFixed(decimals)}`;
+  return `${symbol}${formatWithLocale(value, decimals, (currency || '').toUpperCase() || DEFAULT_CURRENCY)}`;
 }

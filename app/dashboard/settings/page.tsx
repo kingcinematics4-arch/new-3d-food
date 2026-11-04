@@ -91,7 +91,7 @@ export default function SettingsPage() {
     primary_color: '#B8A47A',
     welcome_text: '',
     custom_domain: '',
-    currency: 'USD ($)',
+    currency: 'INR (₹)',
     tax_rate: 8.875,
     service_charge: 5.0,
   });
@@ -115,7 +115,7 @@ export default function SettingsPage() {
         primary_color: hotel.primary_color || '#B8A47A',
         welcome_text: hotel.welcome_text || '',
         custom_domain: hotel.custom_domain || '',
-        currency: hotel.currency || 'USD ($)',
+        currency: hotel.currency || 'INR (₹)',
         tax_rate: hotel.tax_rate || 8.875,
         service_charge: hotel.service_charge || 5.0,
       }));

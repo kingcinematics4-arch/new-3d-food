@@ -62,6 +62,13 @@ export async function GET(
     // The select list is assembled from the detected schema, so its
     // shape cannot be inferred statically; the row is read as untyped
     // data below.
+    const hotelSelect = [
+      'id',
+      hotelSchema.menuTheme ? 'menu_theme' : '',
+      'slug',
+      hotelSchema.currency ? 'currency' : '',
+    ].filter(Boolean).join(', ');
+
     const orderSelectColumns = [
       'id',
       'status',
@@ -73,7 +80,7 @@ export async function GET(
       'notes',
       'total_amount',
       'created_at',
-      `hotels (id, ${hotelSchema.menuTheme ? 'menu_theme, ' : ''}slug)`,
+      `hotels (${hotelSelect})`,
       ...(schema.orderNumber ? ['order_number'] : []),
       ...(schema.updatedAt ? ['updated_at'] : []),
     ];
@@ -152,6 +159,7 @@ export async function GET(
         items,
         hotel_theme: (order as any).hotels?.menu_theme || await getStoredMenuTheme((order as any).hotels?.id) || DEFAULT_MENU_THEME,
         hotel_slug: (order as any).hotels?.slug || null,
+        currency: (order as any).hotels?.currency || null,
       },
     }), {
       status: 200,

@@ -234,7 +234,7 @@ export default function CustomThemeBuilder({
     name: hotel.name,
     slug: hotel.slug,
     logo_url: hotel.logo_url,
-    currency: hotel.currency || 'USD',
+    currency: hotel.currency || 'INR (₹)',
     welcome_text: hotel.welcome_text || 'Bespoke Dining Experience',
     primary_color: config.primaryColor,
     secondary_color: '#10b981',
@@ -628,7 +628,7 @@ export default function CustomThemeBuilder({
                   <CustomTemplate
                     hotel={previewHotel}
                     customConfig={config}
-                    currency={hotel.currency || '$'}
+                    currency={hotel.currency || 'INR (₹)'}
                     tableNumber="4"
                     categories={PREVIEW_CATEGORIES}
                     pills={['All', 'Mains', 'Desserts']}
@@ -676,7 +676,7 @@ export default function CustomThemeBuilder({
                   <CustomTemplate
                     hotel={previewHotel}
                     customConfig={config}
-                    currency={hotel.currency || '$'}
+                    currency={hotel.currency || 'INR (₹)'}
                     tableNumber="4"
                     categories={PREVIEW_CATEGORIES}
                     pills={['All', 'Mains', 'Desserts']}
