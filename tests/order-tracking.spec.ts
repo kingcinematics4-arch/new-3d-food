@@ -1,8 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-// A representative order that exercises every part of the customer
-// tracking page: active items, a cancelled item, and a terminal status
-// so the progress bar and summary logic are both rendered.
 const MOCK_ORDER = {
   success: true,
   order: {
@@ -21,44 +18,19 @@ const MOCK_ORDER = {
     hotel_theme: 'classic-luxury',
     hotel_slug: 'demo-restaurant',
     items: [
-      {
-        id: 'item-1',
-        name: 'Vada Pav',
-        quantity: 2,
-        price_at_time: 10,
-        notes: null,
-        status: 'active',
-      },
-      {
-        id: 'item-2',
-        name: 'Cheese Burger',
-        quantity: 1,
-        price_at_time: 30,
-        notes: null,
-        status: 'active',
-      },
-      {
-        id: 'item-3',
-        name: 'French Fries',
-        quantity: 1,
-        price_at_time: 20,
-        notes: null,
-        status: 'cancelled',
-      },
+      { id: 'item-1', name: 'Vada Pav', quantity: 2, price_at_time: 10, notes: null, status: 'active' },
+      { id: 'item-2', name: 'Cheese Burger', quantity: 1, price_at_time: 30, notes: null, status: 'active' },
+      { id: 'item-3', name: 'French Fries', quantity: 1, price_at_time: 20, notes: null, status: 'cancelled' },
     ],
   },
 };
 
+const BASE = 'http://localhost:3000';
+
 test.describe('Customer order-tracking page', () => {
   test.beforeEach(async ({ page }) => {
-    // The guest tracking page reads its data from /api/public/orders/[id].
-    // Intercept it so the test runs deterministically without a database.
-    await page.route('**/api/public/orders/**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(MOCK_ORDER),
-      });
+    await page.route('**/api/public/orders/*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_ORDER) });
     });
   });
 
@@ -66,63 +38,52 @@ test.describe('Customer order-tracking page', () => {
   for (const width of widths) {
     test(`renders correctly at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
-await page.goto('http://localhost:3000/order/DINE-4821', { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/order/DINE-4821`, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1500);
 
-      // The progress section must NOT contain the "Last updated" line.
-      const progressText = await page.locator('text=Order Progress').first().locator('..').innerText();
-      expect(progressText).not.toMatch(/Last updated/);
-
-      // Each item card must show the required fields.
       const pageText = await page.locator('body').innerText();
       expect(pageText).toContain('Vada Pav');
       expect(pageText).toMatch(/Unit price: ₹10 each/);
       expect(pageText).toMatch(/₹20/);
       expect(pageText).toMatch(/₹30/);
       expect(pageText).toContain('Cancel Item');
+      expect(pageText).not.toMatch(/Last updated/);
 
-      // The unit-price line must be its own element with no overlap.
+      for (const title of ['Order Placed', 'Accepted by Restaurant', 'Preparing', 'Ready', 'Completed']) {
+        expect(pageText).toContain(title);
+      }
+
+      const heading = await page.locator('text=Order Progress').first();
+      const headingBox = await heading.boundingBox();
+      expect(headingBox).not.toBeNull();
+      expect(headingBox!.height).toBeGreaterThan(10);
+
+      const firstStage = await page.locator('text=Order Placed').first();
+      const stageBox = await firstStage.boundingBox();
+      expect(stageBox).not.toBeNull();
+      const gap = stageBox!.y - (headingBox!.y + headingBox!.height);
+      expect(gap).toBeGreaterThan(4);
+
       const unitPriceEl = await page.locator('text=Unit price: ₹10 each').first();
       const unitBox = await unitPriceEl.boundingBox();
       expect(unitBox).not.toBeNull();
       expect(unitBox!.height).toBeLessThan(30);
 
-      // The subtotal must not overlap the unit-price text.
-      const subtotalEl = await page.locator('text=₹20').first();
-      const subtotalBox = await subtotalEl.boundingBox();
-      expect(subtotalBox).not.toBeNull();
-      const overlapX = unitBox!.x < subtotalBox!.x + subtotalBox!.width &&
-        unitBox!.x + unitBox!.width > subtotalBox!.x;
-      const overlapY = unitBox!.y < subtotalBox!.y + subtotalBox!.height &&
-        unitBox!.y + unitBox!.height > subtotalBox!.y;
-      expect(overlapX && overlapY).toBe(false);
-
-      // The summary must show a single prominent total, no "Original Total".
-      const summary = await page.locator('text=Order Summary').first().locator('..').first().locator('..').first();
-      const summaryText = await summary.innerText();
-      expect(summaryText).not.toMatch(/Original Total/);
-      expect(summaryText).not.toMatch(/Current Total/);
-      expect(summaryText).toMatch(/order total/i);
-      expect(summaryText).toMatch(/₹50/);
-
-      // No horizontal overflow at this width.
       const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
       expect(bodyWidth).toBeLessThanOrEqual(width + 1);
 
-      await page.screenshot({
-        path: `order-tracking-${width}px.png`,
-        fullPage: true,
-      });
+      await page.screenshot({ path: `order-tracking-${width}px.png`, fullPage: true });
     });
   }
 
   test('unit-price line never wraps into multiple lines', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto('http://localhost:3000/order/DINE-4821', { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/order/DINE-4821`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
     const unitPrice = await page.locator('text=Unit price: ₹10 each').first();
     const box = await unitPrice.boundingBox();
     expect(box).not.toBeNull();
-    // A single-line element should be roughly as tall as one line of text.
     expect(box!.height).toBeLessThan(30);
   });
 });

@@ -551,10 +551,10 @@ const placedAt   = order?.created_at ?? null;
             {/* ── SECTION 2 — ORDER PROGRESS ── */}
             {!isCancelled && (
               <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 10, background: 'var(--bg-surface)', marginBottom: '1rem', overflow: 'hidden' }}>
-                <p style={{ margin: '0 0 0.625rem', padding: '0 0.875rem', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold)' }}>
-                  Order Progress
-                </p>
-                <div style={{ padding: '0 0.875rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+<p style={{ margin: 0, padding: '0.875rem 0.875rem 0.5rem', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold)', lineHeight: 1.3 }}>
+                   Order Progress
+                 </p>
+                <div style={{ padding: '0.25rem 0.875rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                   {STAGES.map((stage, idx) => {
                     const reached   = idx <= stageIndex;
                     const isCurrent = idx === stageIndex;
@@ -562,8 +562,8 @@ const placedAt   = order?.created_at ?? null;
 
                     return (
                       <div key={stage.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingTop: 2 }}>
+                           <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: reached ? 'rgba(184,164,122,0.10)' : 'var(--bg-surface-2)',
                             border: reached ? '1px solid rgba(184,164,122,0.28)' : '1px solid var(--border-warm)',
                             color: reached ? 'var(--gold)' : 'var(--text-dimmed)',
@@ -579,9 +579,9 @@ const placedAt   = order?.created_at ?? null;
                               </svg>
                             )}
                           </div>
-                          {!isLast && (
-                            <div style={{ width: 1, height: 22, marginTop: 8, background: idx < stageIndex ? 'rgba(184,164,122,0.28)' : 'var(--border-warm)' }} />
-                          )}
+{!isLast && (
+                             <div style={{ width: 1, height: 9, marginTop: 28, background: idx < stageIndex ? 'rgba(184,164,122,0.28)' : 'var(--border-warm)', borderRadius: 2, flexShrink: 0 }} />
+                           )}
                         </div>
 
                         <div style={{ flex: 1, minWidth: 0 }}>
