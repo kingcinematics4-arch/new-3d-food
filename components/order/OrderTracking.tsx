@@ -358,122 +358,197 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       className={`min-h-screen flex flex-col ${menuThemeClass(order?.hotel_theme || undefined)}`}
       style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
     >
-      <div className="w-full max-w-md mx-auto px-5 pt-10 pb-8">
-
-        {/* ── Header ── */}
-        <div className="text-center space-y-3 mb-10">
-          <div
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl"
-            style={{ background: 'rgba(184,164,122,0.08)', border: '1px solid rgba(184,164,122,0.15)', color: 'var(--gold)' }}
-          >
-            {loading ? (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.25" />
-                <path d="M12 2A10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                <path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </div>
-
-          <h1
-            style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}
-          >
-            Your Order
-          </h1>
-
-          {order && !loading && (
-            <div style={{ marginTop: '1rem' }}>
-              <Link
-                href={`/menu/${order.hotel_slug || hotelSlug}?addToOrder=${encodeURIComponent(order.id)}&orderNumber=${encodeURIComponent(order.order_number)}${order.table_number ? `&table=${encodeURIComponent(order.table_number)}` : ''}`}
-                className="d3-btn-primary"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.625rem 1.25rem',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  borderRadius: 10,
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                ADD ANOTHER DISH
-              </Link>
-            </div>
-          )}
-
-          {order && !loading && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', letterSpacing: '0.02em' }}>
-                Ref{' '}
-                <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontWeight: 600, color: 'var(--gold)' }}>
-                  #{order.order_number}
-                </span>
-                {placedAt && <>{' · '}{formatDateTime(placedAt)}</>}
-              </p>
-
-              {/* Current order status */}
-              <span
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '0.2rem 0.625rem', borderRadius: 100, fontSize: '0.7rem', fontWeight: 700,
-                  letterSpacing: '0.1em', textTransform: 'uppercase' as const,
-                  background: 'var(--bg-surface-2)', border: '1px solid var(--border-warm)', color: statusColor,
-                }}
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </span>
-
-              {/* Live / auto-refresh indicator */}
-              {!isCancelled && !isTerminal(status) && (
-                <div
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '0.2rem 0.625rem', borderRadius: 100,
-                    background: realtimeOk ? 'rgba(91,165,111,0.10)' : 'rgba(184,164,122,0.08)',
-                    border: realtimeOk ? '1px solid rgba(91,165,111,0.22)' : '1px solid rgba(184,164,122,0.18)',
-                    fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-                    color: realtimeOk ? '#6bba85' : 'var(--text-dimmed)',
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 5, height: 5, borderRadius: '50%',
-                      background: realtimeOk ? '#6bba85' : 'var(--gold)',
-                      animation: 'ot-pulse 2s infinite',
-                    }}
-                  />
-                  {realtimeOk ? 'Live updates' : 'Auto-refresh'}
-                </div>
-              )}
-              {(!isCancelled && (status === 'pending' || status === 'accepted')) && (
-                <button
-                  type="button"
-                  onClick={() => setShowCancelDialog(true)}
-                  disabled={cancelling}
-                  className="d3-btn-quiet d3-btn-danger"
-                  style={{
-                    flex: 1,
-                    opacity: cancelling ? 0.6 : 1,
-                    padding: '0.5rem 1rem',
-                    fontSize: '0.8125rem',
-                    fontWeight: 600,
-                    borderRadius: 10,
-                  }}
-                >
-                  {cancelling ? 'Cancelling…' : 'Cancel Order'}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+      <div className="w-full max-w-md mx-auto px-4 sm:px-5 pt-6 sm:pt-10 pb-6 sm:pb-8">
+ 
+         {/* ── Header ── */}
+         <div className="text-center space-y-2 mb-6 sm:mb-10">
+           <div
+-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl"
++            className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl"
+             style={{ background: 'rgba(184,164,122,0.08)', border: '1px solid rgba(184,164,122,0.15)', color: 'var(--gold)' }}
+           >
+             {loading ? (
+-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
++              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.25" />
+                 <path d="M12 2A10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+               </svg>
+             ) : (
+-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
++              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                 <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                 <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                 <path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+               </svg>
+             )}
+           </div>
+ 
+           <h1
+-            style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}
++            style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.01em', lineHeight: 1.15 }}
+           >
+             Your Order
+           </h1>
+ 
+           {order && !loading && (
+-            <div style={{ marginTop: '1rem' }}>
++            <div style={{ marginTop: '0.875rem' }}>
+               <Link
+                 href={`/menu/${order.hotel_slug || hotelSlug}?addToOrder=${encodeURIComponent(order.id)}&orderNumber=${encodeURIComponent(order.order_number)}${order.table_number ? `&table=${encodeURIComponent(order.table_number)}` : ''}`}
+                 className="d3-btn-primary"
+                 style={{
+                   display: 'inline-flex',
+                   alignItems: 'center',
+                   gap: '0.5rem',
+-                  padding: '0.625rem 1.25rem',
+-                  fontSize: '0.875rem',
++                  padding: '0.5rem 1rem',
++                  fontSize: '0.8125rem',
+                   fontWeight: 600,
+                   borderRadius: 10,
+                 }}
+               >
+                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                   <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                 </svg>
+                 ADD ANOTHER DISH
+               </Link>
+             </div>
+           )}
+ 
+           {order && !loading && (
+-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', letterSpacing: '0.02em' }}>
+-                Ref{' '}
+-                <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontWeight: 600, color: 'var(--gold)' }}>
+-                  #{order.order_number}
+-                </span>
+-                {placedAt && <>{' · '}{formatDateTime(placedAt)}</>}
+-              </p>
+-
+-              {/* Current order status */}
+-              <span
+-                style={{
+-                  display: 'inline-flex', alignItems: 'center', gap: 6,
+-                  padding: '0.2rem 0.625rem', borderRadius: 100, fontSize: '0.7rem', fontWeight: 700,
+-                  letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+-                  background: 'var(--bg-surface-2)', border: '1px solid var(--border-warm)', color: statusColor,
+-                }}
+-              >
+-                {status.charAt(0).toUpperCase() + status.slice(1)}
+-              </span>
+-
+-              {/* Live / auto-refresh indicator */}
+-              {!isCancelled && !isTerminal(status) && (
+-                <div
+-                  style={{
+-                    display: 'inline-flex', alignItems: 'center', gap: 6,
+-                    padding: '0.2rem 0.625rem', borderRadius: 100,
+-                    background: realtimeOk ? 'rgba(91,165,111,0.10)' : 'rgba(184,164,122,0.08)',
+-                    border: realtimeOk ? '1px solid rgba(91,165,111,0.22)' : '1px solid rgba(184,164,122,0.18)',
+-                    fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+-                    color: realtimeOk ? '#6bba85' : 'var(--text-dimmed)',
+-                  }}
+-                >
+-                  <span
+-                    style={{
+-                      width: 5, height: 5, borderRadius: '50%',
+-                      background: realtimeOk ? '#6bba85' : 'var(--gold)',
+-                      animation: 'ot-pulse 2s infinite',
+-                    }}
+-                  />
+-                  {realtimeOk ? 'Live updates' : 'Auto-refresh'}
+-                </div>
+-              )}
+-              {(!isCancelled && (status === 'pending' || status === 'accepted')) && (
+-                <button
+-                  type="button"
+-                  onClick={() => setShowCancelDialog(true)}
+-                  disabled={cancelling}
+-                  className="d3-btn-quiet d3-btn-danger"
+-                  style={{
+-                    flex: 1,
+-                    opacity: cancelling ? 0.6 : 1,
+-                    padding: '0.5rem 1rem',
+-                    fontSize: '0.8125rem',
+-                    fontWeight: 600,
+-                    borderRadius: 10,
+-                  }}
+-                >
+-                  {cancelling ? 'Cancelling…' : 'Cancel Order'}
+-                </button>
+-              )}
++            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: '0.75rem' }}>
++              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 2 }}>
++                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', letterSpacing: '0.02em' }}>
++                  Ref{' '}
++                  <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontWeight: 600, color: 'var(--gold)', fontVariantNumeric: 'tabular-nums' }}>
++                    #{order.order_number}
++                  </span>
++                </p>
++                {placedAt && (
++                  <p style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums' }}>
++                    {formatDateTime(placedAt)}
++                  </p>
++                )}
++              </div>
++
++              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
++                {/* Current order status */}
++                <span
++                  style={{
++                    display: 'inline-flex', alignItems: 'center', gap: 6,
++                    padding: '0.15rem 0.5rem', borderRadius: 100, fontSize: '0.625rem', fontWeight: 700,
++                    letterSpacing: '0.1em', textTransform: 'uppercase' as const,
++                    background: 'var(--bg-surface-2)', border: '1px solid var(--border-warm)', color: statusColor,
++                  }}
++                >
++                  {status.charAt(0).toUpperCase() + status.slice(1)}
++                </span>
++
++                {/* Live / auto-refresh indicator */}
++                {!isCancelled && !isTerminal(status) && (
++                  <div
++                    style={{
++                      display: 'inline-flex', alignItems: 'center', gap: 6,
++                      padding: '0.15rem 0.5rem', borderRadius: 100,
++                      background: realtimeOk ? 'rgba(91,165,111,0.10)' : 'rgba(184,164,122,0.08)',
++                      border: realtimeOk ? '1px solid rgba(91,165,111,0.22)' : '1px solid rgba(184,164,122,0.18)',
++                      fontSize: '0.5rem', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
++                      color: realtimeOk ? '#6bba85' : 'var(--text-dimmed)',
++                    }}
++                  >
++                    <span
++                      style={{
++                        width: 4, height: 4, borderRadius: '50%',
++                        background: realtimeOk ? '#6bba85' : 'var(--gold)',
++                        animation: 'ot-pulse 2s infinite',
++                      }}
++                    />
++                    {realtimeOk ? 'Live updates' : 'Auto-refresh'}
++                  </div>
++                )}
++                {(!isCancelled && (status === 'pending' || status === 'accepted')) && (
++                  <button
++                    type="button"
++                    onClick={() => setShowCancelDialog(true)}
++                    disabled={cancelling}
++                    className="d3-btn-quiet d3-btn-danger"
++                    style={{
++                      opacity: cancelling ? 0.6 : 1,
++                      padding: '0.375rem 0.875rem',
++                      fontSize: '0.75rem',
++                      fontWeight: 600,
++                      borderRadius: 8,
++                    }}
++                  >
++                    {cancelling ? 'Cancelling…' : 'Cancel Order'}
++                  </button>
++                )}
++              </div>
+             </div>
+           )}
+         </div>
 
         {/* ── Body ── */}
         {loading ? null : error ? (
@@ -535,7 +610,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
             {/* Progress Timeline */}
             {!isCancelled && (
               <div
-                style={{ padding: '1.75rem 1.5rem', border: '1px solid var(--border-subtle)', borderRadius: 16, background: 'var(--bg-surface)', boxShadow: '0 8px 32px rgba(0,0,0,0.25)', marginBottom: '1.5rem' }}
+                style={{ padding: '1.25rem 1rem sm:1.25rem 1.25rem', border: '1px solid var(--border-subtle)', borderRadius: 14, background: 'var(--bg-surface)', marginBottom: '1rem' }}
               >
                 {STAGES.map((stage, idx) => {
                   const reached   = idx <= stageIndex;
@@ -543,55 +618,55 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   const isLast    = idx === STAGES.length - 1;
 
                   return (
-                    <div key={stage.key} className="flex gap-4">
+                    <div key={stage.key} className="flex gap-3">
                       <div className="flex flex-col items-center">
                         {/* Node */}
                         <div
                           style={{
-                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                            width: 32, height: 32, borderRadius: 8, flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: reached ? 'rgba(184,164,122,0.10)' : 'var(--bg-surface-2)',
                             border:     reached ? '1px solid rgba(184,164,122,0.28)' : '1px solid var(--border-warm)',
                             color:      reached ? 'var(--gold)' : 'var(--text-dimmed)',
-                            boxShadow:  isCurrent ? '0 0 0 3px rgba(184,164,122,0.10)' : 'none',
-                            transition: 'all 350ms ease',
+                            boxShadow:  isCurrent ? '0 0 0 2px rgba(184,164,122,0.10)' : 'none',
+                            transition: 'all 250ms ease',
                           }}
                         >
                           {reached ? (
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                               <path d="M3 8.5L6.5 12L13 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                           ) : (
-                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
                               <circle cx="5" cy="5" r="2" fill="currentColor" />
                             </svg>
                           )}
                         </div>
                         {/* Connector */}
                         {!isLast && (
-                          <div style={{ width: 1, flex: 1, minHeight: 24, background: idx < stageIndex ? 'rgba(184,164,122,0.28)' : 'var(--border-warm)', marginTop: 4, transition: 'background 350ms ease' }} />
+                          <div style={{ width: 1, flex: 1, minHeight: 18, background: idx < stageIndex ? 'rgba(184,164,122,0.28)' : 'var(--border-warm)', marginTop: 2, transition: 'background 250ms ease' }} />
                         )}
                       </div>
 
                       {/* Label */}
-                      <div className="pb-6" style={{ marginTop: -2 }}>
+                      <div className="pb-4" style={{ marginTop: -1 }}>
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3
                             style={{
-                              fontFamily: 'var(--font-display)', fontSize: '1.0625rem', fontWeight: 500,
+                              fontFamily: 'var(--font-display)', fontSize: '0.9375rem', fontWeight: 500,
                               color:     isCurrent ? 'var(--gold)' : reached ? 'var(--text-primary)' : 'var(--text-dimmed)',
-                              letterSpacing: '-0.01em', lineHeight: 1.3, transition: 'color 350ms ease',
+                              letterSpacing: '-0.01em', lineHeight: 1.25, transition: 'color 250ms ease',
                             }}
                           >
                             {stage.title}
                           </h3>
                           {isCurrent && (
-                            <span className="d3-badge d3-badge-gold" style={{ fontSize: '0.5625rem', padding: '0.2rem 0.5rem', letterSpacing: '0.1em' }}>
+                            <span className="d3-badge d3-badge-gold" style={{ fontSize: '0.5rem', padding: '0.15rem 0.4rem', letterSpacing: '0.1em' }}>
                               CURRENT
                             </span>
                           )}
                         </div>
-                        <p style={{ fontSize: '0.8125rem', color: reached ? 'var(--text-muted)' : 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.5, transition: 'color 350ms ease' }}>
+                        <p style={{ fontSize: '0.75rem', color: reached ? 'var(--text-muted)' : 'var(--text-dimmed)', marginTop: 1, lineHeight: 1.4, transition: 'color 250ms ease' }}>
                           {stage.desc}
                         </p>
                       </div>
@@ -601,7 +676,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
 
                 {/* Last updated timestamp */}
                 {updatedAt && (
-                  <p style={{ marginTop: '0.5rem', fontSize: '0.6875rem', color: 'var(--text-dimmed)', textAlign: 'right', letterSpacing: '0.02em' }}>
+                  <p style={{ marginTop: '0.25rem', fontSize: '0.625rem', color: 'var(--text-dimmed)', textAlign: 'right', letterSpacing: '0.02em', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums' }}>
                     Last updated {formatDateTime(updatedAt)}
                   </p>
                 )}
@@ -609,11 +684,11 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
             )}
 
             {/* Items Card */}
-            <div style={{ padding: '1.5rem', border: '1px solid var(--border-subtle)', borderRadius: 16, background: 'var(--bg-surface)' }}>
-              <p className="d3-eyebrow" style={{ marginBottom: '1rem' }}>Items</p>
-              <div className="flex flex-col gap-3">
+            <div style={{ padding: '1rem 0.875rem sm:1rem 1rem', border: '1px solid var(--border-subtle)', borderRadius: 14, background: 'var(--bg-surface)', marginBottom: '1rem' }}>
+              <p className="d3-eyebrow" style={{ marginBottom: '0.75rem' }}>Items</p>
+              <div className="flex flex-col gap-0">
                 {order.items.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-dimmed)' }}>No items recorded</p>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>No items recorded</p>
                 ) : (
                   order.items.map((item) => {
                     const cancelled = (item.status || '').toLowerCase() === 'cancelled';
@@ -622,32 +697,32 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                     const unitPrice = Number(item.price_at_time);
                     const lineTotal = unitPrice * item.quantity;
                     return (
-                      <div key={item.id} style={{ opacity: cancelled ? 0.6 : 1 }}>
-                        <div className="flex items-baseline justify-between gap-4">
-                          <span style={{ fontSize: '0.875rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-secondary)', lineHeight: 1.4, textDecoration: cancelled ? 'line-through' : 'none', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+                      <div key={item.id} style={{ opacity: cancelled ? 0.6 : 1, padding: '0.625rem 0', borderBottom: order.items.indexOf(item) < order.items.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
+                        <div className="flex items-baseline justify-between gap-2.5">
+                          <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-secondary)', lineHeight: 1.35, textDecoration: cancelled ? 'line-through' : 'none', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums', flex: 1, minWidth: 0 }}>
                             {item.quantity} × {item.name || 'Item'}
                             {cancelled && <span style={{ marginLeft: 6, color: '#C46658', fontWeight: 700 }}>C</span>}
                           </span>
-                          <div className="flex items-center gap-2">
-                            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums' }}>
                               {formatINR(lineTotal)}
                             </span>
                             {canEditQty && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateItemQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
                                   disabled={itemQtyUpdating === item.id}
-                                  style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '0.75rem', lineHeight: 1 }}
+                                  style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '0.6875rem', lineHeight: 1, padding: 0 }}
                                 >
                                   −
                                 </button>
-                                <span style={{ fontSize: '0.75rem', minWidth: 16, textAlign: 'center', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{item.quantity}</span>
+                                <span style={{ fontSize: '0.6875rem', minWidth: 14, textAlign: 'center', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateItemQuantity(item.id, (item.quantity || 1) + 1)}
                                   disabled={itemQtyUpdating === item.id}
-                                  style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '0.75rem', lineHeight: 1 }}
+                                  style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '0.6875rem', lineHeight: 1, padding: 0 }}
                                 >
                                   +
                                 </button>
@@ -658,16 +733,16 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                                 type="button"
                                 onClick={() => setShowItemCancelDialog(item.id)}
                                 disabled={itemCancelling === item.id}
-                                style={{ fontSize: '0.7rem', color: '#C46658', background: 'none', border: '1px solid rgba(196,102,88,0.4)', borderRadius: 6, padding: '0.15rem 0.4rem', cursor: 'pointer' }}
+                                style={{ fontSize: '0.625rem', color: '#C46658', background: 'none', border: '1px solid rgba(196,102,88,0.4)', borderRadius: 6, padding: '0.1rem 0.35rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                               >
                                 {itemCancelling === item.id ? '…' : 'Cancel'}
                               </button>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-baseline justify-between gap-4" style={{ marginTop: 2 }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-dimmed)' }}>Unit price</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{formatINR(unitPrice)} each</span>
+                        <div className="flex items-baseline justify-between gap-4" style={{ marginTop: 1 }}>
+                          <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>Unit price</span>
+                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums' }}>{formatINR(unitPrice)} each</span>
                         </div>
                         {showItemCancelDialog === item.id && (
                           <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)' }}>
@@ -686,18 +761,18 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 )}
               </div>
 
-              <div className="d3-divider" style={{ margin: '1.25rem 0' }} />
+              <div className="d3-divider" style={{ margin: '1rem 0' }} />
 
               <div className="flex items-baseline justify-between gap-4">
-                <span style={{ fontSize: '0.6875rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Original Total</span>
-                <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '1.125rem', color: 'var(--text-dimmed)', fontWeight: 500, textDecoration: activeTotal < originalTotal ? 'line-through' : 'none' }}>
+                <span style={{ fontSize: '0.625rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Original Total</span>
+                <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums', fontSize: '1rem', color: 'var(--text-dimmed)', fontWeight: 500, textDecoration: activeTotal < originalTotal ? 'line-through' : 'none' }}>
                   {formatINR(originalTotal)}
                 </span>
               </div>
 
               <div className="flex items-baseline justify-between gap-4">
-                <span style={{ fontSize: '0.6875rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Current Total</span>
-                <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 500 }}>
+                <span style={{ fontSize: '0.625rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Current Total</span>
+                <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums', fontSize: '1.25rem', color: 'var(--gold)', fontWeight: 500 }}>
                   {formatINR(activeTotal)}
                 </span>
               </div>
@@ -716,9 +791,9 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   </div>
                 )}
                 {order.table_number && (
-                  <div className="flex justify-between" style={{ fontSize: '0.75rem' }}>
+                  <div className="flex justify-between" style={{ fontSize: '0.6875rem' }}>
                     <span style={{ color: 'var(--text-dimmed)' }}>Table</span>
-                    <span style={{ color: 'var(--text-secondary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{order.table_number}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums' }}>{order.table_number}</span>
                   </div>
                 )}
                 {order.customer_name && (
