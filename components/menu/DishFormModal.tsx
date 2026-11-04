@@ -418,9 +418,9 @@ export default function DishFormModal({
                   />
                 </div>
                 <div>
-                  <label className="d3-label" htmlFor="dish-price">
-                    Price ({currencyLabel})
-                  </label>
+<label className="d3-label" htmlFor="dish-price">
+                     Price ({currencyLabel} INR)
+                   </label>
                   <input
                     id="dish-price"
                     type="number"
