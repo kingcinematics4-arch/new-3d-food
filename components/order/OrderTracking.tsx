@@ -624,12 +624,12 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                     return (
                       <div key={item.id} style={{ opacity: cancelled ? 0.6 : 1 }}>
                         <div className="flex items-baseline justify-between gap-4">
-                          <span style={{ fontSize: '0.875rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-secondary)', lineHeight: 1.4, textDecoration: cancelled ? 'line-through' : 'none' }}>
+                          <span style={{ fontSize: '0.875rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-secondary)', lineHeight: 1.4, textDecoration: cancelled ? 'line-through' : 'none', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
                             {item.quantity} × {item.name || 'Item'}
                             {cancelled && <span style={{ marginLeft: 6, color: '#C46658', fontWeight: 700 }}>C</span>}
                           </span>
                           <div className="flex items-center gap-2">
-                            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
                               {formatINR(lineTotal)}
                             </span>
                             {canEditQty && (
@@ -642,7 +642,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                                 >
                                   −
                                 </button>
-                                <span style={{ fontSize: '0.75rem', minWidth: 16, textAlign: 'center' }}>{item.quantity}</span>
+                                <span style={{ fontSize: '0.75rem', minWidth: 16, textAlign: 'center', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{item.quantity}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateItemQuantity(item.id, (item.quantity || 1) + 1)}
@@ -667,7 +667,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                         </div>
                         <div className="flex items-baseline justify-between gap-4" style={{ marginTop: 2 }}>
                           <span style={{ fontSize: '0.7rem', color: 'var(--text-dimmed)' }}>Unit price</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>{formatINR(unitPrice)} each</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{formatINR(unitPrice)} each</span>
                         </div>
                         {showItemCancelDialog === item.id && (
                           <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)' }}>
@@ -690,14 +690,14 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
 
               <div className="flex items-baseline justify-between gap-4">
                 <span style={{ fontSize: '0.6875rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Original Total</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', color: 'var(--text-dimmed)', fontWeight: 500, textDecoration: activeTotal < originalTotal ? 'line-through' : 'none' }}>
+                <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '1.125rem', color: 'var(--text-dimmed)', fontWeight: 500, textDecoration: activeTotal < originalTotal ? 'line-through' : 'none' }}>
                   {formatINR(originalTotal)}
                 </span>
               </div>
 
               <div className="flex items-baseline justify-between gap-4">
                 <span style={{ fontSize: '0.6875rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Current Total</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 500 }}>
+                <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 500 }}>
                   {formatINR(activeTotal)}
                 </span>
               </div>
@@ -718,7 +718,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 {order.table_number && (
                   <div className="flex justify-between" style={{ fontSize: '0.75rem' }}>
                     <span style={{ color: 'var(--text-dimmed)' }}>Table</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{order.table_number}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{order.table_number}</span>
                   </div>
                 )}
                 {order.customer_name && (
