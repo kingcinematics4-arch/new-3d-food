@@ -625,73 +625,65 @@ const placedAt   = order?.created_at ?? null;
                     const lineTotal = unitPrice * item.quantity;
 const last = i === order.items.length - 1;
                      return (
-                       <div key={item.id} style={{ padding: '0.625rem 0', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
-                           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                       <div key={item.id} style={{ padding: '0.5rem 0', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
+                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '0.5rem', alignItems: 'start' }}>
+                           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'nowrap', minWidth: 0 }}>
                                <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                                  {item.name || 'Item'}
                                </span>
                              </div>
-                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
-                               <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                                 Qty: {item.quantity}
-                               </span>
-                               <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem' }}>•</span>
-                               <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                                 Unit price: {formatINR(unitPrice)} each
-                               </span>
-                               <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem' }}>•</span>
-                               <span style={{ fontSize: '0.6875rem', color: 'var(--gold)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                 {formatINR(lineTotal)}
-                               </span>
-                             </div>
+                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
+                               Unit price: {formatINR(unitPrice)} each
+                             </span>
                              {cancelled && (
                                <span style={{ fontSize: '0.625rem', color: '#C46658', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                                  CANCELLED
                                </span>
                              )}
                            </div>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                             <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 600, fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', minWidth: 48, textAlign: 'right' }}>
+                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                             <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 600, fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>
                                {formatINR(lineTotal)}
                              </span>
-                             {canEditQty ? (
-                               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                               {canEditQty ? (
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                   <button
+                                     type="button"
+                                     onClick={() => handleUpdateItemQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
+                                     disabled={itemQtyUpdating === item.id}
+                                     style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '1rem', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                                   >
+                                     −
+                                   </button>
+                                   <span style={{ fontSize: '0.8125rem', minWidth: 18, textAlign: 'center', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</span>
+                                   <button
+                                     type="button"
+                                     onClick={() => handleUpdateItemQuantity(item.id, (item.quantity || 1) + 1)}
+                                     disabled={itemQtyUpdating === item.id}
+                                     style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '1rem', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                                   >
+                                     +
+                                   </button>
+                                 </div>
+                               ) : null}
+                               {canCancel && (
                                  <button
                                    type="button"
-                                   onClick={() => handleUpdateItemQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
-                                   disabled={itemQtyUpdating === item.id}
-                                   style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '1rem', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                                   onClick={() => setShowItemCancelDialog(item.id)}
+                                   disabled={itemCancelling === item.id}
+                                   style={{ fontSize: '0.6875rem', color: '#C46658', background: 'none', border: '1px solid rgba(196,102,88,0.4)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer', whiteSpace: 'nowrap', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                                  >
-                                   −
+                                   {itemCancelling === item.id ? '…' : 'Cancel Item'}
                                  </button>
-                                 <span style={{ fontSize: '0.8125rem', minWidth: 18, textAlign: 'center', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</span>
-                                 <button
-                                   type="button"
-                                   onClick={() => handleUpdateItemQuantity(item.id, (item.quantity || 1) + 1)}
-                                   disabled={itemQtyUpdating === item.id}
-                                   style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '1rem', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                                 >
-                                   +
-                                 </button>
-                               </div>
-                             ) : null}
-                             {canCancel && (
-                               <button
-                                 type="button"
-                                 onClick={() => setShowItemCancelDialog(item.id)}
-                                 disabled={itemCancelling === item.id}
-                                 style={{ fontSize: '0.6875rem', color: '#C46658', background: 'none', border: '1px solid rgba(196,102,88,0.4)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer', whiteSpace: 'nowrap', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                               >
-                                 {itemCancelling === item.id ? '…' : 'Cancel Item'}
-                               </button>
-                             )}
-                             {cancelled && (
-                               <span style={{ fontSize: '0.625rem', color: '#C46658', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.2rem 0.5rem', borderRadius: 6, border: '1px solid rgba(196,102,88,0.4)', background: 'rgba(196,102,88,0.06)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                 CANCELLED
-                               </span>
-                             )}
+                               )}
+                               {cancelled && (
+                                 <span style={{ fontSize: '0.625rem', color: '#C46658', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.2rem 0.5rem', borderRadius: 6, border: '1px solid rgba(196,102,88,0.4)', background: 'rgba(196,102,88,0.06)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                   CANCELLED
+                                 </span>
+                               )}
+                             </div>
                            </div>
                          </div>
                         {showItemCancelDialog === item.id && (

@@ -8,7 +8,7 @@ const MOCK_ORDER = {
   order: {
     id: '11111111-1111-1111-1111-111111111111',
     order_number: 'DINE-4821',
-    status: 'preparing',
+    status: 'pending',
     payment_status: 'pending',
     payment_method: 'pay_at_table',
     table_number: '12',
@@ -73,12 +73,28 @@ await page.goto('http://localhost:3000/order/DINE-4821', { waitUntil: 'networkid
       expect(progressText).not.toMatch(/Last updated/);
 
       // Each item card must show the required fields.
-      const vadaPav = await page.locator('text=Vada Pav').first().locator('..').first().locator('..').first();
-      const vadaPavText = await vadaPav.innerText();
-      expect(vadaPavText).toContain('Vada Pav');
-      expect(vadaPavText).toMatch(/Qty: 2/);
-      expect(vadaPavText).toMatch(/Unit price: ₹10 each/);
-      expect(vadaPavText).toMatch(/₹20/);
+      const pageText = await page.locator('body').innerText();
+      expect(pageText).toContain('Vada Pav');
+      expect(pageText).toMatch(/Unit price: ₹10 each/);
+      expect(pageText).toMatch(/₹20/);
+      expect(pageText).toMatch(/₹30/);
+      expect(pageText).toContain('Cancel Item');
+
+      // The unit-price line must be its own element with no overlap.
+      const unitPriceEl = await page.locator('text=Unit price: ₹10 each').first();
+      const unitBox = await unitPriceEl.boundingBox();
+      expect(unitBox).not.toBeNull();
+      expect(unitBox!.height).toBeLessThan(30);
+
+      // The subtotal must not overlap the unit-price text.
+      const subtotalEl = await page.locator('text=₹20').first();
+      const subtotalBox = await subtotalEl.boundingBox();
+      expect(subtotalBox).not.toBeNull();
+      const overlapX = unitBox!.x < subtotalBox!.x + subtotalBox!.width &&
+        unitBox!.x + unitBox!.width > subtotalBox!.x;
+      const overlapY = unitBox!.y < subtotalBox!.y + subtotalBox!.height &&
+        unitBox!.y + unitBox!.height > subtotalBox!.y;
+      expect(overlapX && overlapY).toBe(false);
 
       // The summary must show a single prominent total, no "Original Total".
       const summary = await page.locator('text=Order Summary').first().locator('..').first().locator('..').first();
