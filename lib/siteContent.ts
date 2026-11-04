@@ -517,7 +517,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         enabled: true,
         name: 'Starter',
         tagline: 'For small restaurants',
-        price: '$29',
+        price: '₹29',
         period: '/month',
         features: ['Up to 30 menu items', '5 3D models included', 'QR code generator', 'Basic analytics', 'Standard support'],
         ctaText: 'Get Started',
@@ -529,7 +529,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         enabled: true,
         name: 'Pro',
         tagline: 'For growing restaurants',
-        price: '$79',
+        price: '₹79',
         period: '/month',
         features: [
           'Unlimited menu items',

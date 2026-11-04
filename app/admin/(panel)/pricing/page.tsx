@@ -226,7 +226,7 @@ export default function AdminPricingPage() {
                         <AdminInput
                           value={plan.price}
                           onChange={(v) => setPlan(plan.id, { price: v })}
-                          placeholder="$79"
+                          placeholder="₹79"
                         />
                       </AdminField>
                       <AdminField label="Period">

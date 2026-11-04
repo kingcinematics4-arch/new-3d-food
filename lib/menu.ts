@@ -50,19 +50,42 @@ export interface MenuItem {
   created_at?: string;
 }
 
+export interface PublicHotel {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url?: string | null;
+  currency?: string | null;
+  welcome_text?: string | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  menu_style?: string | null;
+  card_style?: string | null;
+  dark_mode?: boolean;
+  typography?: string | null;
+  menu_theme?: string | null;
+  tax_rate?: number;
+  service_charge?: number;
+  city?: string | null;
+}
+
 // There is no preset model library: a dish is only shown in 3D once the
 // restaurant has stored its own GLB/USDZ file for that dish.
 
 // ============================================================
 // CURRENCY FORMATTING
-// The hotel's `currency` column stores a free-text value such as
-// "USD ($)" or "INR (₹)". We resolve it to a symbol so prices render
-// in whatever currency the restaurant actually set in Supabase.
 //
-// DEFAULT: Indian Rupees (₹). Dine3D is built for the Indian
-// F&B market, so a restaurant that has not explicitly set a currency
-// is always shown in INR with Indian number formatting
-// (e.g. ₹1,500.00). Stored numeric prices are never converted.
+// Dine3D is built for the Indian F&B market, so the default currency
+// for every restaurant is INR (₹) with en-IN locale. A restaurant can
+// still override its currency in the dashboard, but until it does,
+// every price renders in INR.
+//
+// The shared `formatPrice` below is the ONLY place in the application
+// that turns a numeric price into a display string. Every component
+// must import it from here — no component may hardcode a `$` symbol
+// or roll its own `toFixed`/`toLocaleString` for prices.
+//
+// Stored numeric prices are NEVER converted, multiplied or divided.
 // ============================================================
 
 const DEFAULT_CURRENCY = 'INR';
@@ -116,21 +139,20 @@ const ZERO_DECIMAL_CURRENCIES = new Set([
   'JPY', 'KRW', 'VND', 'CLP', 'COP', 'ISK', 'IDR', 'PYG', 'RWF', 'UGX', 'XOF', 'XAF',
 ]);
 
-// Indian-style grouping (1,50,000) for INR; Western grouping otherwise.
-function formatWithLocale(value: number, decimals: number, currency: string): string {
-  const upper = (currency || '').toUpperCase();
-  if (upper === 'INR' || upper === 'Rs' || upper === 'NPR' || upper === 'LKR' || upper === 'PKR' || upper === 'BDT') {
-    return value.toLocaleString('en-IN', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-  }
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+// ISO 4217 currency codes that use the Indian lakh/crore grouping.
+const INDIAN_GROUPING_CURRENCIES = new Set([
+  'INR', 'NPR', 'LKR', 'PKR', 'BDT',
+]);
+
+function currencyLocale(code: string): string {
+  return INDIAN_GROUPING_CURRENCIES.has(code) ? 'en-IN' : 'en-US';
 }
 
+/**
+ * Resolve a free-text currency string (e.g. "INR (₹)") to its ISO
+ * 4217 code, symbol and decimal places. Defaults to INR when the
+ * value is empty or unrecognised.
+ */
 export function resolveCurrency(code?: string | null): { symbol: string; decimals: number } {
   const raw = (code || '').trim();
   if (!raw) return { symbol: CURRENCY_SYMBOLS[DEFAULT_CURRENCY], decimals: 2 };
@@ -144,8 +166,34 @@ export function resolveCurrency(code?: string | null): { symbol: string; decimal
   return { symbol, decimals: ZERO_DECIMAL_CURRENCIES.has(key) ? 0 : 2 };
 }
 
+/**
+ * Shared currency formatter.
+ *
+ * Uses `Intl.NumberFormat` with `style: 'currency'` so the output always
+ * contains the correct symbol and grouping for the currency. INR prices
+ * render as `₹1,500.00` (en-IN grouping); other currencies fall back to
+ * the default `en-US` grouping.
+ *
+ * The numeric `price` is never altered — only its display string.
+ */
 export function formatPrice(price: number, currency?: string | null): string {
-  const { symbol, decimals } = resolveCurrency(currency || DEFAULT_CURRENCY);
+  const raw = (currency || '').trim();
+  let code = raw.split(/[\s(\[]/)[0].toUpperCase();
+  if (!code) code = DEFAULT_CURRENCY;
+
   const value = typeof price === 'number' && Number.isFinite(price) ? price : 0;
-  return `${symbol}${formatWithLocale(value, decimals, (currency || '').toUpperCase() || DEFAULT_CURRENCY)}`;
+  const decimals = ZERO_DECIMAL_CURRENCIES.has(code) ? 0 : 2;
+
+  try {
+    return new Intl.NumberFormat(currencyLocale(code), {
+      style: 'currency',
+      currency: code,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+  } catch {
+    // Unknown currency code — fall back to symbol + plain number.
+    const symbol = CURRENCY_SYMBOLS[code] || CURRENCY_SYMBOLS[DEFAULT_CURRENCY] || '';
+    return `${symbol}${value.toFixed(decimals)}`;
+  }
 }
