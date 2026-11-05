@@ -69,13 +69,13 @@
      present a genuinely different layout — not just colours.
      Defaults here match the Classic Luxury theme.
      ============================================ */
-  --d3-card-radius: 12px;
-  --d3-modal-radius: 16px;
-  --d3-modal-image-radius: 16px 16px 0 0;
-  --d3-input-radius: 6px;
-  --d3-btn-radius: 6px;
-  --d3-badge-radius: 4px;
-  --d3-chip-radius: 5px;
+  --d3-card-radius: 8px;
+  --d3-modal-radius: 12px;
+  --d3-modal-image-radius: 12px 12px 0 0;
+  --d3-input-radius: 4px;
+  --d3-btn-radius: 4px;
+  --d3-badge-radius: 3px;
+  --d3-chip-radius: 4px;
   --d3-image-height: 12rem;
   --d3-image-aspect: 4 / 3;
   --d3-container-max: 720px;
@@ -173,14 +173,14 @@ body {
 }
 
 /* Eyebrow labels */
-.d3-eyebrow {
-  font-family: var(--font-body);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
+  .d3-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: none;
+    color: var(--text-dimmed);
+  }
 
 /* Body text */
 .d3-body {
@@ -519,14 +519,14 @@ body {
 }
 
 /* Section heading inside a panel */
-.d3-panel-title {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  line-height: 1.25;
-  color: var(--text-primary);
-}
+  .d3-panel-title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    color: var(--text-primary);
+  }
 
 /* Numeric figures used for metrics */
 .d3-figure {
