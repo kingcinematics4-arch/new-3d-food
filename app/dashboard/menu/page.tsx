@@ -229,13 +229,10 @@ export default function MenuManagementPage() {
           ].map((stat) => (
             <div key={stat.label}>
               <span
+                className="d3-figure"
                 style={{
                   display: 'block',
-                  fontFamily: 'var(--font-display)',
                   fontSize: '1.375rem',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                  letterSpacing: '-0.02em',
                   lineHeight: 1,
                 }}
               >
@@ -300,7 +297,7 @@ export default function MenuManagementPage() {
                 }}
               >
                 {cat}
-                <span style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem' }}>{countForCategory(cat)}</span>
+                <span className="d3-figure" style={{ color: 'var(--text-dimmed)', fontSize: '0.6875rem' }}>{countForCategory(cat)}</span>
               </button>
             );
           })}
