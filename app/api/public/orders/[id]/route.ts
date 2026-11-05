@@ -22,6 +22,7 @@ import { getOrdersSchema, getOrderItemsSchema } from '@/lib/ordersSchema';
 import { getHotelSchema } from '@/lib/hotelSchema';
 import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
 import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
+import { normalizeCurrency } from '@/lib/menu';
 import { orderReference } from '@/lib/orderReference';
 
 function isStoredReferenceNumber(value: string): boolean {
@@ -159,7 +160,10 @@ export async function GET(
         items,
         hotel_theme: (order as any).hotels?.menu_theme || await getStoredMenuTheme((order as any).hotels?.id) || DEFAULT_MENU_THEME,
         hotel_slug: (order as any).hotels?.slug || null,
-        currency: (order as any).hotels?.currency || null,
+        // Normalise the stored currency to INR for display. This is a
+        // DISPLAY-ONLY mapping: numeric prices, tax, service charge,
+        // payment amounts and historical order rows are never altered.
+        currency: normalizeCurrency((order as any).hotels?.currency || null),
       },
     }), {
       status: 200,

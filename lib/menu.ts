@@ -167,6 +167,50 @@ export function resolveCurrency(code?: string | null): { symbol: string; decimal
 }
 
 /**
+ * Normalise a stored currency value to INR for display.
+ *
+ * Dine3D is built for the Indian F&B market, so every restaurant is
+ * rendered in INR regardless of what the `currency` column holds.
+ * This is a DISPLAY-ONLY normalisation: it never touches numeric
+ * prices, tax, service charge, payment amounts or historical order
+ * rows. Those remain byte-for-byte unchanged.
+ *
+ * Values that already use INR (or an Indian-rupee variant) pass
+ * through unchanged. Any USD / dollar / `$`-only value is mapped to
+ * the INR default so the shared formatter always emits `₹`.
+ */
+export function normalizeCurrency(code?: string | null): string {
+  const raw = (code || '').trim();
+  if (!raw) return 'INR (₹)';
+
+  const lower = raw.toLowerCase();
+  const looksInr =
+    lower.includes('inr') ||
+    lower.includes('₹') ||
+    lower.includes('rupee') ||
+    lower.includes('rupees');
+
+  if (looksInr) return 'INR (₹)';
+
+  // Anything USD / dollar / $-only is treated as INR for display.
+  if (
+    lower.includes('usd') ||
+    lower.includes('dollar') ||
+    lower.includes('$') ||
+    lower === 'usd' ||
+    lower === 'usd ($)' ||
+    lower === 'usd($)' ||
+    lower === '$'
+  ) {
+    return 'INR (₹)';
+  }
+
+  // Unknown / foreign currencies pass through so non-Indian
+  // restaurants can still display their own currency.
+  return raw;
+}
+
+/**
  * Shared currency formatter.
  *
  * Uses `Intl.NumberFormat` with `style: 'currency'` so the output always
@@ -177,7 +221,13 @@ export function resolveCurrency(code?: string | null): { symbol: string; decimal
  * The numeric `price` is never altered — only its display string.
  */
 export function formatPrice(price: number, currency?: string | null): string {
-  const raw = (currency || '').trim();
+  // Normalise the stored currency to INR for display BEFORE
+  // formatting. This guarantees that even if a restaurant's
+  // `currency` column still holds a legacy USD value, every price
+  // renders with the ₹ symbol. The numeric `price` is never
+  // altered — only the display string.
+  const normalized = normalizeCurrency(currency);
+  const raw = normalized.trim();
   let code = raw.split(/[\s(\[]/)[0].toUpperCase();
   if (!code) code = DEFAULT_CURRENCY;
 
