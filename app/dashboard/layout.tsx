@@ -421,12 +421,8 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
             </h1>
           </div>
 
-          {/* Right — Status + Actions */}
+          {/* Right — Actions */}
           <div className="flex items-center gap-3">
-            <span className="d3-badge d3-badge-gold">
-              <span className="d3-live-dot" />
-              Live
-            </span>
             {hotelSlug && (
               <Link
                 href={menuHref}
