@@ -21,6 +21,14 @@ const GRID_LINE = 'rgba(243,239,231,0.06)';
 const ACCENT = '#B8A47A';
 const ACCENT_SOFT = 'rgba(184,164,122,0.22)';
 
+/* Revenue & Order Volume — premium metallic series palette */
+const SERIES_GOLD = '#D4B36A'; // upper (Revenue) — premium champagne gold
+const SERIES_GOLD_FADE = 'rgba(212,179,106,0.02)';
+const SERIES_BRONZE = '#9B7348'; // middle (Orders Count) — muted antique bronze
+const SERIES_BRONZE_FADE = 'rgba(155,115,72,0.02)';
+const SERIES_COPPER = '#8A4B38'; // lower (Cancelled) — elegant dark copper
+const SERIES_COPPER_FADE = 'rgba(138,75,56,0.02)';
+
 function getDayLabel(date: Date): string {
   return DAYS[date.getDay()];
 }
@@ -191,8 +199,8 @@ export default function AnalyticsDashboardPage() {
     });
     return [
       { name: 'Revenue', data: revData, type: 'area', yAxisIndex: 0 },
-      { name: 'Orders Count', data: countData, type: 'line', yAxisIndex: 1 },
-      { name: 'Cancelled', data: cancelledData, type: 'line', yAxisIndex: 1 },
+      { name: 'Orders Count', data: countData, type: 'area', yAxisIndex: 1 },
+      { name: 'Cancelled', data: cancelledData, type: 'area', yAxisIndex: 1 },
     ];
   }, [filteredOrders, dailyBuckets]);
 
@@ -345,14 +353,22 @@ tooltip: {
       },
     },
     theme: { mode: 'dark' },
-    colors: [ACCENT, 'rgba(243,239,231,0.55)', '#C46658'],
-    stroke: { curve: 'smooth', width: 2, dashArray: 0 },
-    markers: { size: 0, hover: { size: 5 } },
+    // Upper/middle/lower zones: champagne gold, antique bronze, dark copper
+    colors: [SERIES_GOLD, SERIES_BRONZE, SERIES_COPPER],
+    stroke: { curve: 'smooth', width: [2.5, 2, 2], dashArray: 0 },
+    markers: { size: 0, hover: { size: 5, strokeWidth: 0 } },
     dataLabels: { enabled: false },
     fill: {
       type: 'gradient',
-      gradient: { shade: 'dark', gradientToColors: [ACCENT_SOFT, 'rgba(184,164,122,0.02)'], stops: [0, 100] },
-      opacity: 0.9,
+      gradient: {
+        shade: 'dark',
+        type: 'vertical',
+        shadeIntensity: 0.25,
+        opacityFrom: 0.42,
+        opacityTo: 0.02,
+        stops: [0, 88, 100],
+        gradientToColors: [SERIES_GOLD_FADE, SERIES_BRONZE_FADE, SERIES_COPPER_FADE],
+      },
     },
     legend: {
       position: 'top',
@@ -416,7 +432,7 @@ tooltip: {
               name === 'Revenue'
                 ? `₹${Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
                 : `${Math.round(Number(val))} order${Math.round(Number(val)) === 1 ? '' : 's'}`;
-            const color = seriesColors[si] || '#B8A47A';
+            const color = seriesColors[si] || SERIES_GOLD;
             return `<div style="display:grid;grid-template-columns:8px 1fr auto;align-items:center;column-gap:12px;row-gap:0;padding:4px 0;min-width:0;">
             <span style="width:8px;height:8px;border-radius:50%;background:${color};display:block;"></span>
             <span style="color:var(--text-muted);white-space:nowrap;min-width:0;">${name}</span>
@@ -562,7 +578,7 @@ tooltip: {
             }
           />
           {isMounted && salesTrendSeries[0].data.some((v) => v > 0) ? (
-            <Chart options={salesTrendOptions} series={salesTrendSeries} type="area" height={300} />
+            <Chart options={salesTrendOptions} series={salesTrendSeries} type="area" height={340} />
           ) : (
             <p
               style={{
