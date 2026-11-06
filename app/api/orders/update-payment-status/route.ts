@@ -8,6 +8,10 @@
 //   • Only orders NOT cancelled can be marked as PAID.
 //   • Duplicate/no-op writes return success without touching the DB.
 //   • paid_at is set when transitioning to 'paid', cleared on 'unpaid'.
+//
+// The response always includes the hotel's google_review_url (when the
+// column exists on this deployment) so the guest tracking page can
+// redirect to it the moment payment is confirmed.
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
@@ -17,6 +21,25 @@ const updatePaymentStatusSchema = z.object({
   order_id: z.string().min(1, 'order_id is required'),
   payment_status: z.enum(['paid', 'unpaid']),
 });
+
+/** Probe whether a column exists on a table. Returns false gracefully for
+ * missing-column PostgREST codes (42703, PGRST204, PGRST205) instead of
+ * throwing. */
+async function columnExists(table: string, column: string): Promise<boolean> {
+  try {
+    const { error } = await supabaseAdmin
+      .from(table)
+      .select(column)
+      .limit(1);
+    if (!error) return true;
+    if (error.code && ['42703', 'PGRST204', 'PGRST205'].includes(error.code)) return false;
+    console.error(`[update-payment-status] column probe for ${table}.${column} failed:`, error.message);
+    return false;
+  } catch (err: any) {
+    console.error(`[update-payment-status] column probe for ${table}.${column} threw:`, err?.message);
+    return false;
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -103,7 +126,20 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    return new NextResponse(JSON.stringify({ success: true, order: updatedOrder }), {
+    // Attach the hotel's google_review_url (when the column exists on this
+    // deployment) so the guest tracking page can redirect after payment.
+    const googleReviewUrl = await columnExists('hotels', 'google_review_url');
+    let reviewUrl: string | null = null;
+    if (googleReviewUrl) {
+      const { data: hotelRow } = await supabaseAdmin
+        .from('hotels')
+        .select('google_review_url')
+        .eq('id', currentOrder.hotel_id)
+        .maybeSingle();
+      reviewUrl = (hotelRow as any)?.google_review_url || null;
+    }
+
+    return new NextResponse(JSON.stringify({ success: true, order: { ...updatedOrder, google_review_url: reviewUrl } }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

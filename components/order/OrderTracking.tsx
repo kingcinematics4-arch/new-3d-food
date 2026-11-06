@@ -38,6 +38,8 @@ interface LiveOrder {
   currency?: string | null;
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
+  /** The hotel's Google Review URL, present once payment is marked PAID. */
+  google_review_url?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,9 +86,29 @@ function statusToStageIndex(status: string): number {
 }
 
 function isTerminal(status: string): boolean {
-  const s = (status || '').trim().toLowerCase();
-  return s === 'delivered' || s === 'completed' || s === 'cancelled';
-}
+    const s = (status || '').trim().toLowerCase();
+    return s === 'delivered' || s === 'completed' || s === 'cancelled';
+  }
+
+  /**
+   * Whether the guest still needs to watch for a payment update.
+   *
+   * A completed order is normally terminal, but the payment-to-review
+   * redirect is gated on payment_status becoming 'paid', which the
+   * hotel sets AFTER completion. If polling/realtime stopped the moment
+   * the order hit 'completed', a guest who refreshed between completion
+   * and payment would never see the paid transition — and never be
+   * redirected. So the tracking page stays live until the order is
+   * both terminal AND paid (or cancelled).
+   */
+  function needsPaymentWatch(order: LiveOrder | null): boolean {
+    if (!order) return false;
+    const s = (order.status || '').trim().toLowerCase();
+    const paid = (order.payment_status || '').trim().toLowerCase() === 'paid';
+    if (s === 'cancelled') return false;
+    if (paid) return false;
+    return true; // pending/accepted/preparing/ready/completed/delivered
+  }
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -135,7 +157,6 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const orderRef = useRef<LiveOrder | null>(null);
   orderRef.current = order;
 
-  const redirectTriggeredRef = useRef(false);
   const paymentRedirectTriggeredRef = useRef(false);
 
   const backHref = hotelSlug || order?.hotel_slug
@@ -268,8 +289,10 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   useEffect(() => {
     // Wait for the first successful load before subscribing.
     if (!order) return;
-    // No point subscribing for a terminal order.
-    if (isTerminal(order.status)) return;
+    // Keep watching until payment is confirmed (or the order is cancelled),
+    // because the review redirect is gated on payment_status = 'paid',
+    // which the hotel sets AFTER the order reaches 'completed'.
+    if (!needsPaymentWatch(order)) return;
     // Supabase env vars might not be present in local dev without .env.local.
     if (!isSupabaseConfigured()) return;
 
@@ -320,7 +343,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // -----------------------------------------------------------------------
   useEffect(() => {
     if (!order) return;
-    if (isTerminal(order.status)) return;
+    if (!needsPaymentWatch(order)) return;
 
     const POLL_MS = 5_000;
     let dead = false;
@@ -328,7 +351,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
     const tick = async () => {
       if (dead) return;
       await loadOrder(true);
-      if (!dead && !isTerminal(orderRef.current?.status ?? '')) {
+      if (!dead && needsPaymentWatch(orderRef.current)) {
         setTimeout(tick, POLL_MS);
       }
     };
@@ -338,45 +361,17 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       dead = true;
       clearTimeout(timer);
     };
-  }, [order?.status, loadOrder]);
-
-  // -----------------------------------------------------------------------
-  // Auto-redirect to Google Review URL once the order is completed
-  //
-  // • Triggered only when status becomes completed / delivered
-  // • Only once per order (sessionStorage guard survives refresh)
-  // • Skipped entirely when no Google Review URL is configured
-  // -----------------------------------------------------------------------
-  useEffect(() => {
-    if (!order) return;
-    const status = (order.status || '').trim().toLowerCase();
-    const isCompleted = status === 'completed' || status === 'delivered';
-    if (!isCompleted || redirectTriggeredRef.current) return;
-
-    const reviewUrl = (order as any).google_review_url;
-    if (!reviewUrl) return;
-
-    const sessionKey = `dpx_review_redirect_${order.id}`;
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(sessionKey)) return;
-
-    redirectTriggeredRef.current = true;
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(sessionKey, '1');
-    }
-
-    // Small delay so the guest sees the completed confirmation first.
-    setTimeout(() => {
-      try { window.location.href = reviewUrl; } catch {}
-    }, 1500);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order, order?.status]);
+  }, [order?.status, order?.payment_status, loadOrder]);
 
   // -----------------------------------------------------------------------
   // Auto-redirect to Google Review URL once payment is marked PAID
   //
-  // • Triggered only when payment_status becomes 'paid' (staff marks it)
+  // • Triggered ONLY when payment_status becomes 'paid' (staff marks it).
+  //   The redirect must never fire on order completion alone — payment
+  //   confirmation is the gate, per the payment-to-review workflow.
   // • Only once per order (sessionStorage guard survives refresh)
-  // • Skipped entirely when no Google Review URL is configured
+  // • Skipped entirely when no Google Review URL is configured; in that
+  //   case a useful message is shown instead of silently doing nothing.
   // • Redirect happens on the guest's device via real-time / polling
   // -----------------------------------------------------------------------
   useEffect(() => {

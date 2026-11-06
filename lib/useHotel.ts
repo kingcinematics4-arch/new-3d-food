@@ -83,6 +83,9 @@ export interface Order {
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
   cancellation_source?: 'hotel' | 'customer' | string | null;
+  /** The hotel's Google Review URL, attached by the payment API after a
+   *  successful `paid` transition so the guest can be redirected. */
+  google_review_url?: string | null;
 }
 
 export interface OrderItem {
@@ -311,9 +314,17 @@ export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'al
         queryClient.setQueryData(queryKeys.orders(hotelId), context.previous);
       }
     },
-    onSettled: () => {
+    onSettled: (_data, _err, { orderId, paymentStatus }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders(hotelId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats(hotelId) });
+      // Surface the hotel's Google Review URL on the cached order so any
+      // consumer (e.g. the guest tracking page) can redirect after payment.
+      if (paymentStatus === 'paid' && _data) {
+        const reviewUrl = (_data as any).google_review_url || null;
+        queryClient.setQueryData<Order[]>(queryKeys.orders(hotelId), (old: Order[] | undefined) =>
+          old ? old.map((o) => (o.id === orderId ? { ...o, google_review_url: reviewUrl } : o)) : old
+        );
+      }
     },
   });
 
