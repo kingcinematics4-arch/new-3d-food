@@ -46,14 +46,14 @@ export function resolveBundledLogoUrl(url: string | null | undefined): string {
  */
 export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
-export const LOGO_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+export const LOGO_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'] as const;
 export type LogoMimeType = (typeof LOGO_MIME_TYPES)[number];
 
 /** Short label reused by every validation message and hint. */
-export const ACCEPTED_LOGO_LABEL = 'PNG, JPG or WebP';
+export const ACCEPTED_LOGO_LABEL = 'PNG, JPG, WebP or SVG';
 
 /** What the file picker offers. Order is the order shown to the owner. */
-export const LOGO_FILE_ACCEPT = '.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp';
+export const LOGO_FILE_ACCEPT = '.png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml';
 
 /* ============================================================
    SHAPE

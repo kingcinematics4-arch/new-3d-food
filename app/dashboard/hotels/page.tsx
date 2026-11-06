@@ -67,7 +67,6 @@ export default function HotelsPage() {
       setBusyId(null);
     }
   }
-
   if (loading) return <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>Loading{"\u2026"}</p>;
 
   return (

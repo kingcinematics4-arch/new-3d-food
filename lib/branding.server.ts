@@ -53,6 +53,7 @@ const EXTENSION_BY_MIME: Record<LogoMimeType, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
+  'image/svg+xml': 'svg',
 };
 
 const SITE_CONTENT_ID = 'main';
@@ -312,6 +313,12 @@ export function sniffImageMime(buffer: Buffer): LogoMimeType | null {
     return 'image/webp';
   }
 
+  // SVG: starts with XML declaration or <svg tag (case-insensitive, optional leading whitespace)
+  const head = buffer.toString('ascii', 0, Math.min(buffer.length, 64)).trim();
+  if (head.startsWith('<?xml') || head.startsWith('<svg') || head.startsWith('<SVG')) {
+    return 'image/svg+xml';
+  }
+
   return null;
 }
 
@@ -417,6 +424,64 @@ export async function uploadLogo(buffer: Buffer, mime: LogoMimeType): Promise<St
  * make a successful "Remove Logo" look like an error to the owner.
  */
 export async function deleteManagedLogo(logoUrl: string | null | undefined): Promise<boolean> {
+  const objectPath = objectPathFromUrl(logoUrl ?? '');
+  if (!objectPath) return false;
+
+  try {
+    const { error } = await supabaseAdmin.storage.from(BRANDING_BUCKET).remove([objectPath]);
+    if (error) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/* ============================================================
+   HOTEL LOGOS
+   ============================================================ */
+
+function buildHotelObjectName(hotelId: string, mime: LogoMimeType): string {
+  const random = Math.random().toString(36).slice(2, 10);
+  const entropy = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+  return `hotel-logo/${hotelId}/${Date.now().toString(36)}-${random}${entropy}.${EXTENSION_BY_MIME[mime]}`;
+}
+
+/** Uploads a hotel-specific logo to the branding bucket under a per-hotel path. */
+export async function uploadHotelLogo(
+  hotelId: string,
+  buffer: Buffer,
+  mime: LogoMimeType
+): Promise<StoredLogo> {
+  assertSupabaseAdminConfigured();
+
+  const objectPath = buildHotelObjectName(hotelId, mime);
+
+  const { error } = await supabaseAdmin.storage.from(BRANDING_BUCKET).upload(objectPath, buffer, {
+    contentType: mime,
+    upsert: false,
+    cacheControl: '31536000',
+  });
+
+  if (error) {
+    if (/bucket not found|not found.*bucket/i.test(error.message)) {
+      throw new MissingBrandingBucketError();
+    }
+    throw new Error(`Could not upload the hotel logo: ${error.message}`);
+  }
+
+  const { data } = supabaseAdmin.storage.from(BRANDING_BUCKET).getPublicUrl(objectPath);
+
+  return {
+    objectPath,
+    publicUrl: data.publicUrl,
+    version: objectPath,
+    bytes: buffer.length,
+    mimeType: mime,
+  };
+}
+
+/** Removes a previously uploaded hotel logo object from the branding bucket. */
+export async function deleteHotelLogo(logoUrl: string | null | undefined): Promise<boolean> {
   const objectPath = objectPathFromUrl(logoUrl ?? '');
   if (!objectPath) return false;
 

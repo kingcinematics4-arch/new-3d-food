@@ -1,4 +1,4 @@
-import React, { useId } from "react";
+import React from "react";
 import "@/components/DinePixelLuxuryHotelCard.css";
 
 type LuxuryHotel = {
@@ -18,6 +18,7 @@ type LuxuryHotel = {
   status?: string | null;
   is_active?: boolean | null;
   slug?: string | null;
+  logo_url?: string | null;
 };
 
 type DinePixelLuxuryHotelCardProps = {
@@ -54,7 +55,6 @@ export default function DinePixelLuxuryHotelCard({
 }: DinePixelLuxuryHotelCardProps) {
   if (!hotel) return null;
 
-  const gradientId = useId();
   const isActive = hotel.is_active !== false;
   const status = isActive ? "Active" : "Inactive";
 
@@ -66,6 +66,7 @@ export default function DinePixelLuxuryHotelCard({
     plan: hotel.subscription_plan || hotel.plan || "Custom",
     date: hotel.registration_date || hotel.created_at || "—",
     status,
+    logoUrl: hotel.logo_url || null,
   };
 
   const formatted =
@@ -92,27 +93,23 @@ export default function DinePixelLuxuryHotelCard({
 
   return (
     <article className="dpx-card">
-      <div className="dpx-decoration">
-        <svg viewBox="0 0 100 100" fill="none">
-          <path d="M20 12A12 12 0 0 0 12 20" stroke="#B88A48" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
-          <path d="M80 88A12 12 0 0 0 88 80" stroke="#B88A48" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
-        </svg>
-      </div>
-
       <section className="dpx-brand">
-        <div className="dpx-monogram" aria-hidden="true">
-          <svg viewBox="0 0 100 100" fill="none">
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-                <stop stopColor="#E4D4A8" />
-                <stop offset="1" stopColor="#8F6B30" />
-              </linearGradient>
-            </defs>
-            <path d="M26 26V74" stroke={`url(#${gradientId})`} strokeWidth="7.5" strokeLinecap="round" />
-            <path d="M26 28C38 28 74 28 74 52C74 76 38 76 26 76" stroke={`url(#${gradientId})`} strokeWidth="6" strokeLinecap="round" />
-            <path d="M44 58Q56 40 68 58" stroke={`url(#${gradientId})`} strokeWidth="4.5" fill="none" strokeLinecap="round" strokeOpacity="0.85" />
-            <circle cx="56" cy="36" r="2.5" fill="#D6AD69" opacity="0.9" />
-          </svg>
+        <div className="dpx-monogram">
+          {data.logoUrl ? (
+            <img
+              src={data.logoUrl}
+              alt="Hotel logo"
+              className="dpx-logo"
+              style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+            />
+          ) : (
+            <img
+              src="/images/dine3d-logo.png"
+              alt="DinePixel"
+              className="dpx-logo"
+              style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+            />
+          )}
         </div>
 
         <div className="dpx-wordmark">DinePixel</div>
@@ -142,17 +139,6 @@ export default function DinePixelLuxuryHotelCard({
         <div className="dpx-email">
           <Info icon="mail" label="CONTACT EMAIL" value={data.email} />
         </div>
-
-        <svg className="dpx-interior" viewBox="0 0 200 140" fill="none" aria-hidden="true">
-          <rect width="200" height="140" fill="#070706" />
-          <path d="M0 92Q100 84 200 92L200 140L0 140Z" fill="#0a0a09" />
-          <circle cx="56" cy="48" r="22" fill="#B88A48" opacity="0.07" />
-          <circle cx="152" cy="44" r="18" fill="#D6AD69" opacity="0.06" />
-          <circle cx="118" cy="60" r="16" fill="#B88A48" opacity="0.07" />
-          <path d="M104 100Q118 82 132 100" stroke="#D6AD69" strokeWidth="3.5" strokeLinecap="round" opacity="0.9" />
-          <circle cx="118" cy="78" r="2" fill="#D6AD69" opacity="0.9" />
-          <path d="M0 124Q100 122 200 124" stroke="rgba(214, 173, 105, 0.12)" strokeWidth="2" fill="none" />
-        </svg>
 
         <div className="dpx-bottom">
           <span className="dpx-bottom-label">DINEPIXEL HOSPITALITY TECHNOLOGY</span>
