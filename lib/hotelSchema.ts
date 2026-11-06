@@ -46,6 +46,8 @@ export interface HotelSchema {
   customThemeConfig: boolean;
   /** public.hotels.currency exists (migration 013/014 applied). */
   currency: boolean;
+  /** public.hotels.hotel_public_id exists (migration 021 applied). */
+  hotelPublicId: boolean;
 }
 
 /**
@@ -59,5 +61,6 @@ export async function getHotelSchema(): Promise<HotelSchema> {
     menuTheme: await columnExists('hotels', 'menu_theme'),
     customThemeConfig: await columnExists('hotels', 'custom_theme_config'),
     currency: await columnExists('hotels', 'currency'),
+    hotelPublicId: await columnExists('hotels', 'hotel_public_id'),
   };
 }

@@ -44,16 +44,9 @@ export async function GET() {
     const savedThemes = await listSavedCustomThemes(owned.id);
     const activeSavedTheme = await getActiveSavedCustomTheme(owned.id);
 
-    return NextResponse.json({
-      success: true,
-      hotel: {
-        ...hotel,
-        menu_theme: hotel?.menu_theme || storedTheme || DEFAULT_MENU_THEME,
-        custom_theme_config: hotel?.custom_theme_config || storedCustomConfig || null,
-      },
-      saved_themes: savedThemes,
-      active_saved_theme_id: activeSavedTheme?.id || null,
-    });
+    const hotelOut: any = { ...hotel, menu_theme: hotel?.menu_theme || storedTheme || DEFAULT_MENU_THEME, custom_theme_config: hotel?.custom_theme_config || storedCustomConfig || null };
+    delete hotelOut.hotel_public_id; delete hotelOut.user_id;
+    return NextResponse.json({ success: true, hotel: hotelOut, saved_themes: savedThemes, active_saved_theme_id: activeSavedTheme?.id || null });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to resolve hotel' },

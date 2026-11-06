@@ -45,6 +45,7 @@ const navIcons: Record<string, React.ReactNode> = {
     </svg>
   ),
   Analytics: (
+
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M2 12L5 8L8 10L11 5L14 7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       <line x1="2" y1="14" x2="14" y2="14" stroke="currentColor" strokeWidth="1" strokeOpacity="0.4" />
@@ -69,6 +70,25 @@ const navIcons: Record<string, React.ReactNode> = {
       <circle cx="8" cy="8" r="1.6" fill="currentColor" fillOpacity="0.5" />
     </svg>
   ),
+  'Custom Themes': (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M3 3H6L8 1L10 3H13V6L16 8L13 10V13H10L8 15L6 13H3V10L0 8L3 6V3Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="1.6" fill="currentColor" fillOpacity="0.5" />
+    </svg>
+  ),
+  Hotels: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M2.5 13.5V4.8L8 2.2L13.5 4.8V13.5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M6 13.5V10H10V13.5M5 6.2H6M7.5 6.2H8.5M10 6.2H11M5 8.2H6M7.5 8.2H8.5M10 8.2H11" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+      <path d="M1.5 13.5H14.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  ),
+  Admin: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M8 1.6L9.4 2.4L11 2.1L11.7 3.6L13.2 4.3L12.9 5.9L13.7 7.3L12.9 8.7L13.2 10.3L11.7 11L11 12.5L9.4 12.2L8 13L6.6 12.2L5 12.5L4.3 11L2.8 10.3L3.1 8.7L2.3 7.3L3.1 5.9L2.8 4.3L4.3 3.6L5 2.1L6.6 2.4L8 1.6Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" />
+      <circle cx="8" cy="7.3" r="1.9" stroke="currentColor" strokeWidth="1.15" />
+    </svg>
+  ),
   Reviews: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M8 2L9.5 6H14L10.5 8.5L12 12.5L8 10L4 12.5L5.5 8.5L2 6H6.5L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
@@ -88,12 +108,23 @@ const navItems = [
   { label: 'Live Orders', href: '/dashboard/orders' },
   { label: 'QR Code Builder', href: '/dashboard/qr' },
   { label: 'Analytics', href: '/dashboard/analytics' },
-  { label: 'Menu Design', href: '/dashboard/customize' },
-  { label: 'Menu Themes', href: '/dashboard/menu-theme' },
-  { label: 'Custom Themes', href: '/dashboard/custom-themes' },
+  { label: 'Hotels', href: '/dashboard/hotels' },
+  {
+    label: 'Admin',
+    children: [
+      { label: 'Menu Design', href: '/dashboard/customize' },
+      { label: 'Menu Themes', href: '/dashboard/menu-theme' },
+      { label: 'Custom Themes', href: '/dashboard/custom-themes' },
+    ],
+  },
   { label: 'Reviews', href: '/dashboard/reviews' },
   { label: 'Restaurant Profile', href: '/dashboard/settings' },
-];
+] as const;
+
+type NavLeaf = { label: string; href: string };
+type NavGroup = { label: string; children: readonly NavLeaf[] };
+type NavItem = NavLeaf | NavGroup;
+const isGroup = (item: NavItem): item is NavGroup => 'children' in item;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -109,6 +140,18 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { hotel, loading: hotelLoading } = useHotel();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [dashboardAdminAuthed, setDashboardAdminAuthed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const check = async () => {
+      try { const r = await fetch('/api/dashboard-admin/auth/session', { cache: 'no-store' }); const j = await r.json().catch(()=>({})); if (alive) setDashboardAdminAuthed(!!j.authenticated); }
+      catch { if (alive) setDashboardAdminAuthed(false); }
+    };
+    check();
+    window.addEventListener('dashboard-admin-session', check);
+    return () => { alive = false; window.removeEventListener('dashboard-admin-session', check); };
+  }, []);
 
   // Real records only — no invented placeholders when Supabase has the data.
   const restaurantName = hotel?.name?.trim() || '';
@@ -140,7 +183,11 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
     prevHotelId.current = currentHotelId;
   }, [hotel?.id]);
 
-  const currentPage = navItems.find((n) => n.href === pathname)?.label || 'Dashboard';
+  const allLeaves = navItems.flatMap((n) => (isGroup(n as NavItem) ? (n as NavGroup).children : [n as NavLeaf]));
+  const currentPage = allLeaves.find((n) => n.href === pathname)?.label || 'Dashboard';
+  const activeGroup = (navItems as readonly NavItem[]).find((n): n is NavGroup => isGroup(n) && n.children.some((c) => c.href === pathname));
+
+  useEffect(() => { if (activeGroup) setOpenGroup(activeGroup.label); }, [activeGroup?.label]);
 
   const brandSubtitle = loading ? (
     <span
@@ -209,7 +256,146 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
 
           {/* Nav */}
           <nav className="px-3 py-5 flex flex-col gap-0.5">
-            {navItems.map((item) => {
+            {(navItems as readonly NavItem[]).map((item) => {
+              if (isGroup(item)) {
+                const groupActive = item.children.some((c) => c.href === pathname);
+                const isAdminGroup = item.label === 'Admin';
+                const adminLandingActive = pathname === '/dashboard/admin';
+                const open = (isAdminGroup ? (dashboardAdminAuthed || adminLandingActive) : false) || openGroup === item.label || groupActive;
+                return (
+                  <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {isAdminGroup && !dashboardAdminAuthed && !adminLandingActive ? (
+                      <Link
+                        href="/dashboard/admin"
+                        onClick={() => setSidebarOpen(false)}
+                        style={{
+                          position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.875rem', borderRadius: 5, fontSize: '0.8125rem', fontWeight: adminLandingActive ? 500 : 400, color: adminLandingActive ? 'var(--text-primary)' : 'var(--text-muted)', background: 'transparent', border: '1px solid transparent', transition: 'color 200ms, background 200ms', textDecoration: 'none', width: '100%'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(243,239,231,0.03)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = adminLandingActive ? 'var(--text-primary)' : 'var(--text-muted)'; }}
+                      >
+                        <span aria-hidden="true" style={{ position: 'absolute', left: -12, top: '50%', transform: 'translateY(-50%)', width: 2, height: adminLandingActive ? 18 : 0, background: 'var(--gold)', transition: 'height 200ms' }} />
+                        <span style={{ opacity: adminLandingActive ? 1 : 0.55, flexShrink: 0, color: adminLandingActive ? 'var(--gold)' : 'inherit' }}>{navIcons[item.label]}</span>
+                        <span style={{ flex: 1 }}>{item.label}</span>
+                      </Link>
+                    ) : (<>
+                    <button
+                      type="button"
+                      onClick={() => setOpenGroup((v) => (v === item.label ? null : item.label))}
+                      aria-expanded={open}
+                      style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.5rem 0.875rem',
+                        borderRadius: 5,
+                        fontSize: '0.8125rem',
+                        fontWeight: groupActive ? 500 : 400,
+                        color: groupActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                        background: 'transparent',
+                        border: '1px solid transparent',
+                        transition: 'color 200ms, background 200ms',
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        width: '100%',
+                        textAlign: 'left',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!groupActive) {
+                          e.currentTarget.style.background = 'rgba(243,239,231,0.03)';
+                          e.currentTarget.style.color = 'var(--text-primary)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!groupActive) {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = 'var(--text-muted)';
+                        }
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          position: 'absolute',
+                          left: -12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: 2,
+                          height: groupActive ? 18 : 0,
+                          background: 'var(--gold)',
+                          transition: 'height 200ms',
+                        }}
+                      />
+                      <span style={{ opacity: groupActive ? 1 : 0.55, flexShrink: 0, color: groupActive ? 'var(--gold)' : 'inherit' }}>
+                        {navIcons[item.label]}
+                      </span>
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      <svg
+                        width="12" height="12" viewBox="0 0 12 12" fill="none"
+                        style={{ opacity: 0.55, transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms' }}
+                        aria-hidden="true"
+                      >
+                        <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateRows: open ? '1fr' : '0fr',
+                        transition: 'grid-template-rows 220ms ease',
+                      }}
+                    >
+                      <div style={{ overflow: 'hidden', minHeight: 0 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingLeft: 12, marginLeft: 12, borderLeft: '1px solid var(--border-subtle)' }}>
+                          {item.children.map((child) => {
+                            const isActive = pathname === child.href;
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setSidebarOpen(false)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.625rem',
+                                  padding: '0.4375rem 0.75rem',
+                                  borderRadius: 5,
+                                  fontSize: '0.8125rem',
+                                  fontWeight: isActive ? 500 : 400,
+                                  color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                                  background: isActive ? 'rgba(243,239,231,0.03)' : 'transparent',
+                                  border: '1px solid transparent',
+                                  transition: 'color 200ms, background 200ms',
+                                  textDecoration: 'none',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isActive) {
+                                    e.currentTarget.style.background = 'rgba(243,239,231,0.03)';
+                                    e.currentTarget.style.color = 'var(--text-primary)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isActive) {
+                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.color = 'var(--text-muted)';
+                                  }
+                                }}
+                              >
+                                <span style={{ opacity: isActive ? 1 : 0.5, flexShrink: 0, color: isActive ? 'var(--gold)' : 'inherit' }}>
+                                  {navIcons[child.label]}
+                                </span>
+                                <span>{child.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    </>)}
+                  </div>
+                );
+              }
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -244,7 +430,6 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
                     }
                   }}
                 >
-                  {/* Champagne active indicator */}
                   <span
                     aria-hidden="true"
                     style={{

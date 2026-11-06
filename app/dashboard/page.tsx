@@ -194,6 +194,20 @@ function formatOrderDateIST(dateStr?: string | null): string {
 }
 
 const TZ = 'Asia/Kolkata';
+
+function getGreeting(now: Date): string {
+  const hourStr = new Intl.DateTimeFormat('en-GB', {
+    timeZone: TZ,
+    hour: '2-digit',
+    hour12: false,
+  }).format(now);
+  const hour = Number(hourStr);
+  if (hour >= 5 && hour <= 11) return 'Good morning';
+  if (hour >= 12 && hour <= 16) return 'Good afternoon';
+  if (hour >= 17 && hour <= 20) return 'Good evening';
+  return 'Good night';
+}
+
 function kolkataYMD(d: Date) {
   const p = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
   const g = (t: string) => p.find((x) => x.type === t)?.value || '';
@@ -229,6 +243,8 @@ export default function DashboardOverview() {
   const { stats, refetch: refetchStats } = useDashboardStats(hotel?.id || null);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
+  const greeting = getGreeting(now);
+  const hotelName = (hotel?.name || '').trim();
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
 
@@ -264,7 +280,7 @@ export default function DashboardOverview() {
               margin: '0.5rem 0 0',
             }}
           >
-            Good evening
+            {hotelName ? `${greeting}, ${hotelName}` : greeting}
           </h1>
           <p style={{ margin: '0.5rem 0 0', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
             Loading your restaurant data…
@@ -310,7 +326,7 @@ export default function DashboardOverview() {
               margin: '0.5rem 0 0',
             }}
           >
-            Good evening
+            {hotelName ? `${greeting}, ${hotelName}` : greeting}
           </h1>
           <p
             style={{

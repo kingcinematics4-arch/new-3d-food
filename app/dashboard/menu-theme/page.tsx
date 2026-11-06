@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import DashboardAdminGate from '@/components/dashboard/DashboardAdminGate';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useHotel } from '@/lib/useHotel';
@@ -14,7 +15,7 @@ import CustomThemeBuilder from '@/components/menu/CustomThemeBuilder';
    a fully personalized Custom Theme with real-time preview.
    ============================================================ */
 
-export default function MenuThemePage() {
+function MenuThemeContent() {
   const { hotel, loading: hotelLoading, refetch } = useHotel();
   const [selectedTheme, setSelectedTheme] = useState<MenuThemeId | null>(null);
   const [saving, setSaving] = useState(false);
@@ -466,3 +467,5 @@ function ThemeCard({ theme, isSelected, isActive, onSelect, onOpenStudio }: Them
     </div>
   );
 }
+
+export default function MenuThemePage(){ return <DashboardAdminGate title="Menu Themes"><MenuThemeContent /></DashboardAdminGate>; }

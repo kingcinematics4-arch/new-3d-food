@@ -119,60 +119,22 @@ export async function PUT(request: Request) {
       .select()
       .single();
 
+        const strip=(h:any)=>{ if(!h||typeof h!='object') return h; const o={...h}; delete o.hotel_public_id; delete o.user_id; return o; };
     if (error) {
-      // If error is due to missing columns (menu_theme, custom_theme_config):
-      // strip them and retry so older schemas still save the other fields.
       const { menu_theme, custom_theme_config, ...rest } = updateData;
-
       if (Object.keys(rest).length > 0) {
-        const { data: retryData } = await supabaseAdmin
-          .from('hotels')
-          .update(rest)
-          .eq('id', hotelId)
-          .select()
-          .single();
-
+        const { data: retryData } = await supabaseAdmin.from('hotels').update(rest).eq('id', hotelId).select().single();
         const storedTheme = await getStoredMenuTheme(hotelId);
         const storedCustomConfig = await getStoredCustomTheme(hotelId);
-
-        return NextResponse.json({
-          success: true,
-          hotel: {
-            ...retryData,
-            menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME,
-            custom_theme_config: storedCustomConfig || custom_theme_config || null,
-          },
-        });
+        return NextResponse.json({ success: true, hotel: strip({ ...retryData, menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME, custom_theme_config: storedCustomConfig || custom_theme_config || null }) });
       }
-
-      // Nothing left to update in the main row; return current state.
-      const { data: currentHotel } = await supabaseAdmin
-        .from('hotels')
-        .select('*')
-        .eq('id', hotelId)
-        .single();
-
+      const { data: currentHotel } = await supabaseAdmin.from('hotels').select('*').eq('id', hotelId).single();
       const storedTheme = await getStoredMenuTheme(hotelId);
       const storedCustomConfig = await getStoredCustomTheme(hotelId);
-
-      return NextResponse.json({
-        success: true,
-        hotel: {
-          ...currentHotel,
-          menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME,
-          custom_theme_config: storedCustomConfig || custom_theme_config || null,
-        },
-      });
+      return NextResponse.json({ success: true, hotel: strip({ ...currentHotel, menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME, custom_theme_config: storedCustomConfig || custom_theme_config || null }) });
     }
-
     const storedCustomConfig = await getStoredCustomTheme(hotelId);
-    return NextResponse.json({
-      success: true,
-      hotel: {
-        ...data,
-        custom_theme_config: data?.custom_theme_config || storedCustomConfig || null,
-      },
-    });
+    return NextResponse.json({ success: true, hotel: strip({ ...data, custom_theme_config: data?.custom_theme_config || storedCustomConfig || null }) });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to update hotel settings' },

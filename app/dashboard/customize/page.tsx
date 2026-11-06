@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import DashboardAdminGate from '@/components/dashboard/DashboardAdminGate';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useHotel, useHotelCustomization, useMenuItems } from '@/lib/useHotel';
@@ -34,7 +35,7 @@ const TYPOGRAPHY = [
   { value: 'Roboto', label: 'Neutral Grotesk' },
 ];
 
-export default function CustomizeMenuPage() {
+function CustomizeMenuContent() {
   const { hotel, loading: hotelLoading } = useHotel();
   const {
     customization,
@@ -677,3 +678,5 @@ dishes.map((dish, i) => {
     </div>
   );
 }
+
+export default function CustomizeMenuPage(){ return <DashboardAdminGate title="Menu Design"><CustomizeMenuContent /></DashboardAdminGate>; }

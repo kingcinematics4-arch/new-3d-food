@@ -4,6 +4,7 @@ import { findHotelOwnedByUser } from './hotelAccess';
 import { z } from 'zod';
 import { getAuthCallbackUrl } from './siteUrl';
 import { isEmailRateLimitError } from './authThrottle';
+import { generateUniqueHotelPublicId } from './hotelPublicId';
 
 /**
  * In-flight signups keyed by email.
@@ -184,10 +185,12 @@ async function performHotelOnboarding(
  * exactly the half-onboarded state recoverIncompleteOnboarding exists to fix.
  */
 async function createHotelForUser(userId: string, data: SignUpInput) {
+  const hotelPublicId = await generateUniqueHotelPublicId();
   const { data: hotelData, error: hotelError } = await supabaseAdmin
     .from('hotels')
     .insert({
       user_id: userId,
+      hotel_public_id: hotelPublicId,
       name: data.hotel_name,
       slug: generateSlug(data.hotel_name),
       owner_name: data.owner_name,

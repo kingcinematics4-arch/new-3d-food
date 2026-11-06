@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import DashboardAdminGate from '@/components/dashboard/DashboardAdminGate';
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useHotel } from '@/lib/useHotel';
@@ -114,7 +115,7 @@ const BTN_GHOST = `${BUTTON_STYLE} border-white/20 text-neutral-300 hover:border
 const BTN_DANGER = `${BUTTON_STYLE} border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300`;
 const BTN_OUTLINE = `${BUTTON_STYLE} border-white/20 text-neutral-400 hover:border-white hover:text-white`;
 
-export default function CustomThemesPage() {
+function CustomThemesContent() {
   const { hotel, loading: hotelLoading, refetch } = useHotel();
   const [themes, setThemes] = useState<SavedTheme[]>([]);
   const [loading, setLoading] = useState(true);
@@ -685,3 +686,5 @@ function CreateThemeEditor({ hotel, themeToEdit, onDone }: CreateThemeEditorProp
     </div>
   );
 }
+
+export default function CustomThemesPage(){ return <DashboardAdminGate title="Custom Themes"><CustomThemesContent /></DashboardAdminGate>; }
