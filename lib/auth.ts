@@ -202,7 +202,7 @@ async function createHotelForUser(userId: string, data: SignUpInput) {
         city: data.city || null,
         address: data.address || null,
         is_active: true,
-        subscription_plan: 'starter',
+        subscription_plan: 'BASIC',
       })
       .select()
       .single();

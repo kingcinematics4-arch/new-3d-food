@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseAdmin, assertSupabaseAdminConfigured } from '@/lib/supabaseAdmin';
 import { getHotelSchema } from '@/lib/hotelSchema';
 import { assignHotelPublicIdIfMissing, isValidHotelPublicId } from '@/lib/hotelPublicId';
@@ -22,6 +22,7 @@ function pickHotel(row: any) {
     is_active: row.is_active !== false,
     created_at: row.created_at ?? null,
     hotel_public_id: row.hotel_public_id ?? null,
+    subscription_plan: (function(v:any){const p=typeof v==='string'?v.trim().toUpperCase():''; if(p==='STARTER'||!p) return 'BASIC'; return ['BASIC','PRO','ULTRA','CUSTOM'].includes(p)?p:'BASIC';})(row.subscription_plan),
   };
 }
 
@@ -35,7 +36,7 @@ export async function GET() {
 
     const schema = await getHotelSchema();
     const idCol = (schema as any).hotelPublicId ? ', hotel_public_id' : '';
-    const base = `id, name, slug, logo_url, city, owner_name, email, phone, is_active, created_at${idCol}`;
+    const base = `id, name, slug, logo_url, city, owner_name, email, phone, is_active, created_at, subscription_plan${idCol}`;
 
     let rows: any[] = [];
     const canManage = !!admin;
