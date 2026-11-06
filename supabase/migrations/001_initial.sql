@@ -201,7 +201,9 @@ CREATE TABLE IF NOT EXISTS public.orders (
   tax numeric(10,2) DEFAULT 0,
   service_charge numeric(10,2) DEFAULT 0,
   total_amount numeric(10,2) NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  paid_at timestamptz
 );
 
 -- order_items

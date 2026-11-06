@@ -650,6 +650,18 @@ export default function LiveOrdersPage() {
                       <span className={`d3-badge ${STATUS_CLASS[normalise(order.status)] || STATUS_CLASS.cancelled}`} style={{ fontSize: '0.625rem' }}>
                         {STATUS_LABEL[normalise(order.status)] || order.status}
                       </span>
+                      <span
+                        className="d3-badge d3-badge-payment"
+                        style={{
+                          fontSize: '0.625rem',
+                          marginLeft: 6,
+                          background: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.12)' : 'rgba(196,102,88,0.12)',
+                          borderColor: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.35)' : 'rgba(196,102,88,0.35)',
+                          color: normalise(order.payment_status) === 'paid' ? '#10b981' : '#C46658',
+                        }}
+                      >
+                        {normalise(order.payment_status) === 'paid' ? 'PAID' : 'UNPAID'}
+                      </span>
                     </div>
                     <p style={{ margin: '0.25rem 0 0', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{order.customer_name || 'Guest'}</span>
@@ -729,49 +741,82 @@ export default function LiveOrdersPage() {
                   )}
 
                   {/* Total — pinned */}
-                  {/* Quick Process & Cancel */}
-                  {normalise(order.status) !== 'cancelled' && normalise(order.status) !== 'completed' && (
+                  {/* Process & Payment actions */}
+                  {normalise(order.status) === 'completed' ? (
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
-                      {(() => {
-                        const s = normalise(order.status);
-                        let nextStatus = '';
-                        let label = '';
-                        if (s === 'pending' || s === 'placed') { nextStatus = 'accepted'; label = 'ACCEPT ORDER'; }
-                        else if (s === 'accepted') { nextStatus = 'preparing'; label = 'START PREPARING'; }
-                        else if (s === 'preparing') { nextStatus = 'ready'; label = 'MARK AS READY'; }
-                        else if (s === 'ready') { nextStatus = 'completed'; label = 'COMPLETE ORDER'; }
-                        else { return null; }
-                        return (
+                      {normalise(order.payment_status) !== 'paid' && (
+                        <button
+                          type="button"
+                          disabled={updatingOrderIds.has(order.id)}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              await updatePaymentStatus(order.id, 'paid');
+                            } catch (err: any) {
+                              setPaymentError(err?.message || 'Failed to mark as paid');
+                            }
+                          }}
+                          className="d3-btn-primary"
+                          style={{
+                            flex: 1,
+                            fontSize: '0.72rem',
+                            padding: '0.375rem 0.5rem',
+                            whiteSpace: 'nowrap',
+                            opacity: updatingOrderIds.has(order.id) ? 0.6 : 1,
+                            background: 'var(--gold)',
+                            color: '#0b0b0a',
+                          }}
+                        >
+                          {updatingOrderIds.has(order.id) ? 'Updating...' : 'MARK AS PAID'}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
+                      {normalise(order.status) !== 'cancelled' && (
+                        <>
+                          {(() => {
+                            const s = normalise(order.status);
+                            let nextStatus = '';
+                            let label = '';
+                            if (s === 'pending' || s === 'placed') { nextStatus = 'accepted'; label = 'ACCEPT ORDER'; }
+                            else if (s === 'accepted') { nextStatus = 'preparing'; label = 'START PREPARING'; }
+                            else if (s === 'preparing') { nextStatus = 'ready'; label = 'MARK AS READY'; }
+                            else if (s === 'ready') { nextStatus = 'completed'; label = 'COMPLETE ORDER'; }
+                            else { return null; }
+                            return (
+                              <button
+                                type="button"
+                                disabled={updatingOrderIds.has(order.id)}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await updateOrderStatus(order.id, nextStatus);
+                                  } catch (err: any) {
+                                    setUpdateError(err?.message || 'Failed to update order');
+                                  }
+                                }}
+                                className="d3-btn-primary"
+                                style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                              >
+                                {updatingOrderIds.has(order.id) ? 'Updating...' : 'QUICK PROCESS'}
+                              </button>
+                            );
+                          })()}
                           <button
                             type="button"
                             disabled={updatingOrderIds.has(order.id)}
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.stopPropagation();
-                              try {
-                                await updateOrderStatus(order.id, nextStatus);
-                              } catch (err: any) {
-                                setUpdateError(err?.message || 'Failed to update order');
-                              }
+                              setModal({ order, item: orderItems[0] || { id: order.id, name: orderItems.length > 0 ? orderItems.length + ' items' : 'Order', quantity: 1, price: 0, notes: null }, orderItems, forceCancel: true });
                             }}
-                            className="d3-btn-primary"
-                            style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
+                            className="d3-btn-inline d3-btn-danger"
+                            style={{ fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
                           >
-                            {updatingOrderIds.has(order.id) ? 'Updating...' : 'QUICK PROCESS'}
+                            CANCEL ORDER
                           </button>
-                        );
-                      })()}
-                      <button
-                        type="button"
-                        disabled={updatingOrderIds.has(order.id)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setModal({ order, item: orderItems[0] || { id: order.id, name: orderItems.length > 0 ? orderItems.length + ' items' : 'Order', quantity: 1, price: 0, notes: null }, orderItems, forceCancel: true });
-                        }}
-                        className="d3-btn-inline d3-btn-danger"
-                        style={{ fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                      >
-                        CANCEL ORDER
-                      </button>
+                        </>
+                      )}
                     </div>
                   )}
 

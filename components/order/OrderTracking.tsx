@@ -121,6 +121,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const [showItemCancelDialog, setShowItemCancelDialog] = useState<string | null>(null);
   const [itemQtyUpdating, setItemQtyUpdating] = useState<string | null>(null);
   const [itemQtyError, setItemQtyError] = useState<string | null>(null);
+  const [paymentReviewMessage, setPaymentReviewMessage] = useState<string | null>(null);
 
   const CANCELLATION_REASONS = [
     'Dish not needed anymore',
@@ -135,6 +136,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   orderRef.current = order;
 
   const redirectTriggeredRef = useRef(false);
+  const paymentRedirectTriggeredRef = useRef(false);
 
   const backHref = hotelSlug || order?.hotel_slug
     ? `/menu/${hotelSlug || order?.hotel_slug}`
@@ -368,6 +370,40 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
     }, 1500);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order, order?.status]);
+
+  // -----------------------------------------------------------------------
+  // Auto-redirect to Google Review URL once payment is marked PAID
+  //
+  // • Triggered only when payment_status becomes 'paid' (staff marks it)
+  // • Only once per order (sessionStorage guard survives refresh)
+  // • Skipped entirely when no Google Review URL is configured
+  // • Redirect happens on the guest's device via real-time / polling
+  // -----------------------------------------------------------------------
+  useEffect(() => {
+    if (!order) return;
+    const paymentStatus = (order.payment_status || '').trim().toLowerCase();
+    if (paymentStatus !== 'paid' || paymentRedirectTriggeredRef.current) return;
+
+    const reviewUrl = (order as any).google_review_url;
+    if (!reviewUrl) {
+      setPaymentReviewMessage('Payment confirmed. A Google Review link has not been configured for this hotel.');
+      return;
+    }
+
+    const sessionKey = `dpx_payment_review_redirect_${order.id}`;
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(sessionKey)) return;
+
+    paymentRedirectTriggeredRef.current = true;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(sessionKey, '1');
+    }
+
+    // Small delay so the guest sees the paid confirmation first.
+    setTimeout(() => {
+      try { window.location.href = reviewUrl; } catch {}
+    }, 1500);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order, order?.payment_status]);
 
   // -----------------------------------------------------------------------
   // Derived display values
@@ -780,6 +816,18 @@ const last = i === order.items.length - 1;
             {itemQtyError && (
               <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(196,102,88,0.06)', border: '1px solid rgba(196,102,88,0.25)', borderRadius: 8, color: '#C46658', fontSize: '0.75rem' }}>
                 {itemQtyError}
+              </div>
+            )}
+
+            {/* Payment review message */}
+            {paymentReviewMessage && (
+              <div style={{ padding: '0.875rem 1.25rem', marginBottom: '1.5rem', background: 'rgba(184,164,122,0.08)', border: '1px solid rgba(184,164,122,0.22)', borderRadius: 10, color: 'var(--text-primary)', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ width: 14, height: 14, flexShrink: 0 }}>
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 6 4 9 9 2" />
+                  </svg>
+                </span>
+                <span>{paymentReviewMessage}</span>
               </div>
             )}
 

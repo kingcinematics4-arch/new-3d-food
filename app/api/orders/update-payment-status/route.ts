@@ -1,7 +1,13 @@
 // app/api/orders/update-payment-status/route.ts
-// Toggle the payment_status of an order between 'paid' and 'unpaid'.
+// Set the payment_status of an order to 'paid' (or back to 'unpaid').
 // Payment status is fully independent of order preparation status
 // (pending/accepted/preparing/ready/completed).
+//
+// Business rules:
+//   • Only orders in 'completed' status can be marked as PAID.
+//   • Only orders NOT cancelled can be marked as PAID.
+//   • Duplicate/no-op writes return success without touching the DB.
+//   • paid_at is set when transitioning to 'paid', cleared on 'unpaid'.
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
@@ -26,10 +32,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // Fetch current order to validate ownership and transition
+    // Fetch current order to validate ownership, status and transition
     const { data: currentOrder, error: fetchError } = await supabaseAdmin
       .from('orders')
-      .select('id, hotel_id, payment_status')
+      .select('id, hotel_id, payment_status, status')
       .eq('id', validated.order_id)
       .single();
 
@@ -48,7 +54,26 @@ export async function POST(request: Request) {
       });
     }
 
-    // Only toggle if different (avoid no-op writes)
+    const isCompleted = (currentOrder.status || '').trim().toLowerCase() === 'completed';
+    const isCancelled = (currentOrder.status || '').trim().toLowerCase() === 'cancelled';
+
+    // PAID can only be set on a completed, non-cancelled order
+    if (validated.payment_status === 'paid') {
+      if (isCancelled) {
+        return new NextResponse(JSON.stringify({ success: false, error: 'Cannot mark a cancelled order as paid.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
+      }
+      if (!isCompleted) {
+        return new NextResponse(JSON.stringify({ success: false, error: 'Order must be completed before payment can be marked.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
+      }
+    }
+
+    // Duplicate/no-op writes return success without touching the DB
     if (currentOrder.payment_status === validated.payment_status) {
       return new NextResponse(JSON.stringify({ success: true, order: currentOrder }), {
         status: 200,
@@ -56,10 +81,22 @@ export async function POST(request: Request) {
       });
     }
 
+    // Build update payload: payment_status + paid_at timestamp
+    const now = new Date().toISOString();
+    const updatePayload: Record<string, any> = {
+      payment_status: validated.payment_status,
+      updated_at: now,
+    };
+    if (validated.payment_status === 'paid') {
+      updatePayload.paid_at = now;
+    } else {
+      updatePayload.paid_at = null;
+    }
+
     // Update payment status only — order status is untouched
     const { data: updatedOrder, error: updateError } = await supabaseAdmin
       .from('orders')
-      .update({ payment_status: validated.payment_status })
+      .update(updatePayload)
       .eq('id', validated.order_id)
       .select()
       .single();
