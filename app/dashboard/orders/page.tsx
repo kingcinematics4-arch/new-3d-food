@@ -56,6 +56,38 @@ function formatOrderDateIST(dateStr?: string | null): string {
   }).format(d); // e.g. "1 Jun 2026"
 }
 
+const TZ = 'Asia/Kolkata';
+function kolkataYMD(d: Date) {
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+  const g = (t: string) => p.find((x) => x.type === t)?.value || '';
+  return { y: +g('year'), m: +g('month'), d: +g('day') };
+}
+function diffDaysIST(a: Date, b: Date) {
+  const A = kolkataYMD(a), B = kolkataYMD(b);
+  const da = Date.UTC(A.y, A.m - 1, A.d);
+  const db = Date.UTC(B.y, B.m - 1, B.d);
+  return Math.round((da - db) / 86400000);
+}
+function formatOrderTimeIST(dateStr?: string | null, now?: Date): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return '';
+  const ref = now || new Date();
+  const mins = Math.floor((ref.getTime() - d.getTime()) / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const dayDiff = diffDaysIST(ref, d);
+  const time = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+  if (dayDiff === 1) return `Yesterday, ${time}`;
+  if (dayDiff >= 2 && dayDiff <= 6) {
+    const wd = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(d);
+    return `${wd}, ${time}`;
+  }
+  return formatOrderDateIST(dateStr);
+}
+
 const TABS = ['all', 'pending', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
 const PAYMENT_FILTERS = ['all', 'paid', 'unpaid'];
 const PAYMENT_LABEL: Record<string, string> = { all: 'All', paid: 'Paid', unpaid: 'Unpaid' };
@@ -389,6 +421,11 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
 export default function LiveOrdersPage() {
   const { hotel, loading: hotelLoading } = useHotel();
   const { orders, updateOrderStatus, updatePaymentStatus, updatingOrderIds } = useOrders(hotel?.id || null);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
@@ -614,8 +651,14 @@ export default function LiveOrdersPage() {
                         {STATUS_LABEL[normalise(order.status)] || order.status}
                       </span>
                     </div>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {order.customer_name || 'Guest'} &middot; {minsAgo} min ago
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{order.customer_name || 'Guest'}</span>
+                      {formatOrderTimeIST(order.created_at, now) && (
+                        <>
+                          <span style={{ color: 'var(--text-dimmed)', opacity: 0.6 }} aria-hidden="true">·</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-dimmed)' }}>{formatOrderTimeIST(order.created_at, now)}</span>
+                        </>
+                      )}
                     </p>
                   </div>
 

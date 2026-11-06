@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useHotel, useOrders, useDashboardStats } from '@/lib/useHotel';
 import { formatPrice } from '@/lib/menu';
@@ -193,10 +193,42 @@ function formatOrderDateIST(dateStr?: string | null): string {
   }).format(d); // e.g. "1 Jun 2026"
 }
 
+const TZ = 'Asia/Kolkata';
+function kolkataYMD(d: Date) {
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+  const g = (t: string) => p.find((x) => x.type === t)?.value || '';
+  return { y: +g('year'), m: +g('month'), d: +g('day') };
+}
+function diffDaysIST(a: Date, b: Date) {
+  const A = kolkataYMD(a), B = kolkataYMD(b);
+  return Math.round((Date.UTC(A.y, A.m - 1, A.d) - Date.UTC(B.y, B.m - 1, B.d)) / 86400000);
+}
+function formatOrderTimeIST(dateStr?: string | null, now?: Date): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return '';
+  const ref = now || new Date();
+  const mins = Math.floor((ref.getTime() - d.getTime()) / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const dayDiff = diffDaysIST(ref, d);
+  const time = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+  if (dayDiff === 1) return `Yesterday, ${time}`;
+  if (dayDiff >= 2 && dayDiff <= 6) {
+    const wd = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(d);
+    return `${wd}, ${time}`;
+  }
+  return formatOrderDateIST(dateStr);
+}
+
 export default function DashboardOverview() {
   const { hotel, loading: hotelLoading } = useHotel();
   const { orders, refetch: refetchOrders } = useOrders(hotel?.id || null);
   const { stats, refetch: refetchStats } = useDashboardStats(hotel?.id || null);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
   const hotelSlug = hotel?.slug || '';
   const menuHref = hotelSlug ? `/menu/${hotelSlug}` : '/dashboard/settings';
 
@@ -403,8 +435,14 @@ export default function DashboardOverview() {
                         {formatOrderDateIST(order.created_at)}
                       </span>
                     )}
-                    <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 3 }}>
-                      {order.table_number || '—'} · {order.customer_name || '—'}
+                    <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 3 }}>
+                      <span>{order.table_number || '—'} · {order.customer_name || '—'}</span>
+                      {formatOrderTimeIST(order.created_at, now) && (
+                        <>
+                          <span style={{ opacity: 0.6 }} aria-hidden="true">·</span>
+                          <span style={{ fontSize: '12px' }}>{formatOrderTimeIST(order.created_at, now)}</span>
+                        </>
+                      )}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
