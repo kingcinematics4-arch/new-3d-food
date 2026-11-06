@@ -10,20 +10,25 @@ export default function DashboardAdminGate({ children }: { children: React.React
 
   useEffect(() => {
     let alive = true;
+    const deny = async () => {
+      try { await fetch('/api/dashboard-admin/auth/logout', { method: 'POST', keepalive: true, cache: 'no-store' }); } catch {}
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('dashboard-admin-session'));
+      if (alive) router.replace(`/dashboard/admin?next=${encodeURIComponent(pathname || '/dashboard/admin')}`);
+    };
     (async () => {
       try {
         const r = await fetch('/api/dashboard-admin/auth/session', { cache: 'no-store' });
         const j = await r.json().catch(() => ({}));
         if (!alive) return;
         if (j.authenticated) setOk(true);
-        else router.replace(`/dashboard/admin?next=${encodeURIComponent(pathname || '/dashboard/admin')}`);
+        else await deny();
       } catch {
-        if (alive) router.replace(`/dashboard/admin?next=${encodeURIComponent(pathname || '/dashboard/admin')}`);
+        if (alive) await deny();
       } finally {
         if (alive) setChecking(false);
       }
     })();
-    const on = () => { if (!alive) return; fetch('/api/dashboard-admin/auth/session', { cache: 'no-store' }).then(r=>r.json()).then(j=>{ if(!j.authenticated) router.replace('/dashboard/admin'); else setOk(true); }).catch(()=>{}); };
+    const on = () => { if (!alive) return; fetch('/api/dashboard-admin/auth/session', { cache: 'no-store' }).then(r=>r.json()).then(j=>{ if(!j.authenticated) deny(); else setOk(true); }).catch(()=>{ deny(); }); };
     window.addEventListener('dashboard-admin-session', on);
     return () => { alive = false; window.removeEventListener('dashboard-admin-session', on); };
   }, [pathname, router]);

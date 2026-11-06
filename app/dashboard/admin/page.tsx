@@ -76,7 +76,7 @@ export default function DashboardAdminLanding() {
         <div>
           <span className="d3-eyebrow" style={{ fontSize: '0.5625rem', color: 'var(--gold-dim)' }}>Authenticated</span>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.9rem,3.5vw,2.6rem)', fontWeight: 500, color: 'var(--text-primary)', margin: '0.5rem 0 0', letterSpacing: '-0.025em' }}>Admin</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', marginTop: '0.5rem', maxWidth: '60ch' }}>Admin access is unlocked for this session. Use the sections below — you won’t be asked for the password again while the session is valid.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', marginTop: '0.5rem', maxWidth: '60ch' }}>Admin access is unlocked while you stay in the Admin section. Leaving Admin will lock it automatically.</p>
         </div>
         <button type="button" className="d3-btn-ghost" onClick={logout}>Lock Admin</button>
       </header>

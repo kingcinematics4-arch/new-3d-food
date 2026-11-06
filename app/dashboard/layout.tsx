@@ -140,18 +140,37 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { hotel, loading: hotelLoading } = useHotel();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const ADMIN_SECTION = ['/dashboard/admin', '/dashboard/customize', '/dashboard/menu-theme', '/dashboard/custom-themes'];
+  const isInAdminSection = (p: string | null) => !!p && ADMIN_SECTION.some((a) => p === a || p.startsWith(a + '/'));
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [dashboardAdminAuthed, setDashboardAdminAuthed] = useState(false);
+  const wasInAdmin = useRef(isInAdminSection(pathname));
+
+  const lockAdmin = async (notify = true) => {
+    try { await fetch('/api/dashboard-admin/auth/logout', { method: 'POST', keepalive: true, cache: 'no-store' }); } catch {}
+    setDashboardAdminAuthed(false);
+    setOpenGroup((g) => (g === 'Admin' ? null : g));
+    if (notify && typeof window !== 'undefined') window.dispatchEvent(new Event('dashboard-admin-session'));
+  };
+
   useEffect(() => {
     let alive = true;
+    const inAdmin = isInAdminSection(pathname);
+    if (wasInAdmin.current && !inAdmin) {
+      wasInAdmin.current = inAdmin;
+      lockAdmin();
+      return () => { alive = false; };
+    }
+    wasInAdmin.current = inAdmin;
     const check = async () => {
+      if (!isInAdminSection(pathname)) { if (alive) setDashboardAdminAuthed(false); return; }
       try { const r = await fetch('/api/dashboard-admin/auth/session', { cache: 'no-store' }); const j = await r.json().catch(()=>({})); if (alive) setDashboardAdminAuthed(!!j.authenticated); }
       catch { if (alive) setDashboardAdminAuthed(false); }
     };
     check();
     window.addEventListener('dashboard-admin-session', check);
     return () => { alive = false; window.removeEventListener('dashboard-admin-session', check); };
-  }, []);
+  }, [pathname]);
 
   // Real records only — no invented placeholders when Supabase has the data.
   const restaurantName = hotel?.name?.trim() || '';
@@ -261,7 +280,8 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
                 const groupActive = item.children.some((c) => c.href === pathname);
                 const isAdminGroup = item.label === 'Admin';
                 const adminLandingActive = pathname === '/dashboard/admin';
-                const open = (isAdminGroup ? (dashboardAdminAuthed || adminLandingActive) : false) || openGroup === item.label || groupActive;
+                const adminOpen = isAdminGroup && dashboardAdminAuthed && (adminLandingActive || groupActive || openGroup === 'Admin');
+                const open = isAdminGroup ? adminOpen : (openGroup === item.label || groupActive);
                 return (
                   <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {isAdminGroup && !dashboardAdminAuthed && !adminLandingActive ? (
@@ -281,7 +301,7 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
                     ) : (<>
                     <button
                       type="button"
-                      onClick={() => setOpenGroup((v) => (v === item.label ? null : item.label))}
+                      onClick={() => { if (isAdminGroup && !dashboardAdminAuthed) return; setOpenGroup((v) => (v === item.label ? null : item.label)); }}
                       aria-expanded={open}
                       style={{
                         position: 'relative',
