@@ -224,7 +224,7 @@ export function useMenuItems(hotelId: string | null) {
 /*  useOrders                                                         */
 /* ------------------------------------------------------------------ */
 
-export function useOrders(hotelId: string | null) {
+export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'all'; from?: string; to?: string }) {
   const queryClient = useQueryClient();
 
   if (isServer) {
@@ -240,10 +240,14 @@ export function useOrders(hotelId: string | null) {
   }
 
   const query = useQuery({
-    queryKey: queryKeys.orders(hotelId),
+    queryKey: [...queryKeys.orders(hotelId), opts?.scope || 'month', opts?.from || '', opts?.to || ''],
     queryFn: async () => {
       if (!hotelId) return [] as Order[];
-      const json = await fetchJson(`/api/orders?hotel_id=${hotelId}`);
+      const params = new URLSearchParams({ hotel_id: hotelId });
+      if (opts?.scope) params.set('scope', opts.scope);
+      if (opts?.from) params.set('from', opts.from);
+      if (opts?.to) params.set('to', opts.to);
+      const json = await fetchJson(`/api/orders?${params.toString()}`);
       return (json.orders || []) as Order[];
     },
     enabled: !!hotelId,
