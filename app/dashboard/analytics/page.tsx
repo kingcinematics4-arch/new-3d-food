@@ -4,657 +4,422 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useMemo, useEffect } from 'react';
 import dynamicChart from 'next/dynamic';
-import { useHotel, useOrders, useMenuItems } from '@/lib/useHotel';
-import { Order } from '@/lib/useHotel';
+import { useHotel, useOrders, useMenuItems, Order } from '@/lib/useHotel';
 import { formatPrice } from '@/lib/menu';
 
 const Chart = dynamicChart(() => import('react-apexcharts'), { ssr: false });
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const TZ = 'Asia/Kolkata';
 
-const normalise = (status: string) => (status || '').trim().toLowerCase();
+/* ─── Timezone / month helpers (Asia/Kolkata) ─── */
+function kolkataParts(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value || '';
+  return { year: +get('year'), month: +get('month'), day: +get('day') };
+}
 
-/* Shared chart palette — champagne and bone only */
+function isCurrentMonthKolkata(iso: string | null | undefined, ref: Date) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  const a = kolkataParts(d);
+  const b = kolkataParts(ref);
+  return a.year === b.year && a.month === b.month;
+}
+
+function daysInMonth(year: number, month: number) {
+  return new Date(year, month, 0).getDate(); // month is 1-based
+}
+
+function monthLabel(year: number, month: number) {
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: TZ,
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+const normalise = (s: string | null | undefined) => (s || '').trim().toLowerCase();
+const isCancelled = (o: Order) => normalise(o.status) === 'cancelled';
+const isCompleted = (o: Order) => {
+  const s = normalise(o.status);
+  return s === 'completed' || s === 'delivered' || s === 'served';
+};
+const isPending = (o: Order) => {
+  const s = normalise(o.status);
+  return s !== 'cancelled' && !isCompleted(o);
+};
+
+function orderRevenue(o: Order): number {
+  // Use actual stored order amount; subtotal fallback.
+  const v = o.total_amount != null ? Number(o.total_amount) : Number(o.subtotal || 0);
+  return Number.isFinite(v) ? v : 0;
+}
+
+function activeItems(o: Order) {
+  return (o.order_items || []).filter((it: any) => normalise(it.status) !== 'cancelled');
+}
+
+/* ─── Shared chart palette (Dine3D black & gold) ─── */
 const INK_MUTED = '#9B968C';
 const INK_DIM = '#6B675F';
-const GRID_LINE = 'rgba(243,239,231,0.06)';
-const ACCENT = '#B8A47A';
-const ACCENT_SOFT = 'rgba(184,164,122,0.22)';
+const GRID = 'rgba(243,239,231,0.06)';
+const GOLD = '#D4B36A';
+const BRONZE = '#9B7348';
+const COPPER = '#8A4B38';
+const SAGE = '#7E9A86';
+const SLATE = '#7D8794';
 
-/* Revenue & Order Volume — premium metallic series palette */
-const SERIES_GOLD = '#D4B36A'; // upper (Revenue) — premium champagne gold
-const SERIES_GOLD_FADE = 'rgba(212,179,106,0.02)';
-const SERIES_BRONZE = '#9B7348'; // middle (Orders Count) — muted antique bronze
-const SERIES_BRONZE_FADE = 'rgba(155,115,72,0.02)';
-const SERIES_COPPER = '#8A4B38'; // lower (Cancelled) — elegant dark copper
-const SERIES_COPPER_FADE = 'rgba(138,75,56,0.02)';
-
-function getDayLabel(date: Date): string {
-  return DAYS[date.getDay()];
-}
-
-/* ============================================================
-   METRIC CARD
-   ============================================================ */
-function Metric({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string;
-  note: string;
-}) {
-    return (
-      <div
-        className="d3-panel flex flex-col justify-between p-5"
-        style={{ minHeight: 132, minWidth: 0 }}
-      >
-        <span
-          style={{
-            display: 'block',
-            fontSize: '0.5625rem',
-            fontWeight: 600,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'var(--text-dimmed)',
-          }}
-        >
-          {label}
-        </span>
-        <span
-          className="d3-figure"
-          style={{
-            display: 'block',
-            fontSize: 'clamp(1.5rem, 2.2vw, 2rem)',
-            marginTop: '0.875rem',
-            wordBreak: 'break-word',
-          }}
-        >
-          {value}
-        </span>
-        <span
-          style={{
-            display: 'block',
-            marginTop: 8,
-            fontSize: '0.6875rem',
-            lineHeight: 1.45,
-            color: 'var(--text-muted)',
-          }}
-        >
-          {note}
-        </span>
-      </div>
-    );
-}
-
-/* ============================================================
-   PANEL HEADING
-   ============================================================ */
-function PanelHeading({
-  title,
-  aside,
-}: {
-  title: string;
-  aside?: React.ReactNode;
-}) {
+function Metric({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div
-      className="flex items-baseline justify-between gap-4"
-      style={{ paddingBottom: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-warm)' }}
-    >
-      <h3 className="d3-panel-title" style={{ fontSize: '1.125rem' }}>
-        {title}
-      </h3>
+    <div className="d3-panel flex flex-col justify-between p-5" style={{ minHeight: 124, minWidth: 0 }}>
+      <span style={{ display: 'block', fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-dimmed)' }}>
+        {label}
+      </span>
+      <span className="d3-figure" style={{ display: 'block', fontSize: 'clamp(1.4rem, 2vw, 1.9rem)', marginTop: '0.75rem', wordBreak: 'break-word' }}>
+        {value}
+      </span>
+      <span style={{ display: 'block', marginTop: 8, fontSize: '0.6875rem', lineHeight: 1.45, color: 'var(--text-muted)' }}>{note}</span>
+    </div>
+  );
+}
+
+function PanelHeading({ title, aside }: { title: string; aside?: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4" style={{ paddingBottom: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-warm)' }}>
+      <h3 className="d3-panel-title" style={{ fontSize: '1.125rem' }}>{title}</h3>
       {aside}
     </div>
   );
 }
 
+function Empty({ text }: { text: string }) {
+  return <p style={{ color: 'var(--text-dimmed)', fontSize: '0.875rem', padding: '2.5rem 0', textAlign: 'center' }}>{text}</p>;
+}
+
 export default function AnalyticsDashboardPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { orders, refetch: refetchOrders } = useOrders(hotel?.id || null);
-  const { items: menuItems, refetch: refetchItems } = useMenuItems(hotel?.id || null);
+  const { orders } = useOrders(hotel?.id || null);
+  const { items: menuItems } = useMenuItems(hotel?.id || null);
   const [isMounted, setIsMounted] = useState(false);
-  const [timeRange, setTimeRange] = useState<'today' | '7days' | '30days'>('7days');
+  // Ref date drives auto month reset (Asia/Kolkata). Refresh on mount; cheap.
+  const [now, setNow] = useState<Date>(() => new Date());
 
   useEffect(() => {
     setIsMounted(true);
+    setNow(new Date());
   }, []);
 
-  const now = new Date();
-  const cutoff = useMemo(() => {
-    const d = new Date(now);
-    if (timeRange === 'today') {
-      d.setHours(0, 0, 0, 0);
-    } else if (timeRange === '7days') {
-      d.setDate(d.getDate() - 7);
-    } else {
-      d.setDate(d.getDate() - 30);
-    }
-    return d;
-  }, [timeRange, now]);
+  const month = useMemo(() => {
+    const p = kolkataParts(now);
+    const dim = daysInMonth(p.year, p.month);
+    const days = Array.from({ length: dim }, (_, i) => i + 1);
+    return { ...p, dim, days, label: monthLabel(p.year, p.month) };
+  }, [now]);
 
-  const filteredOrders = useMemo(() => {
+  // One month only (current month, Asia/Kolkata). Real DB records, deduped by id.
+  const monthOrders = useMemo(() => {
+    const seen = new Set<string>();
     return orders.filter((o: Order) => {
-      const d = new Date(o.created_at);
-      return d >= cutoff && d <= now;
+      if (!o || !o.id) return false;
+      if (seen.has(o.id)) return false;
+      if (!isCurrentMonthKolkata(o.created_at, now)) return false;
+      seen.add(o.id);
+      return true;
     });
-  }, [orders, cutoff, now]);
+  }, [orders, now]);
 
-  const nonCancelledOrders = useMemo(() => {
-    return filteredOrders.filter((o: Order) => normalise(o.status) !== 'cancelled');
-  }, [filteredOrders]);
+  const currency = hotel?.currency;
 
-  const totalRevenue = useMemo(
-    () => nonCancelledOrders.reduce((s: number, o: Order) => s + (o.total_amount || 0), 0),
-    [nonCancelledOrders]
-  );
-  const totalOrdersCount = nonCancelledOrders.length;
-  const aov = totalOrdersCount > 0 ? totalRevenue / totalOrdersCount : 0;
-
-  const cancelledCount = filteredOrders.filter((o: Order) => normalise(o.status) === 'cancelled').length;
-
-  const dailyBuckets = useMemo(() => {
-    const days: number = timeRange === 'today' ? 1 : timeRange === '7days' ? 7 : 30;
-    const buckets = Array.from({ length: days }, (_, i) => {
-      const d = new Date(now);
-      d.setDate(d.getDate() - (days - 1 - i));
-      d.setHours(0, 0, 0, 0);
-      return d;
+  const stats = useMemo(() => {
+    let totalRevenue = 0;
+    let completed = 0;
+    let cancelled = 0;
+    let pending = 0;
+    let itemsSold = 0;
+    monthOrders.forEach((o) => {
+      if (isCancelled(o)) {
+        cancelled += 1;
+        // cancelled orders excluded from completed revenue
+      } else {
+        totalRevenue += orderRevenue(o);
+        activeItems(o).forEach((it: any) => {
+          const q = Number(it.quantity);
+          if (Number.isFinite(q) && q > 0) itemsSold += q;
+        });
+        if (isCompleted(o)) completed += 1;
+        else pending += 1;
+      }
     });
-    return buckets;
-  }, [timeRange, now]);
+    const totalOrders = monthOrders.length;
+    const eligibleOrders = totalOrders - cancelled; // for AOV (exclude cancelled)
+    const aov = eligibleOrders > 0 ? totalRevenue / eligibleOrders : 0;
+    return { totalRevenue, totalOrders, completed, cancelled, pending, aov, itemsSold };
+  }, [monthOrders]);
 
-  const dailyLabels = dailyBuckets.map((d) =>
-    timeRange === '30days' ? `${d.getMonth() + 1}/${d.getDate()}` : getDayLabel(d)
-  );
+  // Per-day buckets (1..dim) in Kolkata month
+  const daily = useMemo(() => {
+    const revenue = Array(month.dim).fill(0) as number[];
+    const placed = Array(month.dim).fill(0) as number[];
+    const completed = Array(month.dim).fill(0) as number[];
+    const cancelled = Array(month.dim).fill(0) as number[];
+    monthOrders.forEach((o) => {
+      const p = kolkataParts(new Date(o.created_at));
+      if (p.year !== month.year || p.month !== month.month) return;
+      const idx = p.day - 1;
+      if (idx < 0 || idx >= month.dim) return;
+      placed[idx] += 1;
+      if (isCancelled(o)) cancelled[idx] += 1;
+      else {
+        revenue[idx] += orderRevenue(o);
+        if (isCompleted(o)) completed[idx] += 1;
+      }
+    });
+    return { revenue, placed, completed, cancelled };
+  }, [monthOrders, month]);
 
-  const salesTrendSeries = useMemo(() => {
-    const revData = dailyBuckets.map((bucket) => {
-      const next = new Date(bucket);
-      next.setDate(next.getDate() + 1);
-      return filteredOrders
-        .filter((o: Order) => {
-          const d = new Date(o.created_at);
-          return d >= bucket && d < next;
-        })
-        .reduce((s: number, o: Order) => s + (o.total_amount || 0), 0);
-    });
-    const countData = dailyBuckets.map((bucket) => {
-      const next = new Date(bucket);
-      next.setDate(next.getDate() + 1);
-      return filteredOrders.filter((o: Order) => {
-        const d = new Date(o.created_at);
-        return d >= bucket && d < next;
-      }).length;
-    });
-    const cancelledData = dailyBuckets.map((bucket) => {
-      const next = new Date(bucket);
-      next.setDate(next.getDate() + 1);
-      return filteredOrders.filter((o: Order) => {
-        const d = new Date(o.created_at);
-        return d >= bucket && d < next && normalise(o.status) === 'cancelled';
-      }).length;
-    });
-    return [
-      { name: 'Revenue', data: revData, type: 'area', yAxisIndex: 0 },
-      { name: 'Orders Count', data: countData, type: 'area', yAxisIndex: 1 },
-      { name: 'Cancelled', data: cancelledData, type: 'area', yAxisIndex: 1 },
-    ];
-  }, [filteredOrders, dailyBuckets]);
-
-  const topDishes = useMemo(() => {
-    const dishMap: Record<string, number> = {};
-    filteredOrders.forEach((o: Order) => {
-      (o.order_items || []).forEach((item: any) => {
-        const name = item.name || item.menu_item?.name || item.menu_item_id || 'Unknown';
-        dishMap[name] = (dishMap[name] || 0) + (item.quantity || 1);
+  // Best-selling dishes (by quantity, top 5) + revenue; image from menu
+  const bestDishes = useMemo(() => {
+    const map = new Map<string, { name: string; qty: number; revenue: number; menuItemId?: string; image?: string | null }>();
+    monthOrders.forEach((o) => {
+      if (isCancelled(o)) return; // exclude cancelled orders from dish revenue context
+      activeItems(o).forEach((it: any) => {
+        const name: string = it.name || it.menu_item?.name || 'Unknown';
+        const qty = Number(it.quantity) || 0;
+        if (qty <= 0) return;
+        const unit = it.price_at_time != null ? Number(it.price_at_time) : (it.price != null ? Number(it.price) : Number(it.menu_item?.price || 0));
+        const rev = (Number.isFinite(unit) ? unit : 0) * qty;
+        const key = it.menu_item_id || name;
+        const cur = map.get(key) || { name, qty: 0, revenue: 0, menuItemId: it.menu_item_id, image: null };
+        cur.qty += qty;
+        cur.revenue += rev;
+        if (!cur.menuItemId && it.menu_item_id) cur.menuItemId = it.menu_item_id;
+        map.set(key, cur);
       });
     });
-    return Object.entries(dishMap)
-      .map(([name, qty]) => ({ name, qty }))
+    const menuById = new Map(menuItems.map((m: any) => [m.id, m]));
+    const menuByName = new Map(menuItems.map((m: any) => [normalise(m.name), m]));
+    return Array.from(map.values())
+      .map((d) => {
+        const mi = (d.menuItemId && menuById.get(d.menuItemId)) || menuByName.get(normalise(d.name));
+        return { ...d, image: mi?.image_url || null };
+      })
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 5);
-  }, [filteredOrders]);
+  }, [monthOrders, menuItems]);
 
-  const topDishesOptions: any = {
-    chart: {
-      type: 'bar',
-      toolbar: { show: false },
-      background: 'transparent',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      animations: { enabled: true, speed: 400, animateFrom: 'end', animateTo: true },
-    },
-    theme: { mode: 'dark' },
-    plotOptions: { bar: { borderRadius: 4, horizontal: true, barHeight: '40%' } },
-    colors: [ACCENT],
+  // Order status distribution
+  const statusDist = useMemo(() => {
+    let completed = 0, pending = 0, preparing = 0, cancelled = 0;
+    monthOrders.forEach((o) => {
+      const s = normalise(o.status);
+      if (s === 'cancelled') cancelled += 1;
+      else if (s === 'completed' || s === 'delivered' || s === 'served') completed += 1;
+      else if (s === 'preparing' || s === 'accepted' || s === 'ready') preparing += 1;
+      else pending += 1; // placed/pending/unknown
+    });
+    return { completed, pending, preparing, cancelled };
+  }, [monthOrders]);
+
+  // Payment method distribution
+  const paymentDist = useMemo(() => {
+    const map = new Map<string, number>();
+    monthOrders.forEach((o) => {
+      const m = normalise(o.payment_method);
+      let label = 'Other';
+      if (m === 'cash' || m.includes('cash') || m.includes('counter')) label = 'Cash';
+      else if (m === 'upi' || m.includes('upi') || m === 'card' || m.includes('card') || m.includes('online') || m.includes('net') || m.includes('razor') || m.includes('stripe') || m.includes('wallet')) label = 'Online';
+      else if (!m || m === 'unknown' || m.includes('pay_at_table')) label = 'Pay at Table';
+      map.set(label, (map.get(label) || 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [monthOrders]);
+
+  const baseChart = {
+    chart: { toolbar: { show: false }, background: 'transparent', fontFamily: 'Inter, system-ui, sans-serif', animations: { enabled: true, speed: 400 } },
+    theme: { mode: 'dark' as const },
     dataLabels: { enabled: false },
-    xaxis: {
-      categories: topDishes.map((d) => d.name),
-      labels: { style: { colors: INK_MUTED, fontSize: '11px' } },
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-    },
-    yaxis: {
-      labels: { style: { colors: INK_DIM, fontSize: '10px' }, maxWidth: 140 },
-    },
-    grid: { borderColor: GRID_LINE, strokeDashArray: 3, xaxis: { lines: { show: false } }, yaxis: { lines: { show: false } } },
+    grid: { borderColor: GRID, strokeDashArray: 3, xaxis: { lines: { show: false } }, yaxis: { lines: { show: false } } },
+  };
+
+  const dayCats = month.days.map(String);
+
+  const revenueTrendOpts: any = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: 'area' },
+    colors: [GOLD],
+    stroke: { curve: 'smooth', width: 2.5 },
+    fill: { type: 'gradient', gradient: { shade: 'dark', type: 'vertical', opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 90, 100] } },
+    xaxis: { categories: dayCats, labels: { style: { colors: INK_DIM, fontSize: '10px' }, rotate: 0, hideOverlappingLabels: true }, axisBorder: { show: false }, axisTicks: { show: false }, tickAmount: Math.min(10, month.dim) },
+    yaxis: { labels: { style: { colors: INK_DIM, fontSize: '10px' }, formatter: (v: number) => `₹${Math.round(v || 0).toLocaleString('en-IN')}` } },
     legend: { show: false },
-    tooltip: { theme: 'dark', style: { fontSize: '12px' }, y: { formatter: (val: number) => `${val} unit${val === 1 ? '' : 's'}` } },
+    tooltip: { theme: 'dark', y: { formatter: (v: number) => `₹${Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } },
   };
-  const topDishesSeries = [{ name: 'Units Sold', data: topDishes.map((d) => d.qty) }];
+  const revenueTrendSeries = [{ name: 'Revenue', data: daily.revenue }];
 
-  const paymentMethodMap: Record<string, number> = {};
-  filteredOrders.forEach((o: Order) => {
-    const pm = o.payment_method || 'Unknown';
-    paymentMethodMap[pm] = (paymentMethodMap[pm] || 0) + 1;
-  });
-  const paymentEntries = Object.entries(paymentMethodMap).sort((a, b) => b[1] - a[1]);
-
-  // Human-readable labels for the stored payment_method values.
-  const paymentMethodLabels: Record<string, string> = {
-    pay_at_table: 'Pay at Table',
-    pay_at_table_cash: 'Pay at Table',
-    pay_at_table_card: 'Pay at Table',
-    card: 'Card',
-    credit_card: 'Card',
-    debit_card: 'Card',
-    upi: 'UPI',
-    net_banking: 'Net Banking',
-    wallet: 'Wallet',
-    cash: 'Cash',
-    unknown: 'Other',
+  const orderVolOpts: any = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: 'bar' },
+    colors: [BRONZE, SAGE, COPPER],
+    plotOptions: { bar: { borderRadius: 3, columnWidth: '55%' } },
+    stroke: { show: true, width: 1, colors: ['transparent'] },
+    xaxis: { categories: dayCats, labels: { style: { colors: INK_DIM, fontSize: '10px' }, rotate: 0, hideOverlappingLabels: true }, axisBorder: { show: false }, axisTicks: { show: false }, tickAmount: Math.min(10, month.dim) },
+    yaxis: { labels: { style: { colors: INK_DIM, fontSize: '10px' }, formatter: (v: number) => `${Math.round(v || 0)}` } },
+    legend: { position: 'top', horizontalAlign: 'left', labels: { colors: INK_MUTED }, markers: { width: 8, height: 8, radius: 4, strokeWidth: 0 } },
+    tooltip: { theme: 'dark', shared: true, intersect: false },
   };
+  const orderVolSeries = [
+    { name: 'Orders Placed', data: daily.placed },
+    { name: 'Completed', data: daily.completed },
+    { name: 'Cancelled', data: daily.cancelled },
+  ];
 
-  const paymentMethodOptions: any = {
-    chart: {
-      type: 'donut',
-      background: 'transparent',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      animations: { enabled: true, speed: 600, animateFrom: 'end', animateTo: true },
-    },
-    theme: { mode: 'dark' },
-    labels: paymentEntries.map(([k]) => paymentMethodLabels[k] || k),
-    colors: ['#B8A47A', '#D9CBAB', '#8E8578'],
+  const bestOpts: any = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: 'bar' },
+    plotOptions: { bar: { borderRadius: 4, horizontal: true, barHeight: '42%' } },
+    colors: [GOLD],
+    xaxis: { categories: bestDishes.map((d) => d.name), labels: { style: { colors: INK_MUTED, fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { labels: { style: { colors: INK_DIM, fontSize: '10px' }, maxWidth: 160 } },
+    legend: { show: false },
+    tooltip: { theme: 'dark', y: { formatter: (v: number) => `${Math.round(v || 0)} sold` } },
+  };
+  const bestSeries = [{ name: 'Quantity Sold', data: bestDishes.map((d) => d.qty) }];
+
+  const statusDonutOpts: any = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: 'donut' },
+    labels: ['Completed', 'Pending', 'Preparing', 'Cancelled'],
+    colors: [SAGE, SLATE, GOLD, COPPER],
     stroke: { width: 2, colors: ['#171613'] },
-    legend: {
-      position: 'bottom',
-      labels: { colors: INK_MUTED, fontSize: '11px' },
-      markers: { width: 6, height: 6, strokeWidth: 0 },
-      itemMargin: { horizontal: 8, vertical: 6 },
-    },
-    dataLabels: { enabled: false },
-tooltip: {
-        theme: 'dark',
-        style: { fontSize: '12px' },
-        y: { formatter: (val: number) => `${val} order${val === 1 ? '' : 's'}` },
-        x: { formatter: (_label: string) => _label },
-      },
-      plotOptions: { donut: { size: '78%', labels: { show: false } } },
+    legend: { position: 'bottom', labels: { colors: INK_MUTED, fontSize: '11px' }, markers: { width: 6, height: 6, strokeWidth: 0 } },
+    tooltip: { theme: 'dark', y: { formatter: (v: number) => `${v} order${v === 1 ? '' : 's'}` } },
+    plotOptions: { pie: { donut: { size: '72%' } } },
   };
-  const paymentMethodSeries = paymentEntries.map(([, v]) => v);
+  const statusDonutSeries = [statusDist.completed, statusDist.pending, statusDist.preparing, statusDist.cancelled];
 
-  const salesTrendOptions: any = {
-    chart: {
-      type: 'area',
-      toolbar: { show: false },
-      background: 'transparent',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      animations: { enabled: true, speed: 600, animateFrom: 'end', animateTo: true },
-      dropShadow: { enabled: false },
-      events: {
-        // Reposition ApexCharts' tooltip wrapper so it never overflows the
-        // chart boundary. On desktop, flip left of the data point when
-        // there is insufficient room on the right. On narrow/mobile
-        // containers, clamp fully inside the chart.
-        mounted: (chartContext: any) => {
-          const el = chartContext?.el;
-          if (!el) return;
-          const reposition = () => {
-            const wrap = el.querySelector('.apexcharts-tooltip') as HTMLElement | null;
-            const inner = el.querySelector('.apexcharts-inner') as HTMLElement | null;
-            if (!wrap || !inner || wrap.style.display === 'none' || wrap.classList.contains('apexcharts-tooltip-hidden')) return;
-            const cRect = inner.getBoundingClientRect();
-            const wRect = wrap.getBoundingClientRect();
-            // Let the tooltip size to its content up to the container.
-            const maxW = Math.max(200, Math.min(360, cRect.width - 12));
-            wrap.style.maxWidth = `${maxW}px`;
-            wrap.style.width = 'max-content';
-            wrap.style.boxSizing = 'border-box';
-            wrap.style.overflow = 'visible';
-            // Re-read after width adjustment.
-            const w2 = wrap.getBoundingClientRect();
-            let left = parseFloat(wrap.style.left || '0');
-            if (Number.isNaN(left)) left = w2.left - cRect.left;
-            // Flip to the left of the active point when overflowing right.
-            if (left + w2.width > cRect.width - 4) {
-              left = Math.max(4, left - w2.width - 18);
-            }
-            // Clamp inside container (mobile / narrow).
-            if (left < 4) left = 4;
-            if (left + w2.width > cRect.width - 4) left = Math.max(4, cRect.width - w2.width - 4);
-            wrap.style.left = `${left}px`;
-            // Clamp vertical position if needed.
-            let top = parseFloat(wrap.style.top || '0');
-            if (!Number.isNaN(top)) {
-              if (top < 4) wrap.style.top = '4px';
-              if (top + w2.height > cRect.height - 4) wrap.style.top = `${Math.max(4, cRect.height - w2.height - 4)}px`;
-            }
-          };
-          const obs = new MutationObserver(() => requestAnimationFrame(reposition));
-          obs.observe(el, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
-          (el as any).__kiloTooltipObs = obs;
-        },
-        beforeDestroy: (chartContext: any) => {
-          const el = chartContext?.el;
-          (el as any)?.__kiloTooltipObs?.disconnect?.();
-        },
-      },
-    },
-    theme: { mode: 'dark' },
-    // Upper/middle/lower zones: champagne gold, antique bronze, dark copper
-    colors: [SERIES_GOLD, SERIES_BRONZE, SERIES_COPPER],
-    stroke: { curve: 'smooth', width: [2.5, 2, 2], dashArray: 0 },
-    markers: { size: 0, hover: { size: 5, strokeWidth: 0 } },
-    dataLabels: { enabled: false },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shade: 'dark',
-        type: 'vertical',
-        shadeIntensity: 0.25,
-        opacityFrom: 0.42,
-        opacityTo: 0.02,
-        stops: [0, 88, 100],
-        gradientToColors: [SERIES_GOLD_FADE, SERIES_BRONZE_FADE, SERIES_COPPER_FADE],
-      },
-    },
-    legend: {
-      position: 'top',
-      horizontalAlign: 'left',
-      fontSize: '11px',
-      labels: { colors: INK_MUTED, fontWeight: 500 },
-      markers: { width: 8, height: 8, radius: 4, strokeWidth: 0 },
-      itemMargin: { horizontal: 12, vertical: 0 },
-      formatter: (seriesName: string) => seriesName,
-    },
-    xaxis: {
-      categories: dailyLabels,
-      labels: { style: { colors: INK_DIM, fontSize: '10px' } },
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-    },
-    yaxis: [
-      {
-        // Primary axis — Revenue (INR)
-        labels: {
-          style: { colors: INK_DIM, fontSize: '10px' },
-          formatter: (val: number) => `₹${Number(val || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-        },
-      },
-      {
-        // Secondary axis — order counts (no currency symbol)
-        opposite: true,
-        labels: {
-          style: { colors: INK_DIM, fontSize: '10px' },
-          formatter: (val: number) => `${Math.round(Number(val || 0))}`,
-        },
-      },
-    ],
-    grid: {
-      borderColor: GRID_LINE,
-      strokeDashArray: 3,
-      xaxis: { lines: { show: false } },
-      yaxis: { lines: { show: false } },
-    },
-    tooltip: {
-      theme: 'dark',
-      style: { fontSize: '12px' },
-      shared: true,
-      // ApexCharts wraps the custom HTML in a fixed-width container that
-      // can clip long content. Positioning is handled by chart.events
-      // (mounted) so the tooltip flips left on desktop when needed and
-      // stays fully inside the chart on mobile.
-      custom: (opts: any) => {
-        const seriesNames = salesTrendSeries.map((s: any) => s.name);
-        const seriesColors = salesTrendOptions.colors;
-        const series = opts.series || [];
-        const dataPointIndex = opts.dataPointIndex;
-        const label = opts.xAxisCategory || '';
-
-        const rows = series
-          .map((s: any[], si: number) => {
-            const name = seriesNames[si] || '';
-            const val = s[dataPointIndex];
-            if (val == null) return '';
-            const formatted =
-              name === 'Revenue'
-                ? `₹${Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
-                : `${Math.round(Number(val))} order${Math.round(Number(val)) === 1 ? '' : 's'}`;
-            const color = seriesColors[si] || SERIES_GOLD;
-            return `<div style="display:grid;grid-template-columns:8px 1fr auto;align-items:center;column-gap:12px;row-gap:0;padding:4px 0;min-width:0;">
-            <span style="width:8px;height:8px;border-radius:50%;background:${color};display:block;"></span>
-            <span style="color:var(--text-muted);white-space:nowrap;min-width:0;">${name}</span>
-            <span style="color:var(--text-primary);font-weight:600;white-space:nowrap;text-align:right;padding-left:8px;">${formatted}</span>
-          </div>`;
-          })
-          .filter(Boolean)
-          .join('');
-
-        return `<div data-kilo-tooltip="sales-trend" style="min-width:180px;max-width:240px;width:max-content;padding:8px 12px;box-sizing:border-box;">
-          <div style="color:var(--text-dimmed);font-size:11px;font-weight:500;margin-bottom:8px;white-space:nowrap;">${label}</div>
-          ${rows}
-        </div>`;
-      },
-    },
+  const payDonutOpts: any = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: 'donut' },
+    labels: paymentDist.map((p) => p[0]),
+    colors: [GOLD, SAGE, BRONZE, SLATE, COPPER],
+    stroke: { width: 2, colors: ['#171613'] },
+    legend: { position: 'bottom', labels: { colors: INK_MUTED, fontSize: '11px' }, markers: { width: 6, height: 6, strokeWidth: 0 } },
+    tooltip: { theme: 'dark', y: { formatter: (v: number) => `${v} order${v === 1 ? '' : 's'}` } },
+    plotOptions: { pie: { donut: { size: '72%' } } },
   };
+  const payDonutSeries = paymentDist.map((p) => p[1]);
 
   const loading = hotelLoading;
-  const featuredCount = menuItems.filter((m: any) => m.is_featured || m.is_popular).length;
-
-  const RANGE_LABELS: Record<string, string> = {
-    today: 'Today',
-    '7days': 'Last 7 Days',
-    '30days': 'Last 30 Days',
-  };
 
   return (
     <div className="flex flex-col gap-8" style={{ maxWidth: 1180 }}>
-      {/* ================= Page header ================= */}
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
-            Analytics
-          </span>
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2rem, 4vw, 2.75rem)',
-              fontWeight: 500,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.025em',
-              lineHeight: 1.1,
-              margin: '0.5rem 0 0',
-            }}
-          >
-            Revenue Intelligence
+          <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>Analytics</span>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 4vw, 2.75rem)', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.025em', lineHeight: 1.1, margin: '0.5rem 0 0' }}>
+            Monthly Performance
           </h1>
-          <p
-            style={{
-              margin: '0.5rem 0 0',
-              fontSize: '0.875rem',
-              lineHeight: 1.6,
-              color: 'var(--text-muted)',
-              maxWidth: '56ch',
-            }}
-          >
-            Sales volume, average basket value and menu performance, drawn from your live
-            order history.
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', lineHeight: 1.6, color: 'var(--text-muted)', maxWidth: '60ch' }}>
+            Business performance for the current month, based on real order records (Asia/Kolkata).
           </p>
         </div>
-
-        <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
-          <div className="d3-segment w-full sm:w-auto" role="group" aria-label="Reporting period">
-            {(['today', '7days', '30days'] as const).map((range) => (
-              <button
-                key={range}
-                type="button"
-                className="d3-segment-item flex-1 sm:flex-none justify-center"
-                data-active={timeRange === range}
-                onClick={() => setTimeRange(range)}
-              >
-                {RANGE_LABELS[range]}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="d3-chip">{month.label}</span>
+          <span className="d3-chip" style={{ color: 'var(--text-muted)' }}>1–{month.dim} {month.label.split(' ')[0]}</span>
         </div>
       </header>
 
-      {loading && (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-          Compiling the figures…
-        </p>
-      )}
+      {loading && <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Compiling the figures…</p>}
 
-      {/* ================= Metrics ================= */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <Metric
-          label="Total Revenue"
-          value={formatPrice(totalRevenue, hotel?.currency)}
-          note={
-            totalOrdersCount > 0
-              ? `${totalOrdersCount} orders in this period`
-              : 'No orders in this period'
-          }
-        />
-        <Metric
-          label="Orders Placed"
-          value={`${totalOrdersCount}`}
-          note={totalOrdersCount > 0 ? 'Recorded against this menu' : 'No data yet'}
-        />
-        <Metric
-          label="Cancelled Orders"
-          value={`${cancelledCount}`}
-          note={
-            cancelledCount > 0
-              ? 'Excluded from revenue and AOV'
-              : 'No cancelled orders'
-          }
-        />
-        <Metric
-          label="Average Order Value"
-          value={formatPrice(aov, hotel?.currency)}
-          note={
-            totalOrdersCount > 0
-              ? `Across ${totalOrdersCount} orders`
-              : 'Awaiting first order'
-          }
-        />
-        <Metric
-          label="Menu Items"
-          value={`${menuItems.length}`}
-          note={
-            menuItems.length > 0
-              ? `${featuredCount} featured or popular`
-              : 'No menu items yet'
-          }
-        />
+      {/* Monthly business summary */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Metric label="Total Revenue" value={formatPrice(stats.totalRevenue, currency)} note={stats.cancelled > 0 ? 'Excludes cancelled orders' : 'This month (IST)'} />
+        <Metric label="Total Orders" value={`${stats.totalOrders}`} note="Placed this month" />
+        <Metric label="Completed Orders" value={`${stats.completed}`} note="Successfully completed" />
+        <Metric label="Cancelled Orders" value={`${stats.cancelled}`} note="Cancelled this month" />
+        <Metric label="Pending Orders" value={`${stats.pending}`} note="Not completed or cancelled" />
+        <Metric label="Average Order Value" value={formatPrice(stats.aov, currency)} note="Revenue ÷ eligible orders" />
+        <Metric label="Total Items Sold" value={`${stats.itemsSold}`} note="Dish quantity (excl. cancelled)" />
       </div>
 
-      {/* ================= Charts ================= */}
+      {/* Revenue Trend + Order Volume */}
       <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
-        <section className="min-w-0 lg:col-span-8 d3-panel p-5 sm:p-6">
-          <PanelHeading
-            title="Revenue & Order Volume"
-            aside={
-              <span className="d3-chip">
-                {timeRange === 'today'
-                  ? 'Today'
-                  : timeRange === '7days'
-                  ? 'Last 7 days'
-                  : 'Last 30 days'}
-              </span>
-            }
-          />
-          {isMounted && salesTrendSeries[0].data.some((v) => v > 0) ? (
-            <Chart options={salesTrendOptions} series={salesTrendSeries} type="area" height={340} />
+        <section className="min-w-0 lg:col-span-7 d3-panel p-5 sm:p-6">
+          <PanelHeading title="Revenue Trend" aside={<span className="d3-chip">Total {formatPrice(daily.revenue.reduce((a, b) => a + b, 0), currency)}</span>} />
+          {isMounted && daily.revenue.some((v) => v > 0) ? (
+            <Chart options={revenueTrendOpts} series={revenueTrendSeries} type="area" height={320} />
           ) : (
-            <p
-              style={{
-                color: 'var(--text-dimmed)',
-                fontSize: '0.875rem',
-                padding: '3rem 0',
-                textAlign: 'center',
-              }}
-            >
-              No order data for this period.
-            </p>
+            <Empty text="No revenue recorded for this month." />
           )}
         </section>
-
-        <section className="min-w-0 lg:col-span-4 d3-panel p-5 sm:p-6 flex flex-col">
-          <PanelHeading title="Payment Methods" />
-          <div className="flex-1 flex flex-col justify-center">
-            {isMounted && paymentMethodSeries.length > 0 ? (
-              <>
-                <Chart
-                  options={paymentMethodOptions}
-                  series={paymentMethodSeries}
-                  type="donut"
-                  height={220}
-                />
-                {paymentEntries.length > 0 && (
-                  <p
-                    style={{
-                      marginTop: '0.75rem',
-                      textAlign: 'center',
-                      fontSize: '0.6875rem',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    {paymentMethodLabels[paymentEntries[0][0]] || paymentEntries[0][0]} accounts for{' '}
-                    {paymentEntries[0][1]} of {paymentEntries.reduce((s, [, v]) => s + v, 0)} orders
-                  </p>
-                )}
-              </>
-            ) : (
-              <p
-                style={{
-                  color: 'var(--text-dimmed)',
-                  fontSize: '0.875rem',
-                  padding: '2rem 0',
-                  textAlign: 'center',
-                }}
-              >
-                No payment data for this period.
-              </p>
-            )}
-          </div>
+        <section className="min-w-0 lg:col-span-5 d3-panel p-5 sm:p-6">
+          <PanelHeading title="Order Volume" aside={<span className="d3-chip">Daily</span>} />
+          {isMounted && daily.placed.some((v) => v > 0) ? (
+            <Chart options={orderVolOpts} series={orderVolSeries} type="bar" height={320} />
+          ) : (
+            <Empty text="No orders recorded for this month." />
+          )}
         </section>
       </div>
 
-      {/* ================= Top dishes ================= */}
+      {/* Best-selling dishes */}
       <section className="min-w-0 d3-panel p-5 sm:p-6">
-        <PanelHeading
-          title="Best Sellers"
-          aside={<span className="d3-chip">Units sold</span>}
-        />
-        {isMounted && topDishes.length > 0 ? (
-          <Chart options={topDishesOptions} series={topDishesSeries} type="bar" height={260} />
+        <PanelHeading title="Best-Selling Dishes" aside={<span className="d3-chip">Top 5 by quantity</span>} />
+        {bestDishes.length > 0 ? (
+          <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="min-w-0 lg:col-span-7">
+              {isMounted && <Chart options={bestOpts} series={bestSeries} type="bar" height={260} />}
+            </div>
+            <div className="min-w-0 lg:col-span-5 flex flex-col gap-3">
+              {bestDishes.map((d, i) => (
+                <div key={d.menuItemId || d.name} className="flex items-center gap-3" style={{ padding: '0.6rem 0.75rem', borderRadius: 10, border: '1px solid var(--border-warm)', background: 'var(--bg-secondary)' }}>
+                  <span className="d3-figure" style={{ width: 22, textAlign: 'center', fontSize: '0.95rem', color: 'var(--text-dimmed)' }}>{i + 1}</span>
+                  <div style={{ width: 44, height: 44, borderRadius: 8, overflow: 'hidden', background: 'rgba(243,239,231,0.04)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-warm)' }}>
+                    {d.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={d.image} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-dimmed)' }}>—</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</div>
+                    <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 2 }}>{d.qty} sold · {formatPrice(d.revenue, currency)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
-          <p
-            style={{
-              color: 'var(--text-dimmed)',
-              fontSize: '0.875rem',
-              padding: '2.5rem 0',
-              textAlign: 'center',
-            }}
-          >
-            No dish sales data for this period.
-          </p>
+          <Empty text="No dish sales recorded for this month." />
         )}
       </section>
+
+      {/* Status + Payment */}
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
+        <section className="min-w-0 d3-panel p-5 sm:p-6">
+          <PanelHeading title="Order Status Distribution" aside={<span className="d3-chip">{stats.totalOrders} orders</span>} />
+          {isMounted && stats.totalOrders > 0 ? (
+            <Chart options={statusDonutOpts} series={statusDonutSeries} type="donut" height={260} />
+          ) : (
+            <Empty text="No orders recorded for this month." />
+          )}
+        </section>
+        <section className="min-w-0 d3-panel p-5 sm:p-6">
+          <PanelHeading title="Payment Method Distribution" />
+          {isMounted && paymentDist.length > 0 ? (
+            <Chart options={payDonutOpts} series={payDonutSeries} type="donut" height={260} />
+          ) : (
+            <Empty text="No payment data for this month." />
+          )}
+        </section>
+      </div>
     </div>
   );
 }

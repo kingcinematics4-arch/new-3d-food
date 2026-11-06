@@ -44,6 +44,18 @@ function getMinutesAgo(dateStr: string) {
   return Math.max(1, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
 }
 
+function formatOrderDateIST(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(d); // e.g. "1 Jun 2026"
+}
+
 const TABS = ['all', 'pending', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'];
 const PAYMENT_FILTERS = ['all', 'paid', 'unpaid'];
 const PAYMENT_LABEL: Record<string, string> = { all: 'All', paid: 'Paid', unpaid: 'Unpaid' };
@@ -207,6 +219,9 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
           <div style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dimmed)' }}>
             TABLE {order.table_number || '\u2014'} &middot; <span style={{ fontFamily: 'ui-monospace, monospace' }}>{order.id.slice(0, 8).toUpperCase()}</span>
           </div>
+          {formatOrderDateIST(order.created_at) && (
+            <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>{formatOrderDateIST(order.created_at)}</div>
+          )}
           <StatusBadge status={order.status} order={order} />
         </div>
 
@@ -591,6 +606,9 @@ export default function LiveOrdersPage() {
                     <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.625rem', color: 'var(--text-dimmed)', marginTop: 2 }}>
                       {order.id.slice(0, 8).toUpperCase()}
                     </div>
+                    {formatOrderDateIST(order.created_at) && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>{formatOrderDateIST(order.created_at)}</div>
+                    )}
                     <div style={{ marginTop: 4 }}>
                       <span className={`d3-badge ${STATUS_CLASS[normalise(order.status)] || STATUS_CLASS.cancelled}`} style={{ fontSize: '0.625rem' }}>
                         {STATUS_LABEL[normalise(order.status)] || order.status}

@@ -181,6 +181,18 @@ function StatusBadge({ status, cancellationSource, cancelledBy }: { status: stri
   );
 }
 
+function formatOrderDateIST(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(d); // e.g. "1 Jun 2026"
+}
+
 export default function DashboardOverview() {
   const { hotel, loading: hotelLoading } = useHotel();
   const { orders, refetch: refetchOrders } = useOrders(hotel?.id || null);
@@ -386,6 +398,11 @@ export default function DashboardOverview() {
                     >
                       #{order.id.slice(0, 8).toUpperCase()}
                     </span>
+                    {formatOrderDateIST(order.created_at) && (
+                      <span style={{ fontSize: '12px', color: 'var(--text-dimmed)', display: 'block', marginTop: 2, lineHeight: 1.3 }}>
+                        {formatOrderDateIST(order.created_at)}
+                      </span>
+                    )}
                     <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', display: 'block', marginTop: 3 }}>
                       {order.table_number || '—'} · {order.customer_name || '—'}
                     </span>
