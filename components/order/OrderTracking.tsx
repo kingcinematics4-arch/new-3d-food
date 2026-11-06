@@ -131,10 +131,10 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
     'Other',
   ];
 
-  // Stable ref so effect closures can read the latest order id / status
-  // without being recreated on every render.
   const orderRef = useRef<LiveOrder | null>(null);
   orderRef.current = order;
+
+  const redirectTriggeredRef = useRef(false);
 
   const backHref = hotelSlug || order?.hotel_slug
     ? `/menu/${hotelSlug || order?.hotel_slug}`
@@ -337,6 +337,37 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       clearTimeout(timer);
     };
   }, [order?.status, loadOrder]);
+
+  // -----------------------------------------------------------------------
+  // Auto-redirect to Google Review URL once the order is completed
+  //
+  // • Triggered only when status becomes completed / delivered
+  // • Only once per order (sessionStorage guard survives refresh)
+  // • Skipped entirely when no Google Review URL is configured
+  // -----------------------------------------------------------------------
+  useEffect(() => {
+    if (!order) return;
+    const status = (order.status || '').trim().toLowerCase();
+    const isCompleted = status === 'completed' || status === 'delivered';
+    if (!isCompleted || redirectTriggeredRef.current) return;
+
+    const reviewUrl = (order as any).google_review_url;
+    if (!reviewUrl) return;
+
+    const sessionKey = `dpx_review_redirect_${order.id}`;
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(sessionKey)) return;
+
+    redirectTriggeredRef.current = true;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(sessionKey, '1');
+    }
+
+    // Small delay so the guest sees the completed confirmation first.
+    setTimeout(() => {
+      try { window.location.href = reviewUrl; } catch {}
+    }, 1500);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order, order?.status]);
 
   // -----------------------------------------------------------------------
   // Derived display values

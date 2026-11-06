@@ -45,6 +45,7 @@ const updateHotelSchema = z.object({
   service_charge: z.number().optional(),
   menu_theme: z.enum(MENU_THEME_IDS).optional(),
   custom_theme_config: z.any().optional(),
+  google_review_url: z.string().url('Enter a valid Google Review URL').optional().nullable(),
 });
 
 export async function PUT(request: Request) {

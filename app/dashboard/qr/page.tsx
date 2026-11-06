@@ -6,21 +6,14 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { useHotel } from '@/lib/useHotel';
 
-type FrameStyle = 'noir' | 'ivory' | 'monolith';
-
-const FRAMES: { id: FrameStyle; label: string; note: string }[] = [
-  { id: 'noir', label: 'Noir', note: 'Near-black card, champagne rule' },
-  { id: 'ivory', label: 'Ivory', note: 'Warm paper stock, ink black' },
-  { id: 'monolith', label: 'Monolith', note: 'Full charcoal, no rule' },
-];
+// Fixed champagne-gold foreground for QR codes (no per-user ink customisation).
+const QR_FOREGROUND = '#C9A15D';
 
 export default function QRBuilderPage() {
   const { hotel, loading: hotelLoading } = useHotel();
   const [tableNumber, setTableNumber] = useState('1');
   const [hotelSlug, setHotelSlug] = useState('');
-  const [fgColor, setFgColor] = useState('#F3EFE7');
   const [bgColor, setBgColor] = useState('#0B0B0A');
-  const [templateStyle, setTemplateStyle] = useState<FrameStyle>('noir');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [batchCount, setBatchCount] = useState<number>(10);
   const [batchQrs, setBatchQrs] = useState<{ table: string; url: string; qrDataUrl: string }[]>([]);
@@ -37,7 +30,7 @@ export default function QRBuilderPage() {
   useEffect(() => {
     generateQrCode();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableNumber, fgColor, bgColor, hotelSlug]);
+  }, [tableNumber, bgColor, hotelSlug]);
 
   const generateQrCode = async () => {
     if (!hotelSlug || !menuUrl) return;
@@ -46,7 +39,7 @@ export default function QRBuilderPage() {
         width: 360,
         margin: 2,
         color: {
-          dark: fgColor,
+          dark: QR_FOREGROUND,
           light: bgColor,
         },
       });
@@ -64,7 +57,7 @@ export default function QRBuilderPage() {
       const dataUrl = await QRCode.toDataURL(url, {
         width: 300,
         margin: 2,
-        color: { dark: fgColor, light: bgColor },
+        color: { dark: QR_FOREGROUND, light: bgColor },
       });
       list.push({ table: tNum, url, qrDataUrl: dataUrl });
     }
@@ -83,14 +76,6 @@ export default function QRBuilderPage() {
     navigator.clipboard.writeText(menuUrl);
     alert(`Table menu link copied: ${menuUrl}`);
   };
-
-  /* Standee presentation per frame style */
-  const standee =
-    templateStyle === 'ivory'
-      ? { bg: '#F4F1EA', ink: '#14140F', rule: 'rgba(20,20,15,0.14)', accent: '#8A7A56' }
-      : templateStyle === 'monolith'
-      ? { bg: '#0B0B0A', ink: '#F3EFE7', rule: 'rgba(243,239,231,0.10)', accent: '#B8A47A' }
-      : { bg: '#121210', ink: '#F3EFE7', rule: 'rgba(184,164,122,0.28)', accent: '#B8A47A' };
 
   return (
     <div className="flex flex-col gap-8" style={{ maxWidth: 1180 }}>
@@ -140,7 +125,7 @@ export default function QRBuilderPage() {
               <span className="d3-chip">Single</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
                 <label className="d3-label" htmlFor="qr-table">
                   Table Number / Name
@@ -155,59 +140,16 @@ export default function QRBuilderPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <span className="d3-label">Ink</span>
-                  <div className="d3-swatch">
-                    <input
-                      type="color"
-                      value={fgColor}
-                      onChange={(e) => setFgColor(e.target.value)}
-                      aria-label="QR foreground colour"
-                    />
-                    <code>{fgColor}</code>
-                  </div>
-                </div>
-                <div>
-                  <span className="d3-label">Paper</span>
-                  <div className="d3-swatch">
-                    <input
-                      type="color"
-                      value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
-                      aria-label="QR background colour"
-                    />
-                    <code>{bgColor}</code>
-                  </div>
-                </div>
-              </div>
-
               <div>
-                <span className="d3-label">Frame</span>
-                <div className="grid grid-cols-1 gap-2">
-                  {FRAMES.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      className="d3-option"
-                      data-active={templateStyle === f.id}
-                      aria-pressed={templateStyle === f.id}
-                      onClick={() => setTemplateStyle(f.id)}
-                    >
-                      <span style={{ display: 'block', color: 'inherit' }}>{f.label}</span>
-                      <span
-                        style={{
-                          display: 'block',
-                          fontSize: '0.6875rem',
-                          color: 'var(--text-dimmed)',
-                          marginTop: 3,
-                          fontWeight: 400,
-                        }}
-                      >
-                        {f.note}
-                      </span>
-                    </button>
-                  ))}
+                <span className="d3-label">Paper</span>
+                <div className="d3-swatch">
+                  <input
+                    type="color"
+                    value={bgColor}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    aria-label="QR background colour"
+                  />
+                  <code>{bgColor}</code>
                 </div>
               </div>
 
@@ -300,13 +242,8 @@ export default function QRBuilderPage() {
                 width: 280,
                 padding: '2rem 1.75rem',
                 borderRadius: 8,
-                background: standee.bg,
-                border:
-                  templateStyle === 'noir'
-                    ? `1px solid ${standee.rule}`
-                    : templateStyle === 'ivory'
-                    ? '1px solid rgba(20,20,15,0.12)'
-                    : 'none',
+                background: bgColor || '#0B0B0A',
+                border: `1px solid ${QR_FOREGROUND}`,
                 boxShadow: '0 28px 64px rgba(0,0,0,0.5)',
                 display: 'flex',
                 flexDirection: 'column',
@@ -321,7 +258,7 @@ export default function QRBuilderPage() {
                   fontSize: '0.5rem',
                   letterSpacing: '0.3em',
                   textTransform: 'uppercase',
-                  color: standee.accent,
+                  color: QR_FOREGROUND,
                 }}
               >
                 Dine3D
@@ -336,7 +273,7 @@ export default function QRBuilderPage() {
                     fontWeight: 500,
                     letterSpacing: '-0.015em',
                     lineHeight: 1.25,
-                    color: standee.ink,
+                    color: QR_FOREGROUND,
                   }}
                 >
                   Scan to view the menu
@@ -347,7 +284,7 @@ export default function QRBuilderPage() {
                     fontSize: '0.6875rem',
                     lineHeight: 1.6,
                     opacity: 0.62,
-                    color: standee.ink,
+                    color: QR_FOREGROUND,
                   }}
                 >
                   No app required — open with your camera.
@@ -380,7 +317,7 @@ export default function QRBuilderPage() {
                 style={{
                   paddingTop: '1rem',
                   width: '100%',
-                  borderTop: `1px solid ${standee.rule}`,
+                  borderTop: `1px solid ${QR_FOREGROUND}`,
                 }}
               >
                 <span
@@ -388,7 +325,7 @@ export default function QRBuilderPage() {
                     fontFamily: 'var(--font-display)',
                     fontSize: '1rem',
                     letterSpacing: '0.04em',
-                    color: standee.ink,
+                    color: QR_FOREGROUND,
                   }}
                 >
                   Table {tableNumber}

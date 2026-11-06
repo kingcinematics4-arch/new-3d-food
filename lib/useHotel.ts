@@ -15,6 +15,7 @@ export interface Hotel {
   city: string | null;
   address: string | null;
   logo_url: string | null;
+  google_review_url: string | null;
   primary_color: string;
   secondary_color: string;
   menu_style: string;

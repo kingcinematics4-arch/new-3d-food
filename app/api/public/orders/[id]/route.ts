@@ -66,6 +66,7 @@ export async function GET(
     const hotelSelect = [
       'id',
       hotelSchema.menuTheme ? 'menu_theme' : '',
+      hotelSchema.googleReviewUrl ? 'google_review_url' : '',
       'slug',
       hotelSchema.currency ? 'currency' : '',
     ].filter(Boolean).join(', ');
@@ -160,6 +161,7 @@ export async function GET(
         items,
         hotel_theme: (order as any).hotels?.menu_theme || await getStoredMenuTheme((order as any).hotels?.id) || DEFAULT_MENU_THEME,
         hotel_slug: (order as any).hotels?.slug || null,
+        google_review_url: (order as any).hotels?.google_review_url || null,
         // Normalise the stored currency to INR for display. This is a
         // DISPLAY-ONLY mapping: numeric prices, tax, service charge,
         // payment amounts and historical order rows are never altered.

@@ -48,6 +48,8 @@ export interface HotelSchema {
   currency: boolean;
   /** public.hotels.hotel_public_id exists (migration 021 applied). */
   hotelPublicId: boolean;
+  /** public.hotels.google_review_url exists (migration 001). */
+  googleReviewUrl: boolean;
 }
 
 /**
@@ -62,5 +64,6 @@ export async function getHotelSchema(): Promise<HotelSchema> {
     customThemeConfig: await columnExists('hotels', 'custom_theme_config'),
     currency: await columnExists('hotels', 'currency'),
     hotelPublicId: await columnExists('hotels', 'hotel_public_id'),
+    googleReviewUrl: await columnExists('hotels', 'google_review_url'),
   };
 }
