@@ -19,7 +19,6 @@ import { SECTION_KEYS, SECTION_LABELS } from '@/lib/siteContent';
 
 const QUICK_EDITS = [
   { href: '/admin/hero', label: 'Hero headline', section: 'hero' },
-  { href: '/admin/hotel-cards', label: 'Hotel Card Templates', section: null },
   { href: '/admin/features', label: 'Feature cards', section: 'features' },
   { href: '/admin/pricing', label: 'Pricing plans', section: 'pricing' },
   { href: '/admin/branding', label: 'Branding', section: null },
@@ -113,14 +112,6 @@ export default function AdminOverviewPage() {
                 Manage sections
               </Link>
             </div>
-          </div>
-        </AdminPanel>
-
-        {/* ------------------------------------------------ HOTEL CARD TEMPLATES */}
-        <AdminPanel title="Hotel Card Templates" description="Upload, position and activate card designs for hotel identity cards.">
-          <div className="flex items-center justify-between gap-3">
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Manage hotel card templates, uploads and live preview.</span>
-            <Link href="/admin/hotel-cards" className="d3-btn-quiet">Open ?</Link>
           </div>
         </AdminPanel>
 

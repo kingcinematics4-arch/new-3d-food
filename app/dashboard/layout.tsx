@@ -130,7 +130,6 @@ const navItems = [
     ],
   },
   { label: 'Reviews', href: '/dashboard/reviews' },
-  { label: 'Hotel Card Template', href: '/dashboard/hotel-cards' },
   { label: 'Restaurant Profile', href: '/dashboard/settings' },
 ] as const;
 
@@ -153,7 +152,7 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { hotel, loading: hotelLoading } = useHotel();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const ADMIN_SECTION = ['/dashboard/admin', '/dashboard/customize', '/dashboard/menu-theme', '/dashboard/custom-themes', '/dashboard/hotel-cards'];
+  const ADMIN_SECTION = ['/dashboard/admin', '/dashboard/customize', '/dashboard/menu-theme', '/dashboard/custom-themes'];
   const isInAdminSection = (p: string | null) => !!p && ADMIN_SECTION.some((a) => p === a || p.startsWith(a + '/'));
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [dashboardAdminAuthed, setDashboardAdminAuthed] = useState(false);

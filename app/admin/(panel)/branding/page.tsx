@@ -16,7 +16,6 @@
 import React from 'react';
 import { useSiteContent } from '@/components/admin/SiteContentProvider';
 import LogoUploader from '@/components/admin/LogoUploader';
-import HotelCardTemplatesPanel from '@/components/admin/HotelCardTemplatesPanel';
 import Dine3DLogo from '@/components/Dine3DLogo';
 import {
   AdminPageHeader,
@@ -75,10 +74,6 @@ export default function AdminBrandingPage() {
       />
 
       <div className="flex flex-col gap-6">
-        {/* ---------------------------------------------- HOTEL CARD TEMPLATES */}
-        <HotelCardTemplatesPanel />
-        <div className="d3-rule" />
-
         {/* ---------------------------------------------- LOGO */}
         <AdminPanel title="Logo">
           <LogoUploader onLogoChanged={syncFromServer} />
