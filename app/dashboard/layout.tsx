@@ -76,6 +76,12 @@ const navIcons: Record<string, React.ReactNode> = {
       <circle cx="8" cy="8" r="1.6" fill="currentColor" fillOpacity="0.5" />
     </svg>
   ),
+  'Hotel Card Templates': (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4 6H12M4 9H9" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  ),
   Hotels: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M2.5 13.5V4.8L8 2.2L13.5 4.8V13.5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
@@ -92,6 +98,12 @@ const navIcons: Record<string, React.ReactNode> = {
   Reviews: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M8 2L9.5 6H14L10.5 8.5L12 12.5L8 10L4 12.5L5.5 8.5L2 6H6.5L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  ),
+  'Hotel Card Template': (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4 6H12M4 9H9" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
     </svg>
   ),
   'Restaurant Profile': (
@@ -118,6 +130,7 @@ const navItems = [
     ],
   },
   { label: 'Reviews', href: '/dashboard/reviews' },
+  { label: 'Hotel Card Template', href: '/dashboard/hotel-cards' },
   { label: 'Restaurant Profile', href: '/dashboard/settings' },
 ] as const;
 
@@ -140,7 +153,7 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { hotel, loading: hotelLoading } = useHotel();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const ADMIN_SECTION = ['/dashboard/admin', '/dashboard/customize', '/dashboard/menu-theme', '/dashboard/custom-themes'];
+  const ADMIN_SECTION = ['/dashboard/admin', '/dashboard/customize', '/dashboard/menu-theme', '/dashboard/custom-themes', '/dashboard/hotel-cards'];
   const isInAdminSection = (p: string | null) => !!p && ADMIN_SECTION.some((a) => p === a || p.startsWith(a + '/'));
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [dashboardAdminAuthed, setDashboardAdminAuthed] = useState(false);

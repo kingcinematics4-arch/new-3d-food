@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Overview', description: 'Status and quick actions', exact: true },
   { href: '/admin/hero', label: 'Hero', description: 'Headline and calls to action' },
   { href: '/admin/branding', label: 'Branding', description: 'Logo, type and colour' },
+  { href: '/admin/hotel-cards', label: 'Hotel Card Templates', description: 'Upload, position and activate card design' },
   { href: '/admin/sections', label: 'Sections', description: 'Show, hide and order' },
   { href: '/admin/features', label: 'Features', description: 'Feature cards' },
   { href: '/admin/pricing', label: 'Pricing', description: 'Plans and pricing' },
