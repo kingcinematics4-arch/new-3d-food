@@ -18,8 +18,8 @@ export async function POST(request: Request) {
   if (!t.allowed) return NextResponse.json({ success: false, error: 'Too many attempts. Please wait.', retryAfterSeconds: t.retryAfterSeconds }, { status: 429, headers: { 'Retry-After': String(t.retryAfterSeconds) } });
   let body: any = {};
   try { body = await request.json(); } catch { recordDashboardAdminFailure(key); return NextResponse.json({ success: false, error: 'Invalid request.' }, { status: 400 }); }
-  const ok = await verifyDashboardAdminPassword(body?.password || '');
-  if (!ok) { recordDashboardAdminFailure(key); return NextResponse.json({ success: false, error: 'Incorrect password.' }, { status: 401 }); }
+  const result = await verifyDashboardAdminPassword(body?.password || '');
+  if (!result?.ok) { recordDashboardAdminFailure(key); return NextResponse.json({ success: false, error: 'Incorrect password.' }, { status: 401 }); }
   recordDashboardAdminSuccess(key);
-  return issueDashboardAdminCookie();
+  return issueDashboardAdminCookie(result.hotelPublicId ? { hid: result.hotelPublicId } : {});
 }

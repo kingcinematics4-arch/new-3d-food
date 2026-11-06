@@ -1,5 +1,7 @@
-import { randomBytes, scrypt as _scrypt, timingSafeEqual } from 'crypto';
+﻿import { scrypt as _scrypt, timingSafeEqual } from 'crypto';
 import { promisify } from 'util';
+import { supabaseAdmin } from './supabaseAdmin';
+import { isValidHotelPublicId } from './hotelPublicId';
 
 const scrypt = promisify(_scrypt);
 const enc = new TextEncoder();
@@ -8,42 +10,82 @@ export const DASHBOARD_ADMIN_COOKIE = 'd3_dashboard_admin';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 export const DASHBOARD_ADMIN_MAX_AGE = 8 * 60 * 60;
 
-// Server-only verification material. The dashboard Admin password is never sent to
-// clients and never included in API responses. Verification is performed server-side
-// only. A scrypt-derived hash is used so the raw secret is not compared in logs/UI.
-const BUILTIN_SALT = Buffer.from('5cb37ccc2cb44080114f81e605a8aadb', 'hex');
-const BUILTIN_HASH = Buffer.from(
+// Server-only dashboard/hotel-admin auth. Passwords are never sent to clients,
+// never included in API responses, and never compared in frontend code.
+// Format (dynamic, never hardcoded per hotel): `King.0001` + hotelPublicId
+// Example: hotelPublicId AA11bb123 => King.0001AA11bb123
+export const DASHBOARD_ADMIN_PASSWORD_PREFIX = 'King.0001';
+
+const LEGACY_SALT = Buffer.from('5cb37ccc2cb44080114f81e605a8aadb', 'hex');
+const LEGACY_HASH = Buffer.from(
   '493ebcd5c86ea043a8f142bb22e73d932637c35b03d38f7487be9196f234b31f736b1b75c418a4b5ef9a58718855c5452608ab5b74e2ceefe9a89a490a93f7db',
   'hex'
 );
-const CONTEXT = Buffer.from('d3dash-admin-v1', 'utf8');
+const LEGACY_CONTEXT = Buffer.from('d3dash-admin-v1', 'utf8');
 
-function getSecret(): string {
-  // Server env can override without code changes; never NEXT_PUBLIC_, never returned.
-  return process.env.DASHBOARD_ADMIN_PASSWORD ?? '';
+async function deriveLegacy(password: string): Promise<Buffer> {
+  return (await scrypt(password, Buffer.concat([LEGACY_CONTEXT, LEGACY_SALT]), 64)) as Buffer;
 }
 
-async function derive(password: string, salt: Buffer): Promise<Buffer> {
-  const key = (await scrypt(password, Buffer.concat([CONTEXT, salt]), 64)) as Buffer;
-  return key;
-}
-
-export async function verifyDashboardAdminPassword(candidate: string): Promise<boolean> {
-  const pw = typeof candidate === 'string' ? candidate : '';
-  if (!pw) return false;
-  const configured = getSecret();
-  if (configured) {
-    const a = Buffer.from(pw, 'utf8');
-    const b = Buffer.from(configured, 'utf8');
-    if (a.length !== b.length) return false;
-    return timingSafeEqual(a, b);
-  }
-  const derived = await derive(pw, BUILTIN_SALT);
-  return derived.length === BUILTIN_HASH.length && timingSafeEqual(derived, BUILTIN_HASH);
+function safeEqualStr(a: string, b: string): boolean {
+  const ab = Buffer.from(a, 'utf8');
+  const bb = Buffer.from(b, 'utf8');
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
 }
 
 export function isDashboardAdminConfigured(): boolean {
   return true;
+}
+
+export interface DashboardAdminVerification {
+  ok: boolean;
+  hotelPublicId?: string; // present when authenticated via a valid hotel ID
+}
+
+async function hotelExistsWithPublicId(hotelPublicId: string): Promise<boolean> {
+  if (!isValidHotelPublicId(hotelPublicId)) return false;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('hotels')
+      .select('id')
+      .eq('hotel_public_id', hotelPublicId)
+      .maybeSingle();
+    if (error) return false;
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
+/** Server-side verification. Accepts ONLY `King.0001{hotelPublicId}` for a hotel ID that exists in DB. */
+export async function verifyDashboardAdminPassword(candidate: string): Promise<DashboardAdminVerification> {
+  const pw = typeof candidate === 'string' ? candidate : '';
+  if (!pw) return { ok: false };
+
+  // Optional server override (never NEXT_PUBLIC_, never returned). Exact match only.
+  const configured = process.env.DASHBOARD_ADMIN_PASSWORD || '';
+  if (configured && safeEqualStr(pw, configured)) return { ok: true };
+
+  // New required format: King.0001 + valid AA12bb123 hotelPublicId that exists in DB.
+  if (pw.startsWith(DASHBOARD_ADMIN_PASSWORD_PREFIX)) {
+    const hotelPublicId = pw.slice(DASHBOARD_ADMIN_PASSWORD_PREFIX.length);
+    if (isValidHotelPublicId(hotelPublicId) && (await hotelExistsWithPublicId(hotelPublicId))) {
+      return { ok: true, hotelPublicId };
+    }
+    return { ok: false };
+  }
+
+  // Legacy compatibility for the previous global dashboard-admin password (hash-only; no plaintext).
+  // This does not affect hotel IDs/records and does not grant per-hotel identity.
+  if (!configured) {
+    try {
+      const derived = await deriveLegacy(pw);
+      if (derived.length === LEGACY_HASH.length && timingSafeEqual(derived, LEGACY_HASH)) return { ok: true };
+    } catch {}
+  }
+
+  return { ok: false };
 }
 
 function toB64Url(buf: ArrayBuffer | Uint8Array): string {
@@ -58,11 +100,13 @@ async function hmacKey() {
   return crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
 }
 
-export interface DashboardAdminSession { iat: number; exp: number }
+export interface DashboardAdminSession { iat: number; exp: number; hid?: string }
 
-export async function createDashboardAdminToken(): Promise<string> {
+export async function createDashboardAdminToken(claims: { hid?: string } = {}): Promise<string> {
   const now = Date.now();
-  const payload = toB64Url(enc.encode(JSON.stringify({ iat: now, exp: now + SESSION_TTL_MS })));
+  const payloadObj: any = { iat: now, exp: now + SESSION_TTL_MS };
+  if (claims.hid && isValidHotelPublicId(claims.hid)) payloadObj.hid = claims.hid;
+  const payload = toB64Url(enc.encode(JSON.stringify(payloadObj)));
   const sig = await crypto.subtle.sign('HMAC', await hmacKey(), enc.encode(`${TOKEN_VERSION}.${payload}`));
   return `${TOKEN_VERSION}.${payload}.${toB64Url(sig)}`;
 }
@@ -73,8 +117,10 @@ export async function verifyDashboardAdminToken(token?: string): Promise<Dashboa
   if (parts.length !== 3 || parts[0] !== TOKEN_VERSION) return null;
   const [, payload, sig] = parts;
   try {
-    const ok = await crypto.subtle.verify('HMAC', await hmacKey(), fromB64Url(sig) as unknown as BufferSource, enc.encode(`${TOKEN_VERSION}.${payload}`));
-    if (!ok) return false as any;
+    const sigBuf = fromB64Url(sig);
+    const dataBuf = enc.encode(TOKEN_VERSION + '.' + payload);
+    const ok = await crypto.subtle.verify('HMAC', await hmacKey(), sigBuf as unknown as BufferSource, dataBuf as unknown as BufferSource);
+    if (!ok) return null;
     const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as DashboardAdminSession;
     if (!data?.exp || Date.now() > data.exp) return null;
     return data;

@@ -1,7 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import { supabaseAdmin, assertSupabaseAdminConfigured } from '@/lib/supabaseAdmin';
 import { getHotelSchema } from '@/lib/hotelSchema';
-import { generateUniqueHotelPublicId } from '@/lib/hotelPublicId';
+import { assignHotelPublicIdIfMissing, isValidHotelPublicId } from '@/lib/hotelPublicId';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { findHotelOwnedByUser } from '@/lib/hotelAccess';
 import { getDashboardAdminSession } from '@/lib/dashboardAdminSession.server';
@@ -29,7 +29,6 @@ export async function GET() {
   try {
     assertSupabaseAdminConfigured();
     // Hotels section: no Admin lock. Use normal dashboard permissions.
-    // Dashboard-admin session may see all hotels; regular owners see only their hotel.
     const admin = await getDashboardAdminSession();
     const user = admin ? null : await getAuthenticatedUser();
     if (!admin && !user) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
@@ -39,29 +38,25 @@ export async function GET() {
     const base = `id, name, slug, logo_url, city, owner_name, email, phone, is_active, created_at${idCol}`;
 
     let rows: any[] = [];
-    let canManage = !!admin;
+    const canManage = !!admin;
     if (admin) {
       const { data, error } = await supabaseAdmin.from('hotels').select(base).order('created_at', { ascending: false });
       if (error) throw error;
       rows = (data || []) as any[];
-      // Safe backfill for legacy rows only when admin views and column exists.
-      if ((schema as any).hotelPublicId) {
-        for (const r of rows) {
-          if (!r.hotel_public_id) {
-            try {
-              const hid = await generateUniqueHotelPublicId();
-              const { data: upd } = await supabaseAdmin.from('hotels').update({ hotel_public_id: hid }).eq('id', r.id).is('hotel_public_id', null).select('hotel_public_id').maybeSingle();
-              if (upd?.hotel_public_id) r.hotel_public_id = upd.hotel_public_id;
-            } catch {}
-          }
-        }
-      }
     } else {
       const owned = await findHotelOwnedByUser(user!.id);
       if (!owned) return NextResponse.json({ success: true, hotels: [], canManage: false }, { headers: { 'Cache-Control': 'no-store' } });
       const { data, error } = await supabaseAdmin.from('hotels').select(base).eq('id', owned.id).limit(1);
       if (error) throw error;
       rows = (data || []) as any[];
+    }
+
+    // Safe, idempotent: assign permanent AA12bb123 IDs only where missing/invalid. Preserves existing valid IDs.
+    if ((schema as any).hotelPublicId) {
+      for (const r of rows) {
+        if (isValidHotelPublicId(r.hotel_public_id)) continue;
+        try { const id = await assignHotelPublicIdIfMissing(r.id, r.hotel_public_id); if (id) r.hotel_public_id = id; } catch {}
+      }
     }
 
     return NextResponse.json({ success: true, hotels: rows.map(pickHotel), canManage, schema: { hotelPublicId: !!(schema as any).hotelPublicId } }, { headers: { 'Cache-Control': 'no-store' } });

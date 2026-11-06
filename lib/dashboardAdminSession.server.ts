@@ -47,8 +47,8 @@ export async function requireDashboardAdminApi(): Promise<NextResponse | null> {
   return NextResponse.json({ success: false, error: 'Dashboard admin access required.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
 }
 
-export async function issueDashboardAdminCookie() {
-  const token = await createDashboardAdminToken();
+export async function issueDashboardAdminCookie(claims: { hid?: string } = {}) {
+  const token = await createDashboardAdminToken(claims);
   const res = NextResponse.json({ success: true, expiresInSeconds: DASHBOARD_ADMIN_MAX_AGE });
   res.cookies.set(DASHBOARD_ADMIN_COOKIE, token, dashboardAdminCookieOptions(DASHBOARD_ADMIN_MAX_AGE));
   return res;

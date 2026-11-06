@@ -53,7 +53,7 @@ export default function DashboardAdminLanding() {
       <div style={{ maxWidth: 560 }}>
         <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>Admin Access</span>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.9rem,3.5vw,2.6rem)', fontWeight: 500, color: 'var(--text-primary)', margin: '0.5rem 0 0', letterSpacing: '-0.025em' }}>Admin</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', lineHeight: 1.65, marginTop: '0.625rem', maxWidth: '56ch' }}>Enter the admin password to unlock Menu Design, Menu Themes, and Custom Themes. This is the only place you’ll be asked to authenticate.</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', lineHeight: 1.65, marginTop: '0.625rem', maxWidth: '56ch' }}>Enter your hotel admin password to unlock Menu Design, Menu Themes, and Custom Themes. Use: King.0001 + your Hotel ID (e.g. King.0001AA11bb123). Passwords are verified server-side.</p>
         <form onSubmit={unlock} className="d3-panel" style={{ marginTop: '1.75rem', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: 14, border: '1px solid rgba(201,169,110,0.16)', boxShadow: '0 24px 64px rgba(0,0,0,0.28)' }}>
           <label className="d3-label" htmlFor="admin-landing-pw">Admin password</label>
           <div style={{ display: 'flex', gap: 8 }}>

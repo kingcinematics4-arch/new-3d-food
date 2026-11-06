@@ -185,27 +185,36 @@ async function performHotelOnboarding(
  * exactly the half-onboarded state recoverIncompleteOnboarding exists to fix.
  */
 async function createHotelForUser(userId: string, data: SignUpInput) {
-  const hotelPublicId = await generateUniqueHotelPublicId();
-  const { data: hotelData, error: hotelError } = await supabaseAdmin
-    .from('hotels')
-    .insert({
-      user_id: userId,
-      hotel_public_id: hotelPublicId,
-      name: data.hotel_name,
-      slug: generateSlug(data.hotel_name),
-      owner_name: data.owner_name,
-      email: data.email,
-      phone: data.phone || null,
-      city: data.city || null,
-      address: data.address || null,
-      is_active: true,
-      subscription_plan: 'starter',
-    })
-    .select()
-    .single();
+  let hotelData: any = null;
+  let hotelError: any = null;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const hotelPublicId = await generateUniqueHotelPublicId();
+    const res = await supabaseAdmin
+      .from('hotels')
+      .insert({
+        user_id: userId,
+        hotel_public_id: hotelPublicId,
+        name: data.hotel_name,
+        slug: generateSlug(data.hotel_name),
+        owner_name: data.owner_name,
+        email: data.email,
+        phone: data.phone || null,
+        city: data.city || null,
+        address: data.address || null,
+        is_active: true,
+        subscription_plan: 'starter',
+      })
+      .select()
+      .single();
+    hotelData = res.data; hotelError = res.error;
+    if (!hotelError) break;
+    const msg = `${hotelError.code || ''} ${hotelError.message || ''}`.toLowerCase();
+    if (hotelError.code === '23505' && (msg.includes('hotel_public_id') || msg.includes('hotels_hotel_public_id'))) continue; // race: regenerate ID
+    break;
+  }
 
-  if (hotelError) {
-    throw new Error(describeHotelInsertError(hotelError));
+  if (hotelError || !hotelData) {
+    throw new Error(describeHotelInsertError(hotelError || { message: 'Hotel creation failed' }));
   }
 
   const { error: linkError } = await supabaseAdmin
