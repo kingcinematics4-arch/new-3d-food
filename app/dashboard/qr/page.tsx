@@ -5,12 +5,14 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { useHotel } from '@/lib/useHotel';
+import { useDashboardDialogs } from '@/components/dashboard/DashboardDialogs';
 
 // Fixed champagne-gold foreground for QR codes (no per-user ink customisation).
 const QR_FOREGROUND = '#C9A15D';
 
 export default function QRBuilderPage() {
   const { hotel, loading: hotelLoading } = useHotel();
+  const { toast } = useDashboardDialogs();
   const [tableNumber, setTableNumber] = useState('1');
   const [hotelSlug, setHotelSlug] = useState('');
   const [bgColor, setBgColor] = useState('#0B0B0A');
@@ -72,9 +74,14 @@ export default function QRBuilderPage() {
     link.click();
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(menuUrl);
-    alert(`Table menu link copied: ${menuUrl}`);
+  const handleCopyLink = async () => {
+    if (!menuUrl) return;
+    try {
+      await navigator.clipboard.writeText(menuUrl);
+      toast('Table menu link copied.', 'success');
+    } catch {
+      toast('Unable to copy the link. Please copy it manually.', 'error');
+    }
   };
 
   return (

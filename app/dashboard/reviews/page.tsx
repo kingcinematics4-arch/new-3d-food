@@ -4,9 +4,11 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHotel } from '@/lib/useHotel';
+import { useDashboardDialogs } from '@/components/dashboard/DashboardDialogs';
 
 export default function ReviewsDashboardPage() {
   const { hotel, loading: hotelLoading, refetch } = useHotel();
+  const { confirm } = useDashboardDialogs();
   // Local input state is seeded from the cached hotel row. It is the only
   // source of truth for what is typed; the badge below is derived from the
   // saved value so it reflects the database, not the text box.
@@ -100,10 +102,17 @@ export default function ReviewsDashboardPage() {
   }, [googleReviewUrl, persistUrl]);
 
   // REMOVE URL: an explicit administrator action that deletes the URL.
-  const handleRemove = useCallback(() => {
-    if (!window.confirm('Remove the Google Review URL? This action can be undone by saving a new URL.')) return;
+  const handleRemove = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Remove Google Review URL',
+      body: 'Remove the Google Review URL? This action can be undone by saving a new URL.',
+      confirmLabel: 'Remove URL',
+      cancelLabel: 'Keep URL',
+      tone: 'danger',
+    });
+    if (!ok) return;
     persistUrl('', true);
-  }, [persistUrl]);
+  }, [confirm, persistUrl]);
 
   const isValidUrl = (value: string): boolean => {
     try {

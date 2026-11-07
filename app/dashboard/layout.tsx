@@ -9,6 +9,7 @@ import { supabaseClient } from '@/lib/supabaseClient';
 import { useHotel, clearDashboardCache } from '@/lib/useHotel';
 import { useAuth } from '@/lib/authContext';
 import Dine3DLogo from '@/components/Dine3DLogo';
+import { DashboardDialogsProvider } from '@/components/dashboard/DashboardDialogs';
 
 // Nav item icons (SVG inline for quality)
 const navIcons: Record<string, React.ReactNode> = {
@@ -141,7 +142,9 @@ const isGroup = (item: NavItem): item is NavGroup => 'children' in item;
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <DashboardLayoutBody>{children}</DashboardLayoutBody>
+      <DashboardDialogsProvider>
+        <DashboardLayoutBody>{children}</DashboardLayoutBody>
+      </DashboardDialogsProvider>
     </QueryClientProvider>
   );
 }

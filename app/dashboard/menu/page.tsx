@@ -8,6 +8,7 @@ import DishFormModal, { type DishPayload } from '@/components/menu/DishFormModal
 import Dish3DModal from '@/components/menu/Dish3DModal';
 import { formatPrice, resolveCurrency } from '@/lib/menu';
 import { useHotel, useMenuItems, useCategories, MenuItem, Category } from '@/lib/useHotel';
+import { useDashboardDialogs } from '@/components/dashboard/DashboardDialogs';
 
 const ALL_CATEGORIES = 'All';
 
@@ -17,6 +18,7 @@ export default function MenuManagementPage() {
   const { categories: categoryList, refetch: refetchCategories, createCategory } = useCategories(
     hotel?.id || null
   );
+  const { toast, confirm, prompt } = useDashboardDialogs();
 
   const currencyLabel = resolveCurrency(hotel?.currency).symbol.trim() || '₹';
 
@@ -121,22 +123,38 @@ export default function MenuManagementPage() {
   };
 
   const handleAddCategory = async () => {
-    const name = window.prompt('Enter category name:');
+    const name = await prompt({
+      title: 'Add category',
+      label: 'Category name',
+      placeholder: 'e.g. Starters, Main Course, Desserts',
+      confirmLabel: 'Create category',
+      validate: (value) => (!value.trim() ? 'Enter a category name.' : null),
+    });
     if (name && name.trim()) {
-      await createCategory(name.trim());
+      const created = await createCategory(name.trim());
       await refetchCategories();
+      if (created) toast('Category created.', 'success');
+      else toast('Failed to create category.', 'error');
     }
   };
 
   const handleDelete = async (item: MenuItem) => {
-    if (!window.confirm(`Delete “${item.name}” from your menu?`)) return;
+    const ok = await confirm({
+      title: 'Delete dish',
+      body: `Delete “${item.name}” from your menu? This cannot be undone.`,
+      confirmLabel: 'Delete dish',
+      cancelLabel: 'Keep dish',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       const res = await fetch(`/api/menu/${item.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed to delete dish');
       await refetchItems();
+      toast('Dish deleted.', 'success');
     } catch (err: any) {
-      window.alert(err?.message || 'Failed to delete dish');
+      toast(err?.message || 'Failed to delete dish.', 'error');
     }
   };
 
@@ -149,8 +167,9 @@ export default function MenuManagementPage() {
       });
       const json = await res.json();
       if (json.success) await refetchItems();
+      else throw new Error(json.error || 'Failed to update dish');
     } catch (err: any) {
-      window.alert(err?.message || 'Failed to update dish');
+      toast(err?.message || 'Failed to update dish.', 'error');
     }
   };
 

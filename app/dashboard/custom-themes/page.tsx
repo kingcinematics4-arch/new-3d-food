@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useHotel } from '@/lib/useHotel';
 import CustomThemeBuilder from '@/components/menu/CustomThemeBuilder';
 import type { CustomThemeConfig } from '@/lib/customTheme';
+import { useDashboardDialogs } from '@/components/dashboard/DashboardDialogs';
 
 interface SavedTheme {
   id: string;
@@ -117,6 +118,7 @@ const BTN_OUTLINE = `${BUTTON_STYLE} border-white/20 text-neutral-400 hover:bord
 
 function CustomThemesContent() {
   const { hotel, loading: hotelLoading, refetch } = useHotel();
+  const { toast, confirm, prompt } = useDashboardDialogs();
   const [themes, setThemes] = useState<SavedTheme[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,7 +179,13 @@ function CustomThemesContent() {
   };
 
   const handleRename = async (themeId: string, currentName: string) => {
-    const name = window.prompt('Enter new theme name', currentName);
+    const name = await prompt({
+      title: 'Rename theme',
+      label: 'Theme name',
+      initialValue: currentName,
+      confirmLabel: 'Rename',
+      validate: (value) => (!value.trim() ? 'Enter a theme name.' : null),
+    });
     if (!name || !name.trim() || name.trim() === currentName) return;
     setSavingEdit(themeId);
     try {
@@ -191,8 +199,10 @@ function CustomThemesContent() {
         throw new Error(json.error || 'Failed to rename theme');
       }
       await fetchThemes();
+      toast('Theme renamed.', 'success');
     } catch (err: any) {
       setError(err.message || 'Failed to rename theme');
+      toast(err.message || 'Failed to rename theme.', 'error');
     } finally {
       setSavingEdit(null);
     }
@@ -211,15 +221,24 @@ function CustomThemesContent() {
         throw new Error(json.error || 'Failed to duplicate theme');
       }
       await fetchThemes();
+      toast('Theme duplicated.', 'success');
     } catch (err: any) {
       setError(err.message || 'Failed to duplicate theme');
+      toast(err.message || 'Failed to duplicate theme.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (themeId: string) => {
-    if (!window.confirm('Delete this saved theme? This cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Delete saved theme',
+      body: 'Delete this saved theme? This cannot be undone.',
+      confirmLabel: 'Delete theme',
+      cancelLabel: 'Keep theme',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setDeletingId(themeId);
     try {
       const res = await fetch(`/api/hotel/themes/${themeId}`, {
@@ -232,8 +251,10 @@ function CustomThemesContent() {
         throw new Error(json.error || 'Failed to delete theme');
       }
       await fetchThemes();
+      toast('Theme deleted.', 'success');
     } catch (err: any) {
       setError(err.message || 'Failed to delete theme');
+      toast(err.message || 'Failed to delete theme.', 'error');
     } finally {
       setDeletingId(null);
     }
@@ -444,7 +465,6 @@ function ThemeCard({
 }: ThemeCardProps) {
   const config = theme.theme_config;
   const accent = config?.primaryColor || '#E5A93C';
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <div
@@ -558,7 +578,7 @@ function ThemeCard({
 
         <button
           type="button"
-          onClick={() => setConfirmDelete(true)}
+          onClick={() => void onDelete(theme.id)}
           className={BTN_DANGER}
           title="Delete theme"
         >
@@ -579,34 +599,6 @@ function ThemeCard({
           {isActive ? 'Applied' : 'Apply Theme'}
         </button>
       </div>
-
-      {confirmDelete && (
-        <div
-          className="mt-3 flex gap-2 pt-3 border-t border-white/10"
-          style={{ background: 'rgba(196,102,88,0.06)', borderRadius: 'var(--d3-panel-radius, 10px)', padding: '0.875rem' }}
-        >
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)', margin: '0 0 0.75rem' }}>
-            Delete “{theme.name}”? This cannot be undone.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setConfirmDelete(false);
-              onDelete(theme.id);
-            }}
-            className="px-3 py-1 rounded-lg text-xs font-bold text-red-400 border border-red-500/40 hover:bg-red-500/10"
-          >
-            Delete
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(false)}
-            className="px-3 py-1 rounded-lg text-xs font-bold text-neutral-300 border border-white/20 hover:bg-white/5"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
       </div>
     );
   }

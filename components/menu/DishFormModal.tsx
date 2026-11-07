@@ -6,6 +6,7 @@ import type { Category, MenuItem } from '@/lib/useHotel';
 import { CubeIcon } from './DishCard';
 import { formatBytes } from '@/lib/foodModel';
 import MenuImageUploader from './MenuImageUploader';
+import { useDashboardDialogs } from '@/components/dashboard/DashboardDialogs';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), {
   ssr: false,
@@ -156,6 +157,7 @@ export default function DishFormModal({
 }: DishFormModalProps) {
   const [form, setForm] = useState<FormState>(() => initialState(item, categories));
   const [categoryBusy, setCategoryBusy] = useState(false);
+  const { toast, prompt } = useDashboardDialogs();
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -246,8 +248,9 @@ export default function DishFormModal({
         model_url_glb: '',
         model_url_usdz: '',
       }));
+      toast('3D model removed.', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to remove model');
+      toast(err?.message || 'Failed to remove model.', 'error');
     }
   };
 
@@ -256,13 +259,20 @@ export default function DishFormModal({
       set('category', value);
       return;
     }
-    const name = window.prompt('Enter new category name:');
+    const name = await prompt({
+      title: 'Add category',
+      label: 'Category name',
+      placeholder: 'e.g. Starters, Main Course, Desserts',
+      confirmLabel: 'Create category',
+      validate: (v) => (!v.trim() ? 'Enter a category name.' : null),
+    });
     if (!name || !name.trim()) return;
 
     setCategoryBusy(true);
     try {
       const created = await onCreateCategory(name.trim());
       if (created) set('category', name.trim());
+      else toast('Failed to create category.', 'error');
     } finally {
       setCategoryBusy(false);
     }
