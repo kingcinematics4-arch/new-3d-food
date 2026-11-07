@@ -17,7 +17,7 @@ export default function QRBuilderPage() {
   const [hotelSlug, setHotelSlug] = useState('');
   const [bgColor, setBgColor] = useState('#0B0B0A');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [batchCount, setBatchCount] = useState<number>(10);
+  const [batchCount, setBatchCount] = useState<string>('10');
   const [batchQrs, setBatchQrs] = useState<{ table: string; url: string; qrDataUrl: string }[]>([]);
 
   useEffect(() => {
@@ -52,8 +52,10 @@ export default function QRBuilderPage() {
   };
 
   const handleGenerateBatch = async () => {
+    const count = Math.min(50, Math.max(1, Math.trunc(Number(batchCount) || 10)));
+    setBatchCount(String(count));
     const list: { table: string; url: string; qrDataUrl: string }[] = [];
-    for (let i = 1; i <= batchCount; i++) {
+    for (let i = 1; i <= count; i++) {
       const tNum = `${i}`;
       const url = `${origin}/menu/${hotelSlug}?table=${tNum}`;
       const dataUrl = await QRCode.toDataURL(url, {
@@ -202,10 +204,12 @@ export default function QRBuilderPage() {
                 <input
                   id="qr-batch"
                   type="number"
+                  inputMode="numeric"
                   min={1}
                   max={50}
+                  step={1}
                   value={batchCount}
-                  onChange={(e) => setBatchCount(parseInt(e.target.value) || 10)}
+                  onChange={(e) => setBatchCount(e.target.value)}
                   className="d3-input"
                 />
               </div>
@@ -216,7 +220,7 @@ export default function QRBuilderPage() {
                 style={{ flex: 1 }}
                 disabled={!hotelSlug}
               >
-                Generate {batchCount} Codes
+                Generate {batchCount || '0'} Codes
               </button>
             </div>
           </section>

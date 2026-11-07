@@ -18,8 +18,8 @@ type FormData = {
   welcome_text: string;
   custom_domain: string;
   currency: string;
-  tax_rate: number;
-  service_charge: number;
+  tax_rate: string;
+  service_charge: string;
 };
 
 /* ============================================================
@@ -92,8 +92,8 @@ export default function SettingsPage() {
     welcome_text: '',
     custom_domain: '',
     currency: 'INR (₹)',
-    tax_rate: 8.875,
-    service_charge: 5.0,
+    tax_rate: '8.875',
+    service_charge: '5',
   });
 
   const [loading, setLoading] = useState(false);
@@ -102,6 +102,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (hotel) {
+      const numStr = (v: unknown, fallback: string) =>
+        v === null || v === undefined || v === '' ? fallback : String(v);
       setFormData((prev) => ({
         ...prev,
         hotel_id: hotel.id,
@@ -116,8 +118,8 @@ export default function SettingsPage() {
         welcome_text: hotel.welcome_text || '',
         custom_domain: hotel.custom_domain || '',
         currency: hotel.currency || 'INR (₹)',
-        tax_rate: hotel.tax_rate || 8.875,
-        service_charge: hotel.service_charge || 5.0,
+        tax_rate: numStr(hotel.tax_rate, '8.875'),
+        service_charge: numStr(hotel.service_charge, '5'),
       }));
     }
   }, [hotel]);
@@ -132,10 +134,19 @@ export default function SettingsPage() {
     setError(null);
 
     try {
+      const tax = formData.tax_rate.trim() === '' ? 0 : Number(formData.tax_rate);
+      const service = formData.service_charge.trim() === '' ? 0 : Number(formData.service_charge);
+      if (!Number.isFinite(tax) || tax < 0 || !Number.isFinite(service) || service < 0) {
+        throw new Error('Tax and service charge must be valid non-negative numbers.');
+      }
       const res = await fetch('/api/hotel/update', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          tax_rate: tax,
+          service_charge: service,
+        }),
       });
 
       const data = await res.json();
@@ -422,9 +433,12 @@ export default function SettingsPage() {
               <input
                 id="tax-rate"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
+                min="0"
                 value={formData.tax_rate}
-                onChange={(e) => set('tax_rate', parseFloat(e.target.value) || 0)}
+                onChange={(e) => set('tax_rate', e.target.value)}
+                placeholder="0"
                 className="d3-input"
               />
             </div>
@@ -435,9 +449,12 @@ export default function SettingsPage() {
               <input
                 id="service-charge"
                 type="number"
+                inputMode="decimal"
                 step="0.1"
+                min="0"
                 value={formData.service_charge}
-                onChange={(e) => set('service_charge', parseFloat(e.target.value) || 0)}
+                onChange={(e) => set('service_charge', e.target.value)}
+                placeholder="0"
                 className="d3-input"
               />
             </div>

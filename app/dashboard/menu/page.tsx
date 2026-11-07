@@ -116,10 +116,16 @@ export default function MenuManagementPage() {
     }
   };
 
-  const handleCreateCategory = async (name: string): Promise<boolean> => {
-    const created = await createCategory(name);
-    await refetchCategories();
-    return Boolean(created);
+  const handleCreateCategory = async (name: string): Promise<Category | null> => {
+    try {
+      const created = await createCategory(name);
+      await refetchCategories();
+      return (created as Category | null) ?? null;
+    } catch (err: any) {
+      toast(err?.message || 'Failed to create category.', 'error');
+      await refetchCategories();
+      return null;
+    }
   };
 
   const handleAddCategory = async () => {
@@ -131,10 +137,8 @@ export default function MenuManagementPage() {
       validate: (value) => (!value.trim() ? 'Enter a category name.' : null),
     });
     if (name && name.trim()) {
-      const created = await createCategory(name.trim());
-      await refetchCategories();
-      if (created) toast('Category created.', 'success');
-      else toast('Failed to create category.', 'error');
+      const created = await handleCreateCategory(name.trim());
+      if (created) toast('Category ready.', 'success');
     }
   };
 

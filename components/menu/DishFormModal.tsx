@@ -46,8 +46,8 @@ export interface DishPayload {
   is_veg: boolean;
   allergens: string[];
   dietary_tags: string[];
-  calories: number;
-  preparation_time_mins: number;
+  calories?: number;
+  preparation_time_mins?: number;
   ingredients: string[];
   rating: number;
   order_count: number;
@@ -56,7 +56,7 @@ export interface DishPayload {
 interface FormState {
   name: string;
   description: string;
-  price: number;
+  price: string;
   category: string;
   image_url: string;
   model_url_glb: string;
@@ -65,8 +65,8 @@ interface FormState {
   is_featured: boolean;
   is_popular: boolean;
   is_veg: boolean;
-  calories: number;
-  preparation_time_mins: number;
+  calories: string;
+  preparation_time_mins: string;
   ingredients: string;
   allergens: string;
   dietary_tags: string[];
@@ -77,12 +77,18 @@ interface FormState {
   modelUploadError: string | null;
 }
 
+function numberToInput(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '';
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? String(n) : '';
+}
+
 function initialState(item: MenuItem | null, categories: Category[]): FormState {
   if (item) {
     return {
       name: item.name,
       description: item.description || '',
-      price: Number(item.price) || 0,
+      price: numberToInput(item.price),
       category: item.category || '',
       image_url: item.image_url || '',
       model_url_glb: item.model_url_glb || '',
@@ -91,8 +97,8 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
       is_featured: item.is_featured,
       is_popular: item.is_popular,
       is_veg: item.is_veg,
-      calories: item.calories ?? 0,
-      preparation_time_mins: item.preparation_time_mins ?? 0,
+      calories: numberToInput(item.calories),
+      preparation_time_mins: numberToInput(item.preparation_time_mins),
       ingredients: Array.isArray(item.ingredients) ? item.ingredients.join(', ') : '',
       allergens: Array.isArray(item.allergens) ? item.allergens.join(', ') : '',
       dietary_tags: Array.isArray(item.dietary_tags) ? item.dietary_tags : [],
@@ -106,7 +112,7 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
   return {
     name: '',
     description: '',
-    price: 0,
+    price: '',
     category: categories[0]?.name || '',
     image_url: '',
     // A dish is a dish first — 3D stays opt-in, never pre-attached.
@@ -116,8 +122,8 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
     is_featured: false,
     is_popular: false,
     is_veg: true,
-    calories: 0,
-    preparation_time_mins: 0,
+    calories: '',
+    preparation_time_mins: '',
     ingredients: '',
     allergens: '',
     dietary_tags: [],
@@ -140,7 +146,7 @@ interface DishFormModalProps {
   currencyLabel: string;
   isSaving: boolean;
   error: string | null;
-  onCreateCategory: (name: string) => Promise<boolean>;
+  onCreateCategory: (name: string) => Promise<Category | null>;
   onSubmit: (payload: DishPayload) => Promise<void>;
   onClose: () => void;
 }
@@ -271,7 +277,7 @@ export default function DishFormModal({
     setCategoryBusy(true);
     try {
       const created = await onCreateCategory(name.trim());
-      if (created) set('category', name.trim());
+      if (created?.name) set('category', created.name);
       else toast('Failed to create category.', 'error');
     } finally {
       setCategoryBusy(false);
@@ -280,17 +286,29 @@ export default function DishFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const price = parseFloat(form.price);
+    if (!Number.isFinite(price) || price <= 0) {
+      toast('Enter a valid price greater than 0.', 'error');
+      return;
+    }
+    const caloriesRaw = form.calories.trim();
+    const prepRaw = form.preparation_time_mins.trim();
+    const calories = caloriesRaw === '' ? undefined : Math.max(0, Math.trunc(Number(caloriesRaw)));
+    const preparation_time_mins =
+      prepRaw === '' ? undefined : Math.max(0, Math.trunc(Number(prepRaw)));
+
     const matchedCategory = categories.find((c) => c.name === form.category);
     const categoryId = matchedCategory?.id || null;
 
     if (!matchedCategory && form.category) {
-      throw new Error(`Category "${form.category}" no longer exists. Please select a valid category.`);
+      toast(`Category "${form.category}" is no longer available. Please select a valid category.`, 'error');
+      return;
     }
 
     await onSubmit({
       name: form.name.trim(),
       description: form.description.trim(),
-      price: Number(form.price) || 0,
+      price,
       category_id: categoryId,
       image_url: form.image_url.trim(),
       model_url_glb: form.model_url_glb.trim(),
@@ -301,8 +319,10 @@ export default function DishFormModal({
       is_veg: form.is_veg,
       allergens: splitList(form.allergens),
       dietary_tags: form.dietary_tags,
-      calories: Number(form.calories) || 0,
-      preparation_time_mins: Number(form.preparation_time_mins) || 0,
+      ...(calories !== undefined && Number.isFinite(calories) ? { calories } : {}),
+      ...(preparation_time_mins !== undefined && Number.isFinite(preparation_time_mins)
+        ? { preparation_time_mins }
+        : {}),
       ingredients: splitList(form.ingredients),
       rating: item ? Number(item.rating) || 0 : 0,
       order_count: item ? Number(item.order_count) || 0 : 0,
@@ -434,11 +454,13 @@ export default function DishFormModal({
                   <input
                     id="dish-price"
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     min="0"
                     required
-                    value={Number.isFinite(form.price) ? form.price : ''}
-                    onChange={(e) => set('price', parseFloat(e.target.value) || 0)}
+                    value={form.price}
+                    onChange={(e) => set('price', e.target.value)}
+                    placeholder="0.00"
                     className="d3-input"
                   />
                 </div>
@@ -477,13 +499,13 @@ export default function DishFormModal({
                     disabled={categoryBusy}
                     className="d3-input"
                   >
-                    {categories.length === 0 && <option value="">No categories yet</option>}
+                    <option value="">Select category</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.name}>
                         {c.name}
                       </option>
                     ))}
-                    <option value="__add_new__">+ Add new category</option>
+                    <option value="__add_new__">+ Add New Category</option>
                   </select>
                 </div>
                 <div>
@@ -493,9 +515,12 @@ export default function DishFormModal({
                   <input
                     id="dish-calories"
                     type="number"
+                    inputMode="numeric"
                     min="0"
-                    value={Number.isFinite(form.calories) ? form.calories : ''}
-                    onChange={(e) => set('calories', parseInt(e.target.value) || 0)}
+                    step="1"
+                    value={form.calories}
+                    onChange={(e) => set('calories', e.target.value)}
+                    placeholder="Optional"
                     className="d3-input"
                   />
                 </div>
@@ -506,9 +531,12 @@ export default function DishFormModal({
                   <input
                     id="dish-prep"
                     type="number"
+                    inputMode="numeric"
                     min="0"
-                    value={Number.isFinite(form.preparation_time_mins) ? form.preparation_time_mins : ''}
-                    onChange={(e) => set('preparation_time_mins', parseInt(e.target.value) || 0)}
+                    step="1"
+                    value={form.preparation_time_mins}
+                    onChange={(e) => set('preparation_time_mins', e.target.value)}
+                    placeholder="Optional"
                     className="d3-input"
                   />
                 </div>

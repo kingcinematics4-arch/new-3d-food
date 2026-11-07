@@ -626,7 +626,7 @@ export function useCategories(hotelId: string | null) {
       loading: false,
       error: null,
       refetch: async () => {},
-      createCategory: async () => null,
+      createCategory: async () => null as Category | null,
     };
   }
 
@@ -646,12 +646,19 @@ export function useCategories(hotelId: string | null) {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
-      const json = await fetchJson('/api/categories', {
+      const res = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
       });
-      if (!json.success) throw new Error(json.error || 'Failed to create category');
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        // 409 duplicate returns the existing category; surface it so UI can select it.
+        const err: any = new Error(json.error || 'Failed to create category');
+        err.status = res.status;
+        err.category = json.category;
+        throw err;
+      }
       return json.category as Category;
     },
     onSettled: () => {
@@ -661,7 +668,12 @@ export function useCategories(hotelId: string | null) {
 
   const handleCreateCategory = useCallback(
     async (name: string) => {
-      return await createCategoryMutation.mutateAsync(name);
+      try {
+        return await createCategoryMutation.mutateAsync(name);
+      } catch (err: any) {
+        if (err?.category) return err.category as Category;
+        throw err;
+      }
     },
     [createCategoryMutation]
   );
