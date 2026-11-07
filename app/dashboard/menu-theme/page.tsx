@@ -263,13 +263,15 @@ function MenuThemeContent() {
 
       {/* ================= TAB 2: CUSTOM THEME BUILDER ================= */}
       {activeTab === 'custom' && hotel && (
-        <CustomThemeBuilder
-          hotel={hotel}
-          initialConfig={hotel.custom_theme_config}
-          onSaved={() => {
-            if (refetch) refetch();
-          }}
-        />
+        <div style={{ height: 'min(94vh, 980px)', minHeight: 720, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden' }}>
+          <CustomThemeBuilder
+            hotel={hotel}
+            initialConfig={hotel.custom_theme_config}
+            onSaved={() => {
+              if (refetch) refetch();
+            }}
+          />
+        </div>
       )}
     </div>
   );

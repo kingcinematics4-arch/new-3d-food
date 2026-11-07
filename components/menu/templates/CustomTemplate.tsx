@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
@@ -9,6 +9,8 @@ import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
 interface CustomTemplateProps extends MenuTemplateProps {
   customConfig?: CustomThemeConfig | null;
+  /** When true, render only the first card of the first non-empty section (used by theme editor preview). */
+  previewSingleCard?: boolean;
 }
 
 function mix(hex: string, other: string, t: number) {
@@ -29,7 +31,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
   const {
     hotel, currency, tableNumber, pills, selectedCategory, onSelectCategory, search, onSearchChange,
     filteredItems, featuredItems, popularItems, regularItems, cart, totalCount, totalPrice,
-    onAdd, onRemove, onItemClick, onView3D, onOpenCart,
+    onAdd, onRemove, onItemClick, onView3D, onOpenCart, previewSingleCard,
   } = props;
 
   const config = cloneCustomThemeConfig(props.customConfig || (hotel as any)?.custom_theme_config);
@@ -70,9 +72,9 @@ export default function CustomTemplate(props: CustomTemplateProps) {
 
   return (
     <div className="min-h-screen transition-colors duration-200" style={{ backgroundColor: config.pageBg, color: config.textColor, fontFamily: config.bodyFont, fontSize: config.typography.bodySize, fontWeight: config.typography.bodyWeight as any }}>
-      <header className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-3" style={{ backgroundColor: alpha(config.pageBg, 0.88), borderColor: alpha(p, 0.14) }}>
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+      <header className="sticky top-0 z-30 backdrop-blur-xl border-b px-3 py-2.5" style={{ backgroundColor: alpha(config.pageBg, 0.88), borderColor: alpha(p, 0.14) }}>
+        <div className="w-full max-w-4xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             {hotel.logo_url?.trim() ? (
               <img src={hotel.logo_url ?? undefined} alt={hotel.name} className="w-9 h-9 object-cover border flex-shrink-0" style={{ borderColor: alpha(p,0.35), borderRadius: config.imageRadius }} />
             ) : (
@@ -80,12 +82,12 @@ export default function CustomTemplate(props: CustomTemplateProps) {
                 <Dine3DLogo size="xs" href={null} />
               </div>
             )}
-            <div className="min-w-0">
-              <span style={{ color: p, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block' }}>{tableNumber ? `Table ${tableNumber}` : 'Menu'}</span>
-              <h1 style={{ fontFamily: config.headingFont, fontSize: Math.max(15, config.typography.headingSize - 2), fontWeight: config.typography.headingWeight as any, color: config.textColor, margin: 0, lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hotel.name}</h1>
+            <div className="min-w-0 flex-1">
+              <span style={{ color: p, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', lineHeight: 1.1 }}>{tableNumber ? `Table ${tableNumber}` : 'Menu'}</span>
+              <h1 style={{ fontFamily: config.headingFont, fontSize: Math.max(14, config.typography.headingSize - 3), fontWeight: config.typography.headingWeight as any, color: config.textColor, margin: 0, lineHeight: 1.2, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{hotel.name}</h1>
             </div>
           </div>
-          <button onClick={onOpenCart} style={buttonStyle(true)} className="flex items-center gap-1.5 whitespace-nowrap">
+          <button onClick={onOpenCart} style={{ ...buttonStyle(true), padding: config.buttonSize === 'lg' ? '0.7rem 0.9rem' : config.buttonSize === 'sm' ? '0.4rem 0.55rem' : '0.55rem 0.7rem', flexShrink: 0 }} className="flex items-center gap-1 whitespace-nowrap">
             <span>Cart</span>{totalCount > 0 ? <span>({totalCount})</span> : null}
           </button>
         </div>
@@ -112,6 +114,13 @@ export default function CustomTemplate(props: CustomTemplateProps) {
       <main className="max-w-4xl mx-auto px-4 py-6" style={{ display: 'flex', flexDirection: 'column', gap: config.spacing === 'compact' ? 20 : config.spacing === 'spacious' ? 40 : 28 }}>
         {filteredItems.length === 0 ? (
           <div className="py-20 text-center" style={{ color: config.mutedTextColor }}><p>No dishes match your search.</p></div>
+        ) : previewSingleCard ? (
+          (() => {
+            const s = featuredItems.length ? { title: "Chef's Featured", items: featuredItems } : popularItems.length ? { title: 'Most Popular', items: popularItems } : regularItems.length ? { title: 'Menu', items: regularItems } : null;
+            if (!s) return null;
+            const item = s.items[0];
+            return <Section title={s.title} p={p} config={config} layout={config.menuLayout} gap={gap}><CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} previewSingleCard /></Section>;
+          })()
         ) : (
           <>
             {featuredItems.length > 0 && <Section title="Chef's Featured" p={p} config={config} layout={config.menuLayout} gap={gap}>{featuredItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} />)}</Section>}
@@ -139,11 +148,11 @@ function Section({ title, p, config, layout, gap, children }: { title: string; p
 }
 
 function CustomDishCard({
-  item, currency, cart, config, cardStyles, buttonStyles, badge, onAdd, onRemove, onItemClick, onView3D,
+  item, currency, cart, config, cardStyles, buttonStyles, badge, onAdd, onRemove, onItemClick, onView3D, previewSingleCard,
 }: {
   item: PublicMenuItem; currency: string | null; cart: { menuItem: PublicMenuItem; quantity: number }[]; config: CustomThemeConfig;
   cardStyles: React.CSSProperties; buttonStyles: React.CSSProperties; badge: React.CSSProperties;
-  onAdd: (item: PublicMenuItem) => void; onRemove: (id: string) => void; onItemClick: (item: PublicMenuItem) => void; onView3D: (item: PublicMenuItem) => void;
+  onAdd: (item: PublicMenuItem) => void; onRemove: (id: string) => void; onItemClick: (item: PublicMenuItem) => void; onView3D: (item: PublicMenuItem) => void; previewSingleCard?: boolean;
 }) {
   const inCart = cart.find((c) => c.menuItem.id === item.id);
   const has3D = Boolean(item.model_url_glb?.trim());
@@ -173,7 +182,7 @@ function CustomDishCard({
     );
   }
 
-  const imageHeight = config.menuLayout === 'cards' ? 280 : config.menuLayout === 'editorial' ? 240 : 200;
+  const imageHeight = previewSingleCard ? 170 : config.menuLayout === 'cards' ? 280 : config.menuLayout === 'editorial' ? 240 : 200;
   return (
     <div onClick={() => onItemClick(item)} style={{ ...cardStyles, overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
       <div style={{ position: 'relative', width: '100%', height: imageHeight, background: alpha(p,0.06) }}>

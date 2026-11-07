@@ -624,9 +624,9 @@ function CreateThemeEditor({ hotel, themeToEdit, onDone }: CreateThemeEditorProp
       onClick={handleClose}
     >
       <div
-        className="w-full rounded-2xl border border-white/15 bg-neutral-900 shadow-2xl overflow-hidden flex flex-col"
+        className="w-full rounded-2xl border border-white/10 bg-[#0f1012] shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        style={{ width: 'min(1200px, calc(100vw - 2rem))', height: 'min(90vh, 860px)' }}
+        style={{ width: 'min(1340px, calc(100vw - 2.5rem))', height: 'min(90vh, 900px)', maxHeight: 'calc(100dvh - 2.5rem)' }}
       >
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
           <div>
@@ -646,12 +646,13 @@ function CreateThemeEditor({ hotel, themeToEdit, onDone }: CreateThemeEditorProp
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <CustomThemeBuilder
             hotel={hotel}
             initialConfig={themeToEdit?.theme_config || undefined}
             editingThemeId={themeToEdit?.id || undefined}
             initialThemeName={themeToEdit?.name || undefined}
+            embedded
             onCancel={handleClose}
             onSaved={() => {
               handleClose();
