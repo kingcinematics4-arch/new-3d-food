@@ -6,6 +6,7 @@ import Dine3DLogo from '@/components/Dine3DLogo';
 import { menuThemeClass } from '@/lib/menuThemes';
 import { formatPrice } from '@/lib/menu';
 import { supabaseClient, isSupabaseConfigured } from '@/lib/supabaseBrowser';
+import { customThemeToCssVars, type CustomThemeConfig } from '@/lib/customTheme';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,6 +36,7 @@ interface LiveOrder {
   updated_at?: string | null;
   items: LiveOrderItem[];
   hotel_theme: string | null;
+  hotel_custom_theme_config?: CustomThemeConfig | null;
   hotel_slug: string | null;
   currency?: string | null;
   cancellation_reason?: string | null;
@@ -273,6 +275,8 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       const updatedOrder = json.order as LiveOrder;
       if (prevOrder) {
         updatedOrder.hotel_theme = updatedOrder.hotel_theme || prevOrder.hotel_theme;
+        updatedOrder.hotel_custom_theme_config =
+          updatedOrder.hotel_custom_theme_config || prevOrder.hotel_custom_theme_config;
         updatedOrder.hotel_slug = updatedOrder.hotel_slug || prevOrder.hotel_slug;
       }
       setOrder(updatedOrder);
@@ -488,7 +492,14 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   return (
     <div
       className={`min-h-screen ${menuThemeClass(order?.hotel_theme || undefined)}`}
-      style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
+      style={{
+        background: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
+        fontFamily: 'var(--font-body)',
+        ...(order?.hotel_theme === 'custom'
+          ? (customThemeToCssVars(order?.hotel_custom_theme_config) as React.CSSProperties)
+          : {}),
+      }}
     >
       <header
         className="sticky top-0 z-30"
@@ -1005,7 +1016,7 @@ export default function OrderTracking({ orderId, hotelSlug }: { orderId: string;
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(201,169,110,0.2)', borderTop: '2px solid var(--gold)', animation: 'spin 1s linear infinite' }} />
+          <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--border-light)', borderTop: '2px solid var(--gold)', animation: 'spin 1s linear infinite' }} />
         </div>
       }
     >

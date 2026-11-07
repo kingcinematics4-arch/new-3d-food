@@ -165,3 +165,111 @@ export const TEMPLATE_PRESETS: Record<string, { name: string; config: CustomThem
     },
   },
 };
+
+function hexToRgbParts(hex: string): { r: number; g: number; b: number } | null {
+  if (typeof hex !== 'string') return null;
+  const h = hex.trim().replace('#', '');
+  if (/^[0-9a-fA-F]{3}$/.test(h)) {
+    return {
+      r: parseInt(h[0] + h[0], 16),
+      g: parseInt(h[1] + h[1], 16),
+      b: parseInt(h[2] + h[2], 16),
+    };
+  }
+  if (/^[0-9a-fA-F]{6}$/.test(h)) {
+    return {
+      r: parseInt(h.slice(0, 2), 16),
+      g: parseInt(h.slice(2, 4), 16),
+      b: parseInt(h.slice(4, 6), 16),
+    };
+  }
+  return null;
+}
+
+function rgbaFromHex(hex: string, alpha: number): string {
+  const p = hexToRgbParts(hex);
+  if (!p) return hex;
+  return `rgba(${p.r},${p.g},${p.b},${alpha})`;
+}
+
+function mixWith(hex: string, target: { r: number; g: number; b: number }, amount: number): string {
+  const p = hexToRgbParts(hex);
+  if (!p) return hex;
+  const t = Math.max(0, Math.min(1, amount));
+  const r = Math.round(p.r + (target.r - p.r) * t);
+  const g = Math.round(p.g + (target.g - p.g) * t);
+  const b = Math.round(p.b + (target.b - p.b) * t);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function isLight(hex: string): boolean {
+  const p = hexToRgbParts(hex);
+  if (!p) return false;
+  const l = (0.2126 * p.r + 0.7152 * p.g + 0.0722 * p.b) / 255;
+  return l > 0.62;
+}
+
+/**
+ * Maps a saved CustomThemeConfig to the Dine3D CSS variable system so the
+ * same token-driven UI (menu chrome, cart/View Order, order tracking) reflects
+ * the restaurant's active custom theme on every customer page.
+ */
+export function customThemeToCssVars(config?: Partial<CustomThemeConfig> | null): Record<string, string> {
+  if (!config || typeof config !== 'object') return {};
+  const c = { ...DEFAULT_CUSTOM_THEME, ...config } as CustomThemeConfig;
+  const primary = c.primaryColor || DEFAULT_CUSTOM_THEME.primaryColor;
+  const text = c.textColor || DEFAULT_CUSTOM_THEME.textColor;
+  const page = c.pageBg || DEFAULT_CUSTOM_THEME.pageBg;
+  const card = c.cardBg || DEFAULT_CUSTOM_THEME.cardBg;
+  const lightPage = isLight(page);
+  const surface2 = mixWith(card, lightPage ? { r: 0, g: 0, b: 0 } : { r: 255, g: 255, b: 255 }, lightPage ? 0.04 : 0.06);
+  const surface3 = mixWith(card, lightPage ? { r: 0, g: 0, b: 0 } : { r: 255, g: 255, b: 255 }, lightPage ? 0.08 : 0.12);
+  const muted = mixWith(text, hexToRgbParts(page) || { r: 128, g: 128, b: 128 }, 0.45);
+  const dimmed = mixWith(text, hexToRgbParts(page) || { r: 128, g: 128, b: 128 }, 0.65);
+  const headingFont = `'${String(c.headingFont || 'Manrope').replace(/'/g, '')}', system-ui, sans-serif`;
+  const bodyFont = `'${String(c.bodyFont || 'Inter').replace(/'/g, '')}', system-ui, sans-serif`;
+  const radius = c.borderRadius || '12px';
+  const vars: Record<string, string> = {
+    '--bg-primary': page,
+    '--bg-secondary': mixWith(page, hexToRgbParts(card) || { r: 0, g: 0, b: 0 }, 0.35),
+    '--bg-tertiary': surface2,
+    '--bg-surface': card,
+    '--bg-surface-2': surface2,
+    '--bg-surface-3': surface3,
+    '--bg-elevated': surface3,
+    '--gold': primary,
+    '--gold-bright': mixWith(primary, { r: 255, g: 255, b: 255 }, 0.18),
+    '--gold-dim': mixWith(primary, { r: 0, g: 0, b: 0 }, 0.35),
+    '--gold-pale': mixWith(primary, { r: 255, g: 255, b: 255 }, 0.28),
+    '--gold-deep': mixWith(primary, { r: 0, g: 0, b: 0 }, 0.2),
+    '--text-primary': text,
+    '--text-secondary': mixWith(text, hexToRgbParts(page) || { r: 128, g: 128, b: 128 }, 0.2),
+    '--text-muted': muted,
+    '--text-dimmed': dimmed,
+    '--text-gold': primary,
+    '--border-subtle': rgbaFromHex(primary, 0.12),
+    '--border-light': rgbaFromHex(primary, 0.22),
+    '--border-medium': rgbaFromHex(primary, 0.34),
+    '--border-warm': lightPage ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
+    '--border-solid': mixWith(card, hexToRgbParts(text) || { r: 128, g: 128, b: 128 }, 0.16),
+    '--font-display': headingFont,
+    '--font-body': bodyFont,
+    '--d3-card-radius': radius,
+    '--d3-modal-radius': radius,
+    '--d3-input-radius': radius === '0px' ? '0px' : '8px',
+    '--d3-btn-radius': c.buttonStyle === 'pill' ? '9999px' : radius,
+    '--d3-badge-radius': c.buttonStyle === 'pill' ? '9999px' : '4px',
+    '--d3-chip-radius': c.buttonStyle === 'pill' ? '9999px' : '6px',
+    '--d3-header-bg': rgbaFromHex(page, 0.92),
+    '--d3-nav-bg': rgbaFromHex(page, 0.92),
+    '--d3-shadow-card':
+      c.cardStyle === 'elevated'
+        ? `0 8px 32px ${rgbaFromHex(text, 0.18)}`
+        : c.cardStyle === 'glassmorphic'
+          ? `0 8px 24px ${rgbaFromHex(primary, 0.16)}`
+          : `0 1px 3px ${rgbaFromHex(text, 0.08)}`,
+    '--d3-shadow-card-hover': `0 8px 28px ${rgbaFromHex(primary, 0.14)}`,
+    '--d3-shadow-elevated': `0 2px 10px ${rgbaFromHex(text, 0.12)}`,
+  };
+  return vars;
+}

@@ -16,6 +16,7 @@ import {
   CustomTemplate,
 } from '@/components/menu/templates';
 import type { CustomThemeConfig } from '@/lib/customTheme';
+import { customThemeToCssVars } from '@/lib/customTheme';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 const Dish3DModal = dynamic(() => import('@/components/menu/Dish3DModal'), { ssr: false });
@@ -605,10 +606,10 @@ function CartDrawer({
                       fontSize: '0.6875rem', fontWeight: 600,
                       cursor: 'pointer',
                       border: payment === opt.key
-                        ? '1px solid rgba(201,169,110,0.3)'
+                        ? '1px solid var(--border-medium)'
                         : '1px solid var(--border-subtle)',
                       background: payment === opt.key
-                        ? 'rgba(201,169,110,0.08)'
+                        ? 'var(--bg-surface-3)'
                         : 'var(--bg-surface-2)',
                       color: payment === opt.key ? 'var(--gold)' : 'var(--text-muted)',
                       transition: 'all 200ms',
@@ -744,7 +745,7 @@ function FoodCard({
               padding: '0.1875rem 0.5rem',
               borderRadius: 4,
               background: 'rgba(0,0,0,0.7)',
-              border: '1px solid rgba(201,169,110,0.2)',
+              border: '1px solid var(--border-subtle)',
               color: 'var(--gold)',
               fontSize: '0.5rem', fontWeight: 600,
               letterSpacing: '0.08em', textTransform: 'uppercase',
@@ -875,7 +876,7 @@ function FoodCard({
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'var(--bg-surface-3)';
-                e.currentTarget.style.borderColor = 'rgba(184,164,122,0.45)';
+                e.currentTarget.style.borderColor = 'var(--border-medium)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'var(--bg-surface-2)';
@@ -896,8 +897,8 @@ function FoodCard({
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 width: '100%', padding: '0.5rem',
-                borderRadius: 'var(--d3-btn-radius)', border: '1px solid rgba(201,169,110,0.3)',
-                background: 'rgba(201,169,110,0.05)',
+                borderRadius: 'var(--d3-btn-radius)',                 border: '1px solid var(--border-light)',
+                background: 'var(--bg-surface-2)',
               color: 'var(--gold)',
               fontSize: '0.6875rem', fontWeight: 600,
               letterSpacing: '0.06em', textTransform: 'uppercase',
@@ -905,12 +906,12 @@ function FoodCard({
               transition: 'all 200ms',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(201,169,110,0.12)';
-                e.currentTarget.style.borderColor = 'rgba(201,169,110,0.5)';
+                e.currentTarget.style.background = 'var(--bg-surface-3)';
+                e.currentTarget.style.borderColor = 'var(--border-medium)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(201,169,110,0.05)';
-                e.currentTarget.style.borderColor = 'rgba(201,169,110,0.3)';
+                e.currentTarget.style.background = 'var(--bg-surface-2)';
+                e.currentTarget.style.borderColor = 'var(--border-light)';
               }}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -989,6 +990,19 @@ export default function MenuContent({
 
       if (!isPolling) {
         setHotel(json.hotel as PublicHotel);
+      } else if (json.hotel) {
+        // Keep cart/UI state intact, but pick up dashboard theme changes so
+        // Menu/View Order stay in sync with the restaurant's saved theme.
+        setHotel((prev) => {
+          const next = json.hotel as PublicHotel;
+          if (!prev) return next;
+          const prevTheme = prev.menu_theme || null;
+          const nextTheme = next.menu_theme || null;
+          const prevCfg = JSON.stringify(prev.custom_theme_config || null);
+          const nextCfg = JSON.stringify(next.custom_theme_config || null);
+          if (prevTheme === nextTheme && prevCfg === nextCfg) return prev;
+          return { ...prev, ...next };
+        });
       }
       setMenuItems((json.menuItems || []) as PublicMenuItem[]);
       setCategories((json.categories || []) as PublicCategory[]);
@@ -1081,9 +1095,15 @@ export default function MenuContent({
     return (
       <div
         className={`min-h-screen flex items-center justify-center ${menuThemeClass(hotel?.menu_theme || undefined)}`}
-        style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)' }}
+        style={{
+          background: 'var(--bg-primary)',
+          fontFamily: 'var(--font-body)',
+          ...(hotel?.menu_theme === 'custom'
+            ? (customThemeToCssVars(hotel?.custom_theme_config) as React.CSSProperties)
+            : {}),
+        }}
       >
-        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(201,169,110,0.2)', borderTop: '2px solid var(--gold)', animation: 'spin 1s linear infinite' }} />
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--border-light)', borderTop: '2px solid var(--gold)', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
@@ -1111,10 +1131,17 @@ export default function MenuContent({
   }
 
   return (
-    <MenuThemeProviderContext themeId={hotel?.menu_theme || undefined}>
+    <MenuThemeProviderContext themeId={hotel?.menu_theme || undefined} customConfig={hotel?.custom_theme_config}>
       <div
         className={`min-h-screen ${menuThemeClass(hotel?.menu_theme || undefined)}`}
-        style={{ background: 'var(--bg-primary)', fontFamily: 'var(--font-body)', paddingBottom: '6rem' }}
+        style={{
+          background: 'var(--bg-primary)',
+          fontFamily: 'var(--font-body)',
+          paddingBottom: '6rem',
+          ...(hotel?.menu_theme === 'custom'
+            ? (customThemeToCssVars(hotel?.custom_theme_config) as React.CSSProperties)
+            : {}),
+        }}
       >
         {(() => {
           const commonProps = {

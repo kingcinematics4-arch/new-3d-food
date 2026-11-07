@@ -2,6 +2,7 @@ import { supabaseAdmin } from './supabaseAdmin';
 import { getHotelSchema } from './hotelSchema';
 import { getStoredMenuTheme } from './menuThemeStore.server';
 import { getStoredCustomTheme } from './customThemeStore.server';
+import { getActiveSavedCustomTheme } from './hotelCustomThemes.server';
 import { DEFAULT_MENU_THEME } from './menuThemes';
 
 export const BASE_HOTEL_COLUMNS =
@@ -116,9 +117,20 @@ export async function fetchPublicMenuData(slug: string): Promise<PublicMenuData>
     }
   }
 
-  // Resolve custom theme configuration per hotel
-  const storedCustomTheme = await getStoredCustomTheme(hotel.id);
-  hotel.custom_theme_config = hotel.custom_theme_config || storedCustomTheme || null;
+  // Resolve custom theme configuration per hotel (single source of truth from
+  // the hotel's saved theme). If the active saved-theme library is used but the
+  // hotels row hasn't mirrored config yet, prefer the active saved config.
+  if (!hotel.custom_theme_config) {
+    const storedCustomTheme = await getStoredCustomTheme(hotel.id);
+    if (storedCustomTheme) {
+      hotel.custom_theme_config = storedCustomTheme;
+    } else if (hotel.menu_theme === 'custom') {
+      const active = await getActiveSavedCustomTheme(hotel.id);
+      hotel.custom_theme_config = (active as any)?.theme_config || null;
+    } else {
+      hotel.custom_theme_config = null;
+    }
+  }
 
   const [categoriesResult, itemsResult] = await Promise.all([
     supabaseAdmin

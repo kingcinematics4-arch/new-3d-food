@@ -24,7 +24,7 @@ import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
 import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 import { normalizeCurrency } from '@/lib/menu';
 import { orderReference } from '@/lib/orderReference';
-import { getHotelGoogleReviewUrl } from '@/lib/customThemeStore.server';
+import { getHotelGoogleReviewUrl, getStoredCustomTheme } from '@/lib/customThemeStore.server';
 
 function isStoredReferenceNumber(value: string): boolean {
   return /^DINE-\d+$/i.test(value);
@@ -67,6 +67,7 @@ export async function GET(
     const hotelSelect = [
       'id',
       hotelSchema.menuTheme ? 'menu_theme' : '',
+      hotelSchema.customThemeConfig ? 'custom_theme_config' : '',
       hotelSchema.googleReviewUrl ? 'google_review_url' : '',
       'slug',
       hotelSchema.currency ? 'currency' : '',
@@ -170,6 +171,17 @@ export async function GET(
       hasGoogleReviewUrl: Boolean(googleReviewUrl),
     }));
 
+    const hotelTheme =
+      (order as any).hotels?.menu_theme ||
+      (await getStoredMenuTheme((order as any).hotels?.id)) ||
+      DEFAULT_MENU_THEME;
+    const hotelCustomThemeConfig =
+      (order as any).hotels?.custom_theme_config ||
+      (hotelTheme === 'custom'
+        ? await getStoredCustomTheme((order as any).hotels?.id || orderHotelId)
+        : null) ||
+      null;
+
     return new NextResponse(JSON.stringify({
       success: true,
       order: {
@@ -186,7 +198,8 @@ export async function GET(
         created_at: order.created_at,
         ...(schema.updatedAt ? { updated_at: (order as any).updated_at } : {}),
         items,
-        hotel_theme: (order as any).hotels?.menu_theme || await getStoredMenuTheme((order as any).hotels?.id) || DEFAULT_MENU_THEME,
+        hotel_theme: hotelTheme,
+        hotel_custom_theme_config: hotelCustomThemeConfig,
         hotel_slug: (order as any).hotels?.slug || null,
         google_review_url: googleReviewUrl,
         // Normalise the stored currency to INR for display. This is a
