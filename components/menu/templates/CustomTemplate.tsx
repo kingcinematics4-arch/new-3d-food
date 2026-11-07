@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
 import Dine3DLogo from '@/components/Dine3DLogo';
-import { CustomThemeConfig, DEFAULT_CUSTOM_THEME } from '@/lib/customTheme';
+import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customTheme';
 import type { MenuTemplateProps } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
@@ -11,466 +11,112 @@ interface CustomTemplateProps extends MenuTemplateProps {
   customConfig?: CustomThemeConfig | null;
 }
 
+function mix(hex: string, other: string, t: number) {
+  const n = (h: string) => { const v = (h || '#000').replace('#',''); const f = v.length===3?v.split('').map(c=>c+c).join(''):v.padEnd(6,'0').slice(0,6); return [parseInt(f.slice(0,2),16),parseInt(f.slice(2,4),16),parseInt(f.slice(4,6),16)]; };
+  const a=n(hex), b=n(other); const c=a.map((v,i)=>Math.round(v+(b[i]-v)*t)); return `#${c.map(v=>v.toString(16).padStart(2,'0')).join('')}`;
+}
+function alpha(hex: string, a: number) {
+  const v=(hex||'#000').replace('#',''); const f=v.length===3?v.split('').map(c=>c+c).join(''):v.padEnd(6,'0').slice(0,6);
+  return `rgba(${parseInt(f.slice(0,2),16)},${parseInt(f.slice(2,4),16)},${parseInt(f.slice(4,6),16)},${a})`;
+}
+function contrast(hex: string) {
+  const v=(hex||'#000').replace('#',''); const f=v.length===3?v.split('').map(c=>c+c).join(''):v.padEnd(6,'0').slice(0,6);
+  const r=parseInt(f.slice(0,2),16),g=parseInt(f.slice(2,4),16),b=parseInt(f.slice(4,6),16);
+  return (0.2126*r+0.7152*g+0.0722*b)/255 > 0.62 ? '#111827' : '#ffffff';
+}
+
 export default function CustomTemplate(props: CustomTemplateProps) {
   const {
-    hotel,
-    currency,
-    tableNumber,
-    pills,
-    selectedCategory,
-    onSelectCategory,
-    search,
-    onSearchChange,
-    filteredItems,
-    featuredItems,
-    popularItems,
-    regularItems,
-    cart,
-    totalCount,
-    totalPrice,
-    onAdd,
-    onRemove,
-    onItemClick,
-    onView3D,
-    onOpenCart,
+    hotel, currency, tableNumber, pills, selectedCategory, onSelectCategory, search, onSearchChange,
+    filteredItems, featuredItems, popularItems, regularItems, cart, totalCount, totalPrice,
+    onAdd, onRemove, onItemClick, onView3D, onOpenCart,
   } = props;
 
-  // Resolve custom theme config from prop, hotel property, or fallback to default
-  const config: CustomThemeConfig =
-    props.customConfig ||
-    (hotel as any)?.custom_theme_config ||
-    DEFAULT_CUSTOM_THEME;
+  const config = cloneCustomThemeConfig(props.customConfig || (hotel as any)?.custom_theme_config);
+  const p = config.primaryColor;
+  const cardShadow = config.shadowStrength === 'none' ? 'none' : config.shadowStrength === 'soft' ? '0 4px 14px rgba(0,0,0,0.10)' : config.shadowStrength === 'strong' ? '0 18px 48px rgba(0,0,0,0.28)' : '0 10px 28px rgba(0,0,0,0.18)';
+  const cardBorder = config.borderStyle === 'none' ? '1px solid transparent' : config.borderStyle === 'accent' ? `1px solid ${alpha(p,0.55)}` : config.borderStyle === 'defined' ? `1px solid ${alpha(p,0.28)}` : `1px solid ${alpha(p,0.16)}`;
+  const pad = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 22 : 16;
+  const gap = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 22 : 16;
+  const btnPad = config.buttonSize === 'sm' ? '0.45rem 0.7rem' : config.buttonSize === 'lg' ? '0.85rem 1.2rem' : '0.65rem 0.95rem';
+  const btnFont = config.buttonSize === 'sm' ? 12 : config.buttonSize === 'lg' ? 15 : 13;
 
-  // Determine button styles based on config.buttonStyle
-  const getButtonStyles = (isPrimary = true): React.CSSProperties => {
-    const baseRadius = config.buttonStyle === 'pill' ? '9999px' : config.borderRadius;
-
-    if (!isPrimary) {
-      return {
-        borderRadius: baseRadius,
-        border: `1px solid ${config.primaryColor}40`,
-        background: 'transparent',
-        color: config.primaryColor,
-        fontFamily: config.bodyFont,
-      };
-    }
-
-    switch (config.buttonStyle) {
-      case 'outline':
-        return {
-          borderRadius: baseRadius,
-          border: `1px solid ${config.primaryColor}`,
-          background: 'transparent',
-          color: config.primaryColor,
-          fontFamily: config.bodyFont,
-        };
-      case 'soft':
-        return {
-          borderRadius: baseRadius,
-          border: `1px solid ${config.primaryColor}30`,
-          background: `${config.primaryColor}1A`,
-          color: config.primaryColor,
-          fontFamily: config.bodyFont,
-        };
-      case 'pill':
-      case 'solid':
-      default:
-        return {
-          borderRadius: baseRadius,
-          border: 'none',
-          background: config.primaryColor,
-          color: '#000000',
-          fontFamily: config.bodyFont,
-        };
-    }
+  const buttonStyle = (primary = true): React.CSSProperties => {
+    const radius = config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius;
+    const base: React.CSSProperties = { borderRadius: radius, padding: btnPad, fontSize: btnFont, fontWeight: config.typography.buttonTextWeight as any, fontFamily: config.priceFont, cursor: 'pointer', transition: 'all 180ms ease' };
+    if (!primary) return { ...base, border: `1px solid ${alpha(p,0.35)}`, background: 'transparent', color: p };
+    if (config.buttonStyle === 'outline') return { ...base, border: `1px solid ${p}`, background: 'transparent', color: p };
+    if (config.buttonStyle === 'soft') return { ...base, border: `1px solid ${alpha(p,0.22)}`, background: alpha(p,0.14), color: p };
+    return { ...base, border: `1px solid ${p}`, background: p, color: contrast(p) };
   };
 
-  // Determine card container styles based on config.cardStyle
-  const getCardContainerStyles = (): React.CSSProperties => {
-    const base: React.CSSProperties = {
-      backgroundColor: config.cardBg,
-      borderRadius: config.borderRadius,
-      fontFamily: config.bodyFont,
-      color: config.textColor,
-      transition: 'all 0.25s ease',
-    };
+  const cardBase = (): React.CSSProperties => ({
+    backgroundColor: config.cardStyle === 'glassmorphic' ? alpha(config.cardBg, 0.72) : config.cardBg,
+    color: config.textColor,
+    borderRadius: config.borderRadius,
+    border: config.cardStyle === 'bordered' ? `1px solid ${alpha(p,0.45)}` : config.cardStyle === 'glassmorphic' ? `1px solid ${alpha('#fff',0.14)}` : cardBorder,
+    boxShadow: config.cardStyle === 'elevated' || config.shadowStrength !== 'none' ? cardShadow : 'none',
+    backdropFilter: config.cardStyle === 'glassmorphic' ? 'blur(16px)' : undefined,
+    WebkitBackdropFilter: config.cardStyle === 'glassmorphic' ? 'blur(16px)' : undefined,
+    fontFamily: config.bodyFont,
+  });
 
-    switch (config.cardStyle) {
-      case 'bordered':
-        return {
-          ...base,
-          border: `1px solid ${config.primaryColor}40`,
-        };
-      case 'elevated':
-        return {
-          ...base,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-          border: '1px solid rgba(255,255,255,0.06)',
-        };
-      case 'glassmorphic':
-        return {
-          ...base,
-          backgroundColor: `${config.cardBg}CC`,
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255,255,255,0.12)',
-        };
-      case 'flat':
-      default:
-        return {
-          ...base,
-          border: 'none',
-        };
-    }
+  const badgeStyle = (filled = false): React.CSSProperties => {
+    const base: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0.2rem 0.55rem', borderRadius: config.badgeRadius, fontSize: 11, fontWeight: 600, letterSpacing: '0.02em' };
+    if (config.badgeStyle === 'solid' || filled) return { ...base, background: p, color: contrast(p), border: `1px solid ${p}` };
+    if (config.badgeStyle === 'outline') return { ...base, background: 'transparent', color: p, border: `1px solid ${alpha(p,0.45)}` };
+    return { ...base, background: alpha(p,0.14), color: p, border: `1px solid ${alpha(p,0.18)}` };
   };
 
   return (
-    <div
-      className="min-h-screen transition-colors duration-200"
-      style={{
-        backgroundColor: config.pageBg,
-        color: config.textColor,
-        fontFamily: config.bodyFont,
-      }}
-    >
-      {/* ================= 11. HEADER STYLES ================= */}
-      {false && (
-        <header
-          className="border-b sticky top-0 z-30 backdrop-blur-md px-4 py-4"
-          style={{
-            backgroundColor: `${config.pageBg}E6`,
-            borderColor: `${config.primaryColor}20`,
-          }}
-        >
-          <div className="max-w-4xl mx-auto flex flex-col items-center text-center">
-            <div className="flex items-center justify-between w-full mb-3">
-              <span className="text-xs uppercase tracking-wider opacity-70" style={{ fontFamily: config.bodyFont }}>
-                {tableNumber ? `Table ${tableNumber}` : 'Welcome'}
-              </span>
-
-              <button
-                onClick={onOpenCart}
-                style={getButtonStyles(true)}
-                className="px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 shadow-sm"
-              >
-                <span>Order</span>
-                {totalCount > 0 && <span>({totalCount})</span>}
-              </button>
-            </div>
-
+    <div className="min-h-screen transition-colors duration-200" style={{ backgroundColor: config.pageBg, color: config.textColor, fontFamily: config.bodyFont, fontSize: config.typography.bodySize, fontWeight: config.typography.bodyWeight as any }}>
+      <header className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-3" style={{ backgroundColor: alpha(config.pageBg, 0.88), borderColor: alpha(p, 0.14) }}>
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {hotel.logo_url?.trim() ? (
-              <img
-                src={hotel.logo_url ?? undefined}
-                alt={hotel.name}
-                className="w-12 h-12 rounded-full object-cover border mb-2 shadow-sm"
-                style={{ borderColor: config.primaryColor }}
-              />
+              <img src={hotel.logo_url ?? undefined} alt={hotel.name} className="w-9 h-9 object-cover border flex-shrink-0" style={{ borderColor: alpha(p,0.35), borderRadius: config.imageRadius }} />
             ) : (
-              <div
-                className="w-12 h-12 rounded-full border flex items-center justify-center mb-2 shadow-sm"
-                style={{ borderColor: config.primaryColor, backgroundColor: config.cardBg }}
-              >
+              <div className="w-9 h-9 border flex items-center justify-center flex-shrink-0" style={{ borderColor: alpha(p,0.35), backgroundColor: config.cardBg, borderRadius: config.imageRadius }}>
                 <Dine3DLogo size="xs" href={null} />
               </div>
             )}
-
-            <h1
-              className="text-xl sm:text-2xl font-bold tracking-tight"
-              style={{ fontFamily: config.headingFont, color: config.textColor }}
-            >
-              {hotel.name}
-            </h1>
-
-            {hotel.welcome_text && (
-              <p className="text-xs opacity-75 max-w-md mt-1 italic">
-                {hotel.welcome_text}
-              </p>
-            )}
-          </div>
-        </header>
-      )}
-
-      {false && (
-        <header
-          className="border-b sticky top-0 z-30 backdrop-blur-md px-4 py-3"
-          style={{
-            backgroundColor: `${config.pageBg}F0`,
-            borderColor: 'rgba(255,255,255,0.08)',
-          }}
-        >
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h1
-                className="text-lg font-bold tracking-tight"
-                style={{ fontFamily: config.headingFont, color: config.textColor }}
-              >
-                {hotel.name}
-              </h1>
-              {tableNumber && (
-                <span className="text-[0.65rem] opacity-70 uppercase tracking-widest px-2 py-0.5 rounded border border-current">
-                  T-{tableNumber}
-                </span>
-              )}
+            <div className="min-w-0">
+              <span style={{ color: p, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block' }}>{tableNumber ? `Table ${tableNumber}` : 'Menu'}</span>
+              <h1 style={{ fontFamily: config.headingFont, fontSize: Math.max(15, config.typography.headingSize - 2), fontWeight: config.typography.headingWeight as any, color: config.textColor, margin: 0, lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hotel.name}</h1>
             </div>
-
-            <button
-              onClick={onOpenCart}
-              style={getButtonStyles(true)}
-              className="px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5"
-            >
-              <span>Order</span>
-              {totalCount > 0 && <span>• {formatPrice(totalPrice, currency)}</span>}
-            </button>
           </div>
-        </header>
-      )}
+          <button onClick={onOpenCart} style={buttonStyle(true)} className="flex items-center gap-1.5 whitespace-nowrap">
+            <span>Cart</span>{totalCount > 0 ? <span>({totalCount})</span> : null}
+          </button>
+        </div>
+      </header>
 
-      {false && (
-        <header
-          className="sticky top-0 z-30 px-4 py-3 border-b"
-          style={{
-            backgroundColor: config.cardBg,
-            borderColor: config.primaryColor,
-            borderBottomWidth: 2,
-          }}
-        >
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="border p-1.5 px-3 rounded flex items-center gap-2" style={{ borderColor: `${config.primaryColor}60` }}>
-              <span style={{ color: config.primaryColor }}>✦</span>
-              <h1
-                className="text-base sm:text-lg font-bold uppercase tracking-wider"
-                style={{ fontFamily: config.headingFont, color: config.textColor }}
-              >
-                {hotel.name}
-              </h1>
-            </div>
-
-            <button
-              onClick={onOpenCart}
-              style={getButtonStyles(true)}
-              className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider"
-            >
-              {totalCount > 0 ? `Thali (${totalCount})` : 'Order'}
-            </button>
-          </div>
-        </header>
-      )}
-
-      {true && (
-        <header
-          className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-3"
-          style={{
-            backgroundColor: `${config.pageBg}E6`,
-            borderColor: 'rgba(255,255,255,0.08)',
-          }}
-        >
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {hotel.logo_url?.trim() ? (
-                <img
-                src={hotel.logo_url ?? undefined}
-                  alt={hotel.name}
-                  className="w-9 h-9 rounded-lg object-cover border"
-                  style={{ borderColor: `${config.primaryColor}40` }}
-                />
-              ) : (
-                <div
-                  className="w-9 h-9 rounded-lg border flex items-center justify-center"
-                  style={{ borderColor: `${config.primaryColor}40`, backgroundColor: config.cardBg }}
-                >
-                  <Dine3DLogo size="xs" href={null} />
-                </div>
-              )}
-              <div>
-                <span
-                  className="text-[0.625rem] font-bold uppercase tracking-wider block"
-                  style={{ color: config.primaryColor }}
-                >
-                  {tableNumber ? `Table ${tableNumber}` : 'Kitchen Live'}
-                </span>
-                <h1
-                  className="text-base font-bold tracking-tight leading-tight"
-                  style={{ fontFamily: config.headingFont, color: config.textColor }}
-                >
-                  {hotel.name}
-                </h1>
-              </div>
-            </div>
-
-            <button
-              onClick={onOpenCart}
-              style={getButtonStyles(true)}
-              className="px-3.5 py-1.5 text-xs font-bold tracking-wide flex items-center gap-1.5 shadow-md"
-            >
-              <span>Cart</span>
-              {totalCount > 0 && <span>({totalCount})</span>}
-            </button>
-          </div>
-        </header>
-      )}
-
-      {/* ================= SEARCH & CATEGORY BAR ================= */}
       <div className="max-w-4xl mx-auto px-4 pt-4 pb-2">
         <div className="relative mb-3">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search items, ingredients, flavors..."
-            className="w-full pl-9 pr-4 py-2 text-xs border outline-none transition-all shadow-inner"
-            style={{
-              backgroundColor: config.cardBg,
-              color: config.textColor,
-              borderColor: `${config.primaryColor}30`,
-              borderRadius: config.borderRadius,
-              fontFamily: config.bodyFont,
-            }}
-          />
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-60"
-            viewBox="0 0 14 14"
-            fill="none"
-            stroke={config.primaryColor}
-            strokeWidth="1.5"
-          >
-            <circle cx="6" cy="6" r="4.5" />
-            <path d="M9.5 9.5L12.5 12.5" strokeLinecap="round" />
-          </svg>
+          <input type="text" value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Search dishes..." className="w-full pl-9 pr-4 py-2 border outline-none"
+            style={{ backgroundColor: config.cardBg, color: config.textColor, borderColor: alpha(p,0.22), borderRadius: config.buttonRadius, fontFamily: config.bodyFont, fontSize: config.typography.bodySize }} />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" viewBox="0 0 14 14" fill="none" stroke={p} strokeWidth="1.5"><circle cx="6" cy="6" r="4.5" /><path d="M9.5 9.5L12.5 12.5" strokeLinecap="round" /></svg>
         </div>
-
         {pills.length > 1 && (
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
             {pills.map((cat) => {
-              const isActive = selectedCategory === cat;
+              const active = selectedCategory === cat;
               return (
-                <button
-                  key={cat}
-                  onClick={() => onSelectCategory(cat)}
-                  className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-200"
-                  style={{
-                    borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.borderRadius,
-                    backgroundColor: isActive ? config.primaryColor : config.cardBg,
-                    color: isActive ? '#000000' : config.textColor,
-                    border: `1px solid ${isActive ? config.primaryColor : `${config.primaryColor}25`}`,
-                    fontFamily: config.bodyFont,
-                  }}
-                >
-                  {cat}
-                </button>
+                <button key={cat} onClick={() => onSelectCategory(cat)} style={{ borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius, backgroundColor: active ? p : config.cardBg, color: active ? contrast(p) : config.textColor, border: `1px solid ${active ? p : alpha(p,0.22)}`, padding: '0.45rem 0.85rem', fontSize: Math.max(12, config.typography.bodySize - 1), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer' }}>{cat}</button>
               );
             })}
           </div>
         )}
       </div>
 
-      {/* ================= 10. MENU LAYOUT DISPLAY ================= */}
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-10">
+      <main className="max-w-4xl mx-auto px-4 py-6" style={{ display: 'flex', flexDirection: 'column', gap: config.spacing === 'compact' ? 20 : config.spacing === 'spacious' ? 40 : 28 }}>
         {filteredItems.length === 0 ? (
-          <div className="py-20 text-center opacity-60">
-            <p className="text-sm">No dishes match your inquiry.</p>
-          </div>
+          <div className="py-20 text-center" style={{ color: config.mutedTextColor }}><p>No dishes match your search.</p></div>
         ) : (
           <>
-            {/* FEATURED DISHES */}
-            {featuredItems.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.primaryColor }} />
-                  <h2
-                    className="text-lg font-bold tracking-tight uppercase"
-                    style={{ fontFamily: config.headingFont, color: config.textColor }}
-                  >
-                    Chef&apos;s Featured
-                  </h2>
-                </div>
-
-                <div className={getLayoutGridClass(config.menuLayout)}>
-                  {featuredItems.map((item) => (
-                    <CustomDishCard
-                      key={item.id}
-                      item={item}
-                      currency={currency}
-                      cart={cart}
-                      config={config}
-                      cardStyles={getCardContainerStyles()}
-                      buttonStyles={getButtonStyles()}
-                      onAdd={onAdd}
-                      onRemove={onRemove}
-                      onItemClick={onItemClick}
-                      onView3D={onView3D}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* POPULAR DISHES */}
-            {popularItems.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.primaryColor }} />
-                  <h2
-                    className="text-lg font-bold tracking-tight uppercase"
-                    style={{ fontFamily: config.headingFont, color: config.textColor }}
-                  >
-                    Most Popular
-                  </h2>
-                </div>
-
-                <div className={getLayoutGridClass(config.menuLayout)}>
-                  {popularItems.map((item) => (
-                    <CustomDishCard
-                      key={item.id}
-                      item={item}
-                      currency={currency}
-                      cart={cart}
-                      config={config}
-                      cardStyles={getCardContainerStyles()}
-                      buttonStyles={getButtonStyles()}
-                      onAdd={onAdd}
-                      onRemove={onRemove}
-                      onItemClick={onItemClick}
-                      onView3D={onView3D}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* ALL DISHES */}
-            {regularItems.length > 0 && (
-              <section>
-                {(featuredItems.length > 0 || popularItems.length > 0) && (
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.primaryColor }} />
-                    <h2
-                      className="text-lg font-bold tracking-tight uppercase"
-                      style={{ fontFamily: config.headingFont, color: config.textColor }}
-                    >
-                      All Dishes
-                    </h2>
-                  </div>
-                )}
-
-                <div className={getLayoutGridClass(config.menuLayout)}>
-                  {regularItems.map((item) => (
-                    <CustomDishCard
-                      key={item.id}
-                      item={item}
-                      currency={currency}
-                      cart={cart}
-                      config={config}
-                      cardStyles={getCardContainerStyles()}
-                      buttonStyles={getButtonStyles()}
-                      onAdd={onAdd}
-                      onRemove={onRemove}
-                      onItemClick={onItemClick}
-                      onView3D={onView3D}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
+            {featuredItems.length > 0 && <Section title="Chef's Featured" p={p} config={config} layout={config.menuLayout} gap={gap}>{featuredItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} />)}</Section>}
+            {popularItems.length > 0 && <Section title="Most Popular" p={p} config={config} layout={config.menuLayout} gap={gap}>{popularItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} />)}</Section>}
+            {regularItems.length > 0 && <Section title={featuredItems.length || popularItems.length ? 'All Dishes' : 'Menu'} p={p} config={config} layout={config.menuLayout} gap={gap}>{regularItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} />)}</Section>}
           </>
         )}
       </main>
@@ -478,237 +124,91 @@ export default function CustomTemplate(props: CustomTemplateProps) {
   );
 }
 
-function getLayoutGridClass(menuLayout: CustomThemeConfig['menuLayout']) {
-  switch (menuLayout) {
-    case 'editorial':
-      return 'space-y-6';
-    case 'compact-list':
-      return 'space-y-3';
-    case 'cards':
-      return 'grid grid-cols-1 gap-6';
-    case 'grid':
-    default:
-      return 'grid grid-cols-1 sm:grid-cols-2 gap-4';
-  }
+function Section({ title, p, config, layout, gap, children }: { title: string; p: string; config: CustomThemeConfig; layout: CustomThemeConfig['menuLayout']; gap: number; children: React.ReactNode }) {
+  const cls = layout === 'compact-list' || layout === 'editorial' ? undefined : layout === 'cards' ? 'grid grid-cols-1' : 'grid grid-cols-1 sm:grid-cols-2';
+  const style: React.CSSProperties = { gap, ...(layout === 'compact-list' || layout === 'editorial' ? { display: 'flex', flexDirection: 'column' } : {}) };
+  return (
+    <section>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: p, flexShrink: 0 }} />
+        <h2 style={{ fontFamily: config.headingFont, fontSize: config.typography.headingSize, fontWeight: config.typography.headingWeight as any, color: config.textColor, margin: 0 }}>{title}</h2>
+      </div>
+      <div className={cls} style={style}>{children}</div>
+    </section>
+  );
 }
 
 function CustomDishCard({
-  item,
-  currency,
-  cart,
-  config,
-  cardStyles,
-  buttonStyles,
-  onAdd,
-  onRemove,
-  onItemClick,
-  onView3D,
+  item, currency, cart, config, cardStyles, buttonStyles, badge, onAdd, onRemove, onItemClick, onView3D,
 }: {
-  item: PublicMenuItem;
-  currency: string | null;
-  cart: { menuItem: PublicMenuItem; quantity: number }[];
-  config: CustomThemeConfig;
-  cardStyles: React.CSSProperties;
-  buttonStyles: React.CSSProperties;
-  onAdd: (item: PublicMenuItem) => void;
-  onRemove: (id: string) => void;
-  onItemClick: (item: PublicMenuItem) => void;
-  onView3D: (item: PublicMenuItem) => void;
+  item: PublicMenuItem; currency: string | null; cart: { menuItem: PublicMenuItem; quantity: number }[]; config: CustomThemeConfig;
+  cardStyles: React.CSSProperties; buttonStyles: React.CSSProperties; badge: React.CSSProperties;
+  onAdd: (item: PublicMenuItem) => void; onRemove: (id: string) => void; onItemClick: (item: PublicMenuItem) => void; onView3D: (item: PublicMenuItem) => void;
 }) {
   const inCart = cart.find((c) => c.menuItem.id === item.id);
   const has3D = Boolean(item.model_url_glb?.trim());
   const image = item.image_url?.trim() || '';
+  const p = config.primaryColor;
+  const pad = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 20 : 16;
+  const imgRadius = config.imageRadius;
 
-  // COMPACT LIST LAYOUT
   if (config.menuLayout === 'compact-list') {
     return (
-      <div
-        onClick={() => onItemClick(item)}
-        style={cardStyles}
-        className="p-3.5 flex items-center gap-3.5 cursor-pointer hover:opacity-95 transition-all"
-      >
-        <div
-          className="relative w-20 h-20 flex-shrink-0 overflow-hidden bg-neutral-800"
-          style={{ borderRadius: config.borderRadius }}
-        >
-          {image ? (
-            <img src={image} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[0.6rem] opacity-50">Dish</div>
-          )}
-          {has3D && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onView3D(item);
-              }}
-              className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[0.55rem] font-bold bg-black/80 text-white"
-            >
-              3D
-            </button>
-          )}
+      <div onClick={() => onItemClick(item)} style={{ ...cardStyles, padding: pad, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
+        <div style={{ width: 84, height: 84, flexShrink: 0, overflow: 'hidden', borderRadius: imgRadius, background: alpha(p,0.08), position: 'relative' }}>
+          {image ? <img src={image} alt={item.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: config.mutedTextColor, fontSize: 11 }}>Dish</div>}
         </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span
-              className={`w-2 h-2 rounded-full ${item.is_veg ? 'bg-emerald-500' : 'bg-rose-500'}`}
-            />
-            <h3
-              className="text-sm font-bold truncate"
-              style={{ fontFamily: config.headingFont, color: config.textColor }}
-            >
-              {item.name}
-            </h3>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: item.is_veg ? '#22c55e' : '#ef4444', flexShrink: 0 }} />
+            <h3 style={{ margin: 0, fontFamily: config.headingFont, fontSize: Math.max(14, config.typography.headingSize - 2), fontWeight: config.typography.headingWeight as any, color: config.textColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</h3>
           </div>
-          {item.description && (
-            <p className="text-xs opacity-70 line-clamp-1 mb-1.5">{item.description}</p>
-          )}
-          <span className="text-sm font-bold" style={{ color: config.primaryColor }}>
-            {formatPrice(Number(item.price) || 0, currency)}
-          </span>
+          {item.description ? <p style={{ margin: '0 0 6px', fontSize: Math.max(12, config.typography.bodySize - 1), color: config.mutedTextColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</p> : null}
+          <span style={{ fontFamily: config.priceFont, fontSize: config.typography.priceSize, fontWeight: 700, color: p }}>{formatPrice(Number(item.price) || 0, currency)}</span>
         </div>
-
-        <div className="flex-shrink-0">
-          {inCart ? (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 border px-2 py-0.5"
-              style={{ borderRadius: config.borderRadius, borderColor: config.primaryColor }}
-            >
-              <button onClick={() => onRemove(item.id)} className="font-bold text-xs">
-                −
-              </button>
-              <span className="text-xs font-bold">{inCart.quantity}</span>
-              <button onClick={() => onAdd(item)} className="font-bold text-xs">
-                +
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAdd(item);
-              }}
-              style={buttonStyles}
-              className="px-3 py-1.5 text-xs font-bold"
-            >
-              + Add
-            </button>
-          )}
+        <div onClick={(e) => e.stopPropagation()}>
+          {inCart ? <Qty p={p} config={config} qty={inCart.quantity} onMinus={() => onRemove(item.id)} onPlus={() => onAdd(item)} /> : <button onClick={() => onAdd(item)} style={buttonStyles}>Add</button>}
         </div>
       </div>
     );
   }
 
-  // STANDARD GRID / CARDS / EDITORIAL CARD
-  const imageHeight =
-    config.menuLayout === 'cards' ? 'h-64 sm:h-72' : config.menuLayout === 'editorial' ? 'h-56 sm:h-64' : 'h-48';
-
+  const imageHeight = config.menuLayout === 'cards' ? 280 : config.menuLayout === 'editorial' ? 240 : 200;
   return (
-    <div
-      onClick={() => onItemClick(item)}
-      style={cardStyles}
-      className="overflow-hidden flex flex-col justify-between cursor-pointer group hover:scale-[1.01] transition-transform duration-200"
-    >
-      <div className={`relative w-full ${imageHeight} overflow-hidden bg-neutral-800`}>
-        {image ? (
-          <img
-            src={image}
-            alt={item.name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-xs opacity-50">
-            No Photo
-          </div>
-        )}
-
-        <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <span
-            className={`w-2.5 h-2.5 rounded-full ${item.is_veg ? 'bg-emerald-400' : 'bg-rose-500'}`}
-          />
-          {item.is_featured && (
-            <span
-              className="px-2 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider"
-              style={{ backgroundColor: config.primaryColor, color: '#000000' }}
-            >
-              Featured
-            </span>
-          )}
+    <div onClick={() => onItemClick(item)} style={{ ...cardStyles, overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
+      <div style={{ position: 'relative', width: '100%', height: imageHeight, background: alpha(p,0.06) }}>
+        {image ? <img src={image} alt={item.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: `${imgRadius} ${imgRadius} 0 0` }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: config.mutedTextColor }}>No photo</div>}
+        <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
+          <span style={badge}><span style={{ width: 6, height: 6, borderRadius: 2, background: item.is_veg ? '#22c55e' : '#ef4444' }} />{item.is_veg ? 'Veg' : 'Non-veg'}</span>
+          {item.is_featured ? <span style={{ ...badge, background: p, color: contrast(p), borderColor: p }}>Featured</span> : null}
         </div>
-
-        {has3D && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onView3D(item);
-            }}
-            className="absolute top-3 right-3 px-2 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider bg-black/80 text-white border"
-            style={{ borderColor: config.primaryColor }}
-          >
-            3D View
-          </button>
-        )}
+        {has3D ? <button onClick={(e) => { e.stopPropagation(); onView3D(item); }} style={{ position: 'absolute', top: 10, right: 10, ...badge, cursor: 'pointer' }}>3D</button> : null}
       </div>
-
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div>
-          <div className="flex items-baseline justify-between gap-3 mb-1.5">
-            <h3
-              className="text-base sm:text-lg font-bold leading-tight"
-              style={{ fontFamily: config.headingFont, color: config.textColor }}
-            >
-              {item.name}
-            </h3>
-            <span className="text-base font-bold whitespace-nowrap" style={{ color: config.primaryColor }}>
-              {formatPrice(Number(item.price) || 0, currency)}
-            </span>
-          </div>
-
-          {item.description && (
-            <p className="text-xs opacity-75 line-clamp-2 leading-relaxed mb-3">
-              {item.description}
-            </p>
-          )}
-
-          <div className="flex items-center gap-3 text-[0.65rem] opacity-65 mb-3">
-            {item.calories ? <span>{item.calories} kcal</span> : null}
-            {item.preparation_time_mins ? <span>• {item.preparation_time_mins}m</span> : null}
-            {Number(item.rating) > 0 && <span>• ★ {Number(item.rating).toFixed(1)}</span>}
-          </div>
+      <div style={{ padding: pad, display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+          <h3 style={{ margin: 0, fontFamily: config.headingFont, fontSize: config.typography.headingSize, fontWeight: config.typography.headingWeight as any, color: config.textColor, lineHeight: 1.2 }}>{item.name}</h3>
+          <span style={{ fontFamily: config.priceFont, fontSize: config.typography.priceSize, fontWeight: 700, color: p, whiteSpace: 'nowrap' }}>{formatPrice(Number(item.price) || 0, currency)}</span>
         </div>
-
-        <div className="pt-2 border-t border-current/10 flex items-center justify-between gap-2">
-          {inCart ? (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-between w-full border px-3 py-1"
-              style={{ borderRadius: config.borderRadius, borderColor: config.primaryColor }}
-            >
-              <button onClick={() => onRemove(item.id)} className="font-bold text-sm">
-                −
-              </button>
-              <span className="text-xs font-bold">{inCart.quantity} in order</span>
-              <button onClick={() => onAdd(item)} className="font-bold text-sm">
-                +
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAdd(item);
-              }}
-              style={buttonStyles}
-              className="w-full py-2 text-xs font-bold tracking-wide"
-            >
-              Add to Order
-            </button>
-          )}
+        {item.description ? <p style={{ margin: '0 0 12px', color: config.mutedTextColor, fontSize: Math.max(12, config.typography.bodySize - 1), lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>{item.description}</p> : null}
+        <div style={{ display: 'flex', gap: 10, fontSize: 11, color: config.mutedTextColor, marginBottom: 14 }}>
+          {item.calories ? <span>{item.calories} kcal</span> : null}
+          {item.preparation_time_mins ? <span>{item.preparation_time_mins} min</span> : null}
+          {Number(item.rating) > 0 ? <span>★ {Number(item.rating).toFixed(1)}</span> : null}
+        </div>
+        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 'auto' }}>
+          {inCart ? <Qty p={p} config={config} qty={inCart.quantity} onMinus={() => onRemove(item.id)} onPlus={() => onAdd(item)} full /> : <button onClick={() => onAdd(item)} style={{ ...buttonStyles, width: '100%' }}>Add to order</button>}
         </div>
       </div>
+    </div>
+  );
+}
+
+function Qty({ p, config, qty, onMinus, onPlus, full }: { p: string; config: CustomThemeConfig; qty: number; onMinus: () => void; onPlus: () => void; full?: boolean }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: full ? '100%' : undefined, border: `1px solid ${alpha(p,0.4)}`, borderRadius: config.buttonRadius, padding: '0.35rem 0.6rem', gap: 10 }}>
+      <button onClick={onMinus} style={{ background: 'transparent', border: 'none', color: p, cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>−</button>
+      <span style={{ fontSize: 13, fontWeight: 700, color: config.textColor }}>{full ? `${qty} in order` : qty}</span>
+      <button onClick={onPlus} style={{ background: 'transparent', border: 'none', color: p, cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>+</button>
     </div>
   );
 }

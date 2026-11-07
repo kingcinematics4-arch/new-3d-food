@@ -1,275 +1,439 @@
-// lib/customTheme.ts
-// Data structures and presets for the Dine3D Custom Theme Builder
+﻿export type CustomButtonStyle = 'solid' | 'outline' | 'pill' | 'soft';
+export type CustomCardStyle = 'flat' | 'elevated' | 'bordered' | 'glassmorphic';
+export type CustomHeaderStyle = 'brand-first' | 'minimal-bar' | 'banner' | 'utility';
+export type CustomMenuLayout = 'grid' | 'compact-list' | 'editorial' | 'cards';
+
+export type CustomShadowStrength = 'none' | 'soft' | 'medium' | 'strong';
+export type CustomBorderStyle = 'none' | 'subtle' | 'defined' | 'accent';
+export type CustomBadgeStyle = 'soft' | 'solid' | 'outline';
+export type CustomContentSpacing = 'compact' | 'comfortable' | 'spacious';
+export type CustomFontWeight = '400' | '500' | '600' | '700';
+export type CustomButtonSize = 'sm' | 'md' | 'lg';
+
+export interface CustomThemeTypography {
+  headingSize: number;
+  bodySize: number;
+  priceSize: number;
+  headingWeight: CustomFontWeight;
+  bodyWeight: CustomFontWeight;
+  buttonTextWeight: CustomFontWeight;
+}
 
 export interface CustomThemeConfig {
-  /** 1. Page background color (hex, rgb, etc.) */
-  pageBg: string;
-  /** 2. Card background color */
-  cardBg: string;
-  /** 3. Primary accent / brand color */
   primaryColor: string;
-  /** 4. Text / ink color */
+  pageBg: string;
+  cardBg: string;
   textColor: string;
-  /** 5. Heading font family */
+  mutedTextColor: string;
   headingFont: string;
-  /** 6. Body font family */
   bodyFont: string;
-  /** 7. Border radius (e.g. 0px, 8px, 16px, 24px) */
+  priceFont: string;
   borderRadius: string;
-  /** 8. Card surface style */
-  cardStyle: 'flat' | 'bordered' | 'elevated' | 'glassmorphic';
-  /** 9. Button style */
-  buttonStyle: 'solid' | 'outline' | 'soft' | 'pill';
-  /** 10. Menu items layout */
-  menuLayout: 'grid' | 'editorial' | 'compact-list' | 'cards';
-  /** 11. Header & navigation style (fixed: Sticky Blur Bar) */
-  headerStyle: 'sticky-blur';
+  imageRadius: string;
+  buttonRadius: string;
+  badgeRadius: string;
+  shadowStrength: CustomShadowStrength;
+  borderStyle: CustomBorderStyle;
+  cardStyle: CustomCardStyle;
+  buttonStyle: CustomButtonStyle;
+  buttonSize: CustomButtonSize;
+  badgeStyle: CustomBadgeStyle;
+  spacing: CustomContentSpacing;
+  menuLayout: CustomMenuLayout;
+  headerStyle: CustomHeaderStyle;
+  typography: CustomThemeTypography;
 }
+
+export const DEFAULT_CUSTOM_THEME_TYPOGRAPHY: CustomThemeTypography = {
+  headingSize: 18,
+  bodySize: 14,
+  priceSize: 16,
+  headingWeight: '600',
+  bodyWeight: '400',
+  buttonTextWeight: '600',
+};
 
 export const DEFAULT_CUSTOM_THEME: CustomThemeConfig = {
-  pageBg: '#121212',
-  cardBg: '#1C1C1E',
-  primaryColor: '#E5A93C',
-  textColor: '#F5F5F7',
-  headingFont: 'Manrope',
-  bodyFont: 'Inter',
-  borderRadius: '12px',
-  cardStyle: 'bordered',
-  buttonStyle: 'solid',
+  primaryColor: '#c9a96e',
+  pageBg: '#07070a',
+  cardBg: '#12121a',
+  textColor: '#f0e8d8',
+  mutedTextColor: '#9a9080',
+  headingFont: 'Playfair Display',
+  bodyFont: 'DM Sans',
+  priceFont: 'DM Sans',
+  borderRadius: '16px',
+  imageRadius: '14px',
+  buttonRadius: '12px',
+  badgeRadius: '999px',
+  shadowStrength: 'medium',
+  borderStyle: 'subtle',
+  cardStyle: 'elevated',
+  buttonStyle: 'soft',
+  buttonSize: 'md',
+  badgeStyle: 'soft',
+  spacing: 'comfortable',
   menuLayout: 'grid',
-  headerStyle: 'sticky-blur',
+  headerStyle: 'minimal-bar',
+  typography: DEFAULT_CUSTOM_THEME_TYPOGRAPHY,
 };
 
-export const FONT_OPTIONS = [
-  { label: 'Cormorant Garamond (Editorial Serif)', value: 'Cormorant Garamond' },
-  { label: 'Playfair Display (Luxury Serif)', value: 'Playfair Display' },
-  { label: 'Manrope (Modern Clean Sans)', value: 'Manrope' },
-  { label: 'Inter (Neutral Swiss Sans)', value: 'Inter' },
-  { label: 'Outfit (Geometric Contemporary)', value: 'Outfit' },
-  { label: 'Roboto (Classic Grotesk)', value: 'Roboto' },
+export type FontCategory = 'Sans Serif' | 'Serif' | 'Display' | 'Elegant' | 'Modern' | 'Monospace';
+
+export interface FontOptionMeta {
+  value: string;
+  label: string;
+  category: FontCategory;
+  google?: string;
+  sample?: string;
+}
+
+export const FONT_CATALOG: FontOptionMeta[] = [
+  { value: 'DM Sans', label: 'DM Sans', category: 'Sans Serif', sample: 'Clean modern menu' },
+  { value: 'Inter', label: 'Inter', category: 'Sans Serif', sample: 'Clear and balanced' },
+  { value: 'Manrope', label: 'Manrope', category: 'Sans Serif', sample: 'Friendly professional' },
+  { value: 'Plus Jakarta Sans', label: 'Plus Jakarta Sans', category: 'Sans Serif', sample: 'Contemporary dining' },
+  { value: 'Outfit', label: 'Outfit', category: 'Sans Serif', sample: 'Modern hospitality' },
+  { value: 'Poppins', label: 'Poppins', category: 'Sans Serif', sample: 'Rounded and approachable' },
+  { value: 'Montserrat', label: 'Montserrat', category: 'Sans Serif', sample: 'Bold urban menu' },
+  { value: 'Nunito Sans', label: 'Nunito Sans', category: 'Sans Serif', sample: 'Soft and readable' },
+  { value: 'Work Sans', label: 'Work Sans', category: 'Sans Serif', sample: 'Neutral and crisp' },
+  { value: 'Source Sans 3', label: 'Source Sans 3', category: 'Sans Serif', sample: 'Practical clarity' },
+  { value: 'Lato', label: 'Lato', category: 'Sans Serif', sample: 'Warm readability' },
+  { value: 'Open Sans', label: 'Open Sans', category: 'Sans Serif', sample: 'Familiar and clear' },
+  { value: 'Raleway', label: 'Raleway', category: 'Sans Serif', sample: 'Light premium feel' },
+  { value: 'Rubik', label: 'Rubik', category: 'Sans Serif', sample: 'Soft geometric' },
+  { value: 'Figtree', label: 'Figtree', category: 'Sans Serif', sample: 'Fresh and modern' },
+  { value: 'Sora', label: 'Sora', category: 'Modern', sample: 'Tech-forward dining' },
+  { value: 'Space Grotesk', label: 'Space Grotesk', category: 'Modern', sample: 'Distinctive modern' },
+  { value: 'Urbanist', label: 'Urbanist', category: 'Modern', sample: 'Sleek contemporary' },
+  { value: 'Playfair Display', label: 'Playfair Display', category: 'Serif', sample: 'Classic fine dining' },
+  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', category: 'Serif', sample: 'Elegant signature' },
+  { value: 'Lora', label: 'Lora', category: 'Serif', sample: 'Comfortable editorial' },
+  { value: 'Merriweather', label: 'Merriweather', category: 'Serif', sample: 'Rich and readable' },
+  { value: 'Libre Baskerville', label: 'Libre Baskerville', category: 'Serif', sample: 'Traditional premium' },
+  { value: 'Crimson Pro', label: 'Crimson Pro', category: 'Serif', sample: 'Refined bookish' },
+  { value: 'Source Serif 4', label: 'Source Serif 4', category: 'Serif', sample: 'Balanced serif' },
+  { value: 'EB Garamond', label: 'EB Garamond', category: 'Elegant', sample: 'Timeless luxury' },
+  { value: 'Fraunces', label: 'Fraunces', category: 'Elegant', sample: 'Characterful craft' },
+  { value: 'Spectral', label: 'Spectral', category: 'Elegant', sample: 'Graceful detail' },
+  { value: 'Bodoni Moda', label: 'Bodoni Moda', category: 'Elegant', sample: 'High-fashion dining' },
+  { value: 'Cinzel', label: 'Cinzel', category: 'Display', sample: 'Grand presentation' },
+  { value: 'Marcellus', label: 'Marcellus', category: 'Display', sample: 'Calm sophistication' },
+  { value: 'Prata', label: 'Prata', category: 'Display', sample: 'Editorial luxury' },
+  { value: 'Yeseva One', label: 'Yeseva One', category: 'Display', sample: 'Expressive headings' },
+  { value: 'Oswald', label: 'Oswald', category: 'Display', sample: 'Strong condensed' },
+  { value: 'Bebas Neue', label: 'Bebas Neue', category: 'Display', sample: 'Bold statement' },
+  { value: 'IBM Plex Mono', label: 'IBM Plex Mono', category: 'Monospace', sample: 'Precise price tags' },
+  { value: 'JetBrains Mono', label: 'JetBrains Mono', category: 'Monospace', sample: 'Technical clarity' },
 ];
 
-export const BORDER_RADIUS_OPTIONS = [
-  { label: 'Sharp (0px)', value: '0px' },
-  { label: 'Subtle (6px)', value: '6px' },
-  { label: 'Balanced (12px)', value: '12px' },
-  { label: 'Rounded (20px)', value: '20px' },
-  { label: 'Extra Curved (28px)', value: '28px' },
+export const FONT_OPTIONS = FONT_CATALOG.map(({ value, label }) => ({ value, label }));
+
+export const FONT_CATEGORY_ORDER: FontCategory[] = ['Sans Serif', 'Serif', 'Elegant', 'Display', 'Modern', 'Monospace'];
+
+export interface BorderRadiusOption {
+  label: string;
+  value: string;
+}
+
+export const BORDER_RADIUS_OPTIONS: BorderRadiusOption[] = [
+  { label: 'None', value: '0px' },
+  { label: 'XS', value: '6px' },
+  { label: 'SM', value: '10px' },
+  { label: 'MD', value: '14px' },
+  { label: 'LG', value: '18px' },
+  { label: 'XL', value: '24px' },
+  { label: '2XL', value: '32px' },
 ];
 
-export const CARD_STYLE_OPTIONS: Array<{ label: string; value: CustomThemeConfig['cardStyle']; description: string }> = [
-  { label: 'Bordered', value: 'bordered', description: 'Thin hairline border using accent color' },
-  { label: 'Elevated', value: 'elevated', description: 'Deep ambient shadow with soft edge' },
-  { label: 'Glassmorphic', value: 'glassmorphic', description: 'Translucent frosted glass with blur' },
-  { label: 'Flat Minimal', value: 'flat', description: 'Clean seamless surface with no border' },
+export const SHADOW_OPTIONS: { label: string; value: CustomShadowStrength; description: string }[] = [
+  { label: 'None', value: 'none', description: 'Flat surfaces with no shadow' },
+  { label: 'Soft', value: 'soft', description: 'Light depth for clean menus' },
+  { label: 'Medium', value: 'medium', description: 'Balanced card elevation' },
+  { label: 'Strong', value: 'strong', description: 'High contrast depth' },
 ];
 
-export const BUTTON_STYLE_OPTIONS: Array<{ label: string; value: CustomThemeConfig['buttonStyle']; description: string }> = [
-  { label: 'Solid Accent', value: 'solid', description: 'Filled button in primary color' },
-  { label: 'Outline', value: 'outline', description: 'Transparent with crisp accent border' },
-  { label: 'Soft Wash', value: 'soft', description: 'Gentle translucent accent tint' },
-  { label: 'Pill Capsule', value: 'pill', description: 'Fully rounded modern pill' },
+export const BORDER_STYLE_OPTIONS: { label: string; value: CustomBorderStyle; description: string }[] = [
+  { label: 'None', value: 'none', description: 'No visible card border' },
+  { label: 'Subtle', value: 'subtle', description: 'Quiet separation' },
+  { label: 'Defined', value: 'defined', description: 'Clear card edges' },
+  { label: 'Accent', value: 'accent', description: 'Uses the primary color' },
 ];
 
-export const MENU_LAYOUT_OPTIONS: Array<{ label: string; value: CustomThemeConfig['menuLayout']; description: string }> = [
-  { label: 'Modern Grid', value: 'grid', description: 'Two-column balanced photo cards' },
-  { label: 'Editorial Magazine', value: 'editorial', description: 'Wide spacious rows with generous breathing room' },
-  { label: 'Compact List', value: 'compact-list', description: 'Sleek café-style horizontal list with thumbnail' },
-  { label: 'Hero Cards', value: 'cards', description: 'Large photography-dominant stacked cards' },
+export const SPACING_OPTIONS: { label: string; value: CustomContentSpacing; description: string }[] = [
+  { label: 'Compact', value: 'compact', description: 'Denser menu presentation' },
+  { label: 'Comfortable', value: 'comfortable', description: 'Balanced spacing' },
+  { label: 'Spacious', value: 'spacious', description: 'Airy, premium spacing' },
 ];
 
-export const HEADER_STYLE_OPTIONS: Array<{ label: string; value: CustomThemeConfig['headerStyle']; description: string }> = [
-  { label: 'Sticky Blur Bar', value: 'sticky-blur', description: 'Fixed header style for all menus' },
+export const BADGE_STYLE_OPTIONS: { label: string; value: CustomBadgeStyle; description: string }[] = [
+  { label: 'Soft', value: 'soft', description: 'Tinted badges' },
+  { label: 'Solid', value: 'solid', description: 'Filled badges' },
+  { label: 'Outline', value: 'outline', description: 'Outlined badges' },
 ];
 
-/** Presets used by the "Reset to Template" feature */
-export const TEMPLATE_PRESETS: Record<string, { name: string; config: CustomThemeConfig }> = {
-  'classic-luxury': {
-    name: 'Classic Luxury',
-    config: {
-      pageBg: '#F8F5F0',
-      cardBg: '#FFFFFF',
-      primaryColor: '#9A8760',
-      textColor: '#1A1A1A',
-      headingFont: 'Cormorant Garamond',
-      bodyFont: 'Inter',
-      borderRadius: '12px',
-      cardStyle: 'bordered',
-      buttonStyle: 'outline',
-      menuLayout: 'editorial',
-      headerStyle: 'sticky-blur',
-    },
-  },
-  'modern-dark': {
+export const BUTTON_SIZE_OPTIONS: { label: string; value: CustomButtonSize }[] = [
+  { label: 'Small', value: 'sm' },
+  { label: 'Medium', value: 'md' },
+  { label: 'Large', value: 'lg' },
+];
+
+export interface CardStyleOption {
+  label: string;
+  value: CustomCardStyle;
+  description: string;
+}
+
+export const CARD_STYLE_OPTIONS: CardStyleOption[] = [
+  { label: 'Flat', value: 'flat', description: 'Clean, no shadow' },
+  { label: 'Elevated', value: 'elevated', description: 'Subtle depth shadow' },
+  { label: 'Bordered', value: 'bordered', description: 'Outlined edges' },
+  { label: 'Glassmorphic', value: 'glassmorphic', description: 'Frosted glass look' },
+];
+
+export interface ButtonStyleOption {
+  label: string;
+  value: CustomButtonStyle;
+  description: string;
+}
+
+export const BUTTON_STYLE_OPTIONS: ButtonStyleOption[] = [
+  { label: 'Solid', value: 'solid', description: 'Filled primary color' },
+  { label: 'Outline', value: 'outline', description: 'Bordered, transparent' },
+  { label: 'Pill', value: 'pill', description: 'Fully rounded solid' },
+  { label: 'Soft', value: 'soft', description: 'Light tinted background' },
+];
+
+export interface MenuLayoutOption {
+  label: string;
+  value: CustomMenuLayout;
+  description: string;
+}
+
+export const MENU_LAYOUT_OPTIONS: MenuLayoutOption[] = [
+  { label: 'Grid', value: 'grid', description: 'Two-column card grid' },
+  { label: 'List', value: 'compact-list', description: 'Compact vertical list' },
+  { label: 'Editorial', value: 'editorial', description: 'Large featured cards' },
+  { label: 'Cards', value: 'cards', description: 'Single-column cards' },
+];
+
+export interface ColorPalette {
+  id: string;
+  name: string;
+  colors: { primaryColor: string; pageBg: string; cardBg: string; textColor: string; mutedTextColor: string };
+}
+
+export const COLOR_PALETTES: ColorPalette[] = [
+  { id: 'noir-gold', name: 'Noir Gold', colors: { primaryColor: '#c9a96e', pageBg: '#07070a', cardBg: '#12121a', textColor: '#f0e8d8', mutedTextColor: '#9a9080' } },
+  { id: 'ivory-espresso', name: 'Ivory Espresso', colors: { primaryColor: '#8b5e34', pageBg: '#f7f1e8', cardBg: '#fffaf2', textColor: '#2b2118', mutedTextColor: '#766858' } },
+  { id: 'sage-stone', name: 'Sage Stone', colors: { primaryColor: '#5f7a67', pageBg: '#f3f4ef', cardBg: '#ffffff', textColor: '#1f2923', mutedTextColor: '#66756b' } },
+  { id: 'ocean-night', name: 'Ocean Night', colors: { primaryColor: '#4ea1d3', pageBg: '#08131d', cardBg: '#101f2d', textColor: '#eaf4ff', mutedTextColor: '#90a8bf' } },
+  { id: 'rose-cream', name: 'Rose Cream', colors: { primaryColor: '#c86b85', pageBg: '#fff4f6', cardBg: '#ffffff', textColor: '#352328', mutedTextColor: '#8b6771' } },
+  { id: 'citrus-fresh', name: 'Citrus Fresh', colors: { primaryColor: '#e09f3e', pageBg: '#fffaf0', cardBg: '#ffffff', textColor: '#2f2618', mutedTextColor: '#8a7658' } },
+  { id: 'forest-ember', name: 'Forest Ember', colors: { primaryColor: '#d97745', pageBg: '#0e1512', cardBg: '#17211c', textColor: '#eef3ed', mutedTextColor: '#8fa095' } },
+  { id: 'royal-plum', name: 'Royal Plum', colors: { primaryColor: '#b07adf', pageBg: '#120d18', cardBg: '#1d1628', textColor: '#f5efff', mutedTextColor: '#a595c2' } },
+  { id: 'slate-lime', name: 'Slate Lime', colors: { primaryColor: '#84cc16', pageBg: '#0b1020', cardBg: '#141b2f', textColor: '#e8eefc', mutedTextColor: '#94a3c4' } },
+  { id: 'terracotta-sand', name: 'Terracotta Sand', colors: { primaryColor: '#c96a4b', pageBg: '#f8efe7', cardBg: '#fff8f2', textColor: '#35241d', mutedTextColor: '#8c6f64' } },
+  { id: 'mono-silver', name: 'Mono Silver', colors: { primaryColor: '#c0c7d1', pageBg: '#0b0d10', cardBg: '#151922', textColor: '#f3f5f7', mutedTextColor: '#98a2b3' } },
+  { id: 'midnight-teal', name: 'Midnight Teal', colors: { primaryColor: '#2dd4bf', pageBg: '#061417', cardBg: '#0f2227', textColor: '#e6fffb', mutedTextColor: '#84b7b0' } },
+];
+
+export interface TemplatePreset {
+  name: string;
+  description: string;
+  config: CustomThemeConfig;
+}
+
+function preset(partial: Partial<CustomThemeConfig> & { typography?: Partial<CustomThemeTypography> }): CustomThemeConfig {
+  return normalizeCustomThemeConfig({ ...DEFAULT_CUSTOM_THEME, ...partial, typography: { ...DEFAULT_CUSTOM_THEME_TYPOGRAPHY, ...(partial.typography || {}) } });
+}
+
+export const TEMPLATE_PRESETS: Record<string, TemplatePreset> = {
+  modern: {
     name: 'Modern Dark',
-    config: {
-      pageBg: '#0A0A0A',
-      cardBg: '#141414',
-      primaryColor: '#E1C99A',
-      textColor: '#FFFFFF',
-      headingFont: 'Manrope',
-      bodyFont: 'Inter',
-      borderRadius: '16px',
-      cardStyle: 'elevated',
-      buttonStyle: 'solid',
-      menuLayout: 'grid',
-      headerStyle: 'sticky-blur',
-    },
+    description: 'Clean, dark design with warm gold accents',
+    config: preset({ primaryColor: '#c9a96e', pageBg: '#07070a', cardBg: '#12121a', textColor: '#f0e8d8', mutedTextColor: '#9a9080', headingFont: 'Playfair Display', bodyFont: 'DM Sans', priceFont: 'DM Sans', cardStyle: 'elevated', buttonStyle: 'soft' }),
   },
-  'fresh-minimal': {
-    name: 'Fresh Minimal',
-    config: {
-      pageBg: '#F9FAF8',
-      cardBg: '#FFFFFF',
-      primaryColor: '#2E7D32',
-      textColor: '#1E231F',
-      headingFont: 'Inter',
-      bodyFont: 'Inter',
-      borderRadius: '24px',
-      cardStyle: 'flat',
-      buttonStyle: 'soft',
-      menuLayout: 'cards',
-      headerStyle: 'sticky-blur',
-    },
+  'fine-dining': {
+    name: 'Fine Dining',
+    description: 'Luxurious dark theme with editorial layout',
+    config: preset({ primaryColor: '#d4af37', pageBg: '#0d0a07', cardBg: '#17120d', textColor: '#f5efe3', mutedTextColor: '#a08b73', headingFont: 'Cormorant Garamond', bodyFont: 'Lato', priceFont: 'Cormorant Garamond', menuLayout: 'editorial', cardStyle: 'bordered', borderStyle: 'accent', spacing: 'spacious' }),
   },
-  'indian-heritage': {
-    name: 'Indian Heritage',
-    config: {
-      pageBg: '#1D150E',
-      cardBg: '#2A2015',
-      primaryColor: '#C69A6E',
-      textColor: '#E8E1D1',
-      headingFont: 'Cormorant Garamond',
-      bodyFont: 'Inter',
-      borderRadius: '8px',
-      cardStyle: 'bordered',
-      buttonStyle: 'outline',
-      menuLayout: 'cards',
-      headerStyle: 'sticky-blur',
-    },
+  minimal: {
+    name: 'Minimal Light',
+    description: 'Clean, bright design with elegant simplicity',
+    config: preset({ primaryColor: '#374151', pageBg: '#f8fafc', cardBg: '#ffffff', textColor: '#111827', mutedTextColor: '#6b7280', headingFont: 'Inter', bodyFont: 'Inter', priceFont: 'Inter', cardStyle: 'bordered', buttonStyle: 'outline', shadowStrength: 'soft' }),
   },
-  'contemporary-premium': {
-    name: 'Contemporary Premium',
-    config: {
-      pageBg: '#F5F3EF',
-      cardBg: '#FFFFFF',
-      primaryColor: '#A67C52',
-      textColor: '#1A1A1A',
-      headingFont: 'Manrope',
-      bodyFont: 'Inter',
-      borderRadius: '0px',
-      cardStyle: 'flat',
-      buttonStyle: 'solid',
-      menuLayout: 'editorial',
-      headerStyle: 'sticky-blur',
-    },
+  vibrant: {
+    name: 'Vibrant & Bold',
+    description: 'Energetic colors with a playful card layout',
+    config: preset({ primaryColor: '#ff6b35', pageBg: '#fff8f4', cardBg: '#ffffff', textColor: '#231f20', mutedTextColor: '#7a6d66', headingFont: 'Montserrat', bodyFont: 'Nunito Sans', priceFont: 'Montserrat', cardStyle: 'elevated', buttonStyle: 'pill', badgeStyle: 'solid', shadowStrength: 'strong' }),
   },
 };
 
-function hexToRgbParts(hex: string): { r: number; g: number; b: number } | null {
-  if (typeof hex !== 'string') return null;
-  const h = hex.trim().replace('#', '');
-  if (/^[0-9a-fA-F]{3}$/.test(h)) {
-    return {
-      r: parseInt(h[0] + h[0], 16),
-      g: parseInt(h[1] + h[1], 16),
-      b: parseInt(h[2] + h[2], 16),
-    };
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n));
+}
+
+export function normalizeHex(input: string | null | undefined, fallback: string): string {
+  if (!input || typeof input !== 'string') return fallback;
+  let v = input.trim();
+  if (!v) return fallback;
+  if (!v.startsWith('#')) v = `#${v}`;
+  if (/^#[0-9a-fA-F]{3}$/.test(v)) {
+    v = `#${v[1]}${v[1]}${v[2]}${v[2]}${v[3]}${v[3]}`;
   }
-  if (/^[0-9a-fA-F]{6}$/.test(h)) {
-    return {
-      r: parseInt(h.slice(0, 2), 16),
-      g: parseInt(h.slice(2, 4), 16),
-      b: parseInt(h.slice(4, 6), 16),
-    };
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : fallback;
+}
+
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const n = normalizeHex(hex, '#000000').slice(1);
+  return { r: parseInt(n.slice(0, 2), 16), g: parseInt(n.slice(2, 4), 16), b: parseInt(n.slice(4, 6), 16) };
+}
+
+export function rgbToHex(r: number, g: number, b: number): string {
+  const h = (v: number) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0');
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
+export function hexToHsv(hex: string): { h: number; s: number; v: number } {
+  const { r, g, b } = hexToRgb(hex);
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn), d = max - min;
+  let h = 0;
+  if (d) {
+    if (max === rn) h = ((gn - bn) / d) % 6;
+    else if (max === gn) h = (bn - rn) / d + 2;
+    else h = (rn - gn) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
   }
-  return null;
+  return { h, s: max ? d / max : 0, v: max };
 }
 
-function rgbaFromHex(hex: string, alpha: number): string {
-  const p = hexToRgbParts(hex);
-  if (!p) return hex;
-  return `rgba(${p.r},${p.g},${p.b},${alpha})`;
+export function hsvToHex(h: number, s: number, v: number): string {
+  const hh = ((h % 360) + 360) % 360;
+  const c = v * s;
+  const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+  const m = v - c;
+  let r = 0, g = 0, b = 0;
+  if (hh < 60) { r = c; g = x; }
+  else if (hh < 120) { r = x; g = c; }
+  else if (hh < 180) { g = c; b = x; }
+  else if (hh < 240) { g = x; b = c; }
+  else if (hh < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  return rgbToHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
 }
 
-function mixWith(hex: string, target: { r: number; g: number; b: number }, amount: number): string {
-  const p = hexToRgbParts(hex);
-  if (!p) return hex;
-  const t = Math.max(0, Math.min(1, amount));
-  const r = Math.round(p.r + (target.r - p.r) * t);
-  const g = Math.round(p.g + (target.g - p.g) * t);
-  const b = Math.round(p.b + (target.b - p.b) * t);
-  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+export function mixHex(a: string, b: string, t: number): string {
+  const ca = hexToRgb(a), cb = hexToRgb(b), tt = clamp(t, 0, 1);
+  return rgbToHex(ca.r + (cb.r - ca.r) * tt, ca.g + (cb.g - ca.g) * tt, ca.b + (cb.b - ca.b) * tt);
 }
 
-function isLight(hex: string): boolean {
-  const p = hexToRgbParts(hex);
-  if (!p) return false;
-  const l = (0.2126 * p.r + 0.7152 * p.g + 0.0722 * p.b) / 255;
-  return l > 0.62;
+export function getReadableTextColor(bg: string): string {
+  const { r, g, b } = hexToRgb(bg);
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.62 ? '#111827' : '#f8fafc';
 }
 
-/**
- * Maps a saved CustomThemeConfig to the Dine3D CSS variable system so the
- * same token-driven UI (menu chrome, cart/View Order, order tracking) reflects
- * the restaurant's active custom theme on every customer page.
- */
-export function customThemeToCssVars(config?: Partial<CustomThemeConfig> | null): Record<string, string> {
-  if (!config || typeof config !== 'object') return {};
-  const c = { ...DEFAULT_CUSTOM_THEME, ...config } as CustomThemeConfig;
-  const primary = c.primaryColor || DEFAULT_CUSTOM_THEME.primaryColor;
-  const text = c.textColor || DEFAULT_CUSTOM_THEME.textColor;
-  const page = c.pageBg || DEFAULT_CUSTOM_THEME.pageBg;
-  const card = c.cardBg || DEFAULT_CUSTOM_THEME.cardBg;
-  const lightPage = isLight(page);
-  const surface2 = mixWith(card, lightPage ? { r: 0, g: 0, b: 0 } : { r: 255, g: 255, b: 255 }, lightPage ? 0.04 : 0.06);
-  const surface3 = mixWith(card, lightPage ? { r: 0, g: 0, b: 0 } : { r: 255, g: 255, b: 255 }, lightPage ? 0.08 : 0.12);
-  const muted = mixWith(text, hexToRgbParts(page) || { r: 128, g: 128, b: 128 }, 0.45);
-  const dimmed = mixWith(text, hexToRgbParts(page) || { r: 128, g: 128, b: 128 }, 0.65);
-  const headingFont = `'${String(c.headingFont || 'Manrope').replace(/'/g, '')}', system-ui, sans-serif`;
-  const bodyFont = `'${String(c.bodyFont || 'Inter').replace(/'/g, '')}', system-ui, sans-serif`;
-  const radius = c.borderRadius || '12px';
-  const vars: Record<string, string> = {
-    '--bg-primary': page,
-    '--bg-secondary': mixWith(page, hexToRgbParts(card) || { r: 0, g: 0, b: 0 }, 0.35),
-    '--bg-tertiary': surface2,
-    '--bg-surface': card,
-    '--bg-surface-2': surface2,
-    '--bg-surface-3': surface3,
-    '--bg-elevated': surface3,
-    '--gold': primary,
-    '--gold-bright': mixWith(primary, { r: 255, g: 255, b: 255 }, 0.18),
-    '--gold-dim': mixWith(primary, { r: 0, g: 0, b: 0 }, 0.35),
-    '--gold-pale': mixWith(primary, { r: 255, g: 255, b: 255 }, 0.28),
-    '--gold-deep': mixWith(primary, { r: 0, g: 0, b: 0 }, 0.2),
-    '--text-primary': text,
-    '--text-secondary': mixWith(text, hexToRgbParts(page) || { r: 128, g: 128, b: 128 }, 0.2),
-    '--text-muted': muted,
-    '--text-dimmed': dimmed,
-    '--text-gold': primary,
-    '--border-subtle': rgbaFromHex(primary, 0.12),
-    '--border-light': rgbaFromHex(primary, 0.22),
-    '--border-medium': rgbaFromHex(primary, 0.34),
-    '--border-warm': lightPage ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
-    '--border-solid': mixWith(card, hexToRgbParts(text) || { r: 128, g: 128, b: 128 }, 0.16),
-    '--font-display': headingFont,
-    '--font-body': bodyFont,
-    '--d3-card-radius': radius,
-    '--d3-modal-radius': radius,
-    '--d3-input-radius': radius === '0px' ? '0px' : '8px',
-    '--d3-btn-radius': c.buttonStyle === 'pill' ? '9999px' : radius,
-    '--d3-badge-radius': c.buttonStyle === 'pill' ? '9999px' : '4px',
-    '--d3-chip-radius': c.buttonStyle === 'pill' ? '9999px' : '6px',
-    '--d3-header-bg': rgbaFromHex(page, 0.92),
-    '--d3-nav-bg': rgbaFromHex(page, 0.92),
-    '--d3-shadow-card':
-      c.cardStyle === 'elevated'
-        ? `0 8px 32px ${rgbaFromHex(text, 0.18)}`
-        : c.cardStyle === 'glassmorphic'
-          ? `0 8px 24px ${rgbaFromHex(primary, 0.16)}`
-          : `0 1px 3px ${rgbaFromHex(text, 0.08)}`,
-    '--d3-shadow-card-hover': `0 8px 28px ${rgbaFromHex(primary, 0.14)}`,
-    '--d3-shadow-elevated': `0 2px 10px ${rgbaFromHex(text, 0.12)}`,
+export function getColorShades(hex: string, count = 12): string[] {
+  const base = normalizeHex(hex, '#c9a96e');
+  const { h, s } = hexToHsv(base);
+  const isLight = hexToHsv(base).v > 0.72;
+  const steps = Array.from({ length: count }, (_, i) => i / (count - 1));
+  return steps.map((t) => {
+    if (isLight) {
+      return hsvToHex(h, clamp(s * (0.3 + t * 0.9), 0, 1), clamp(0.98 - t * 0.72, 0.12, 1));
+    }
+    return hsvToHex(h, clamp(s * (0.25 + t * 0.85), 0, 1), clamp(0.14 + t * 0.84, 0.08, 1));
+  });
+}
+
+export function getProfessionalShades(hex: string): string[] {
+  return getColorShades(hex, 12);
+}
+
+export function deriveMutedTextColor(textColor: string, pageBg: string): string {
+  return mixHex(textColor, pageBg, 0.45);
+}
+
+export function resolveFontOption(value: string | null | undefined): FontOptionMeta {
+  const raw = (value || '').trim();
+  if (!raw) return FONT_CATALOG[0];
+  const found = FONT_CATALOG.find((f) => f.value.toLowerCase() === raw.toLowerCase() || f.label.toLowerCase() === raw.toLowerCase());
+  if (found) return found;
+  return { value: raw, label: raw, category: 'Sans Serif' };
+}
+
+export function googleFontHref(fonts: string[]): string | null {
+  const families = Array.from(new Set(fonts.map((f) => resolveFontOption(f).value).filter(Boolean)));
+  if (!families.length) return null;
+  const q = families.map((f) => `family=${encodeURIComponent(f).replace(/%20/g, '+')}:ital,wght@0,400;0,500;0,600;0,700`).join('&');
+  return `https://fonts.googleapis.com/css2?${q}&display=swap`;
+}
+
+function normalizeEnum<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {
+  return typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback;
+}
+
+function normalizePx(v: unknown, fallback: string): string {
+  if (typeof v === 'number' && Number.isFinite(v)) return `${clamp(v, 0, 48)}px`;
+  if (typeof v !== 'string') return fallback;
+  const s = v.trim();
+  if (/^\d+(\.\d+)?px$/.test(s)) return s;
+  if (/^\d+(\.\d+)?$/.test(s)) return `${clamp(Number(s), 0, 48)}px`;
+  return fallback;
+}
+
+export function normalizeCustomThemeConfig(raw: unknown): CustomThemeConfig {
+  const src = (raw && typeof raw === 'object' ? raw : {}) as Partial<CustomThemeConfig> & Record<string, unknown>;
+  const d = DEFAULT_CUSTOM_THEME;
+  const primaryColor = normalizeHex((src.primaryColor as string) || (src as any).accentColor, d.primaryColor);
+  const pageBg = normalizeHex(src.pageBg as string, d.pageBg);
+  const cardBg = normalizeHex(src.cardBg as string, d.cardBg);
+  const textColor = normalizeHex(src.textColor as string, d.textColor);
+  const mutedTextColor = normalizeHex(src.mutedTextColor as string, deriveMutedTextColor(textColor, pageBg));
+  const tSrc = (src.typography && typeof src.typography === 'object' ? src.typography : {}) as Partial<CustomThemeTypography>;
+  const typography: CustomThemeTypography = {
+    headingSize: clamp(Number(tSrc.headingSize) || d.typography.headingSize, 14, 34),
+    bodySize: clamp(Number(tSrc.bodySize) || d.typography.bodySize, 12, 20),
+    priceSize: clamp(Number(tSrc.priceSize) || d.typography.priceSize, 12, 28),
+    headingWeight: normalizeEnum(tSrc.headingWeight, ['400', '500', '600', '700'] as const, d.typography.headingWeight),
+    bodyWeight: normalizeEnum(tSrc.bodyWeight, ['400', '500', '600', '700'] as const, d.typography.bodyWeight),
+    buttonTextWeight: normalizeEnum(tSrc.buttonTextWeight, ['400', '500', '600', '700'] as const, d.typography.buttonTextWeight),
   };
-  return vars;
+  return {
+    primaryColor,
+    pageBg,
+    cardBg,
+    textColor,
+    mutedTextColor,
+    headingFont: resolveFontOption(src.headingFont as string).value || d.headingFont,
+    bodyFont: resolveFontOption(src.bodyFont as string).value || d.bodyFont,
+    priceFont: resolveFontOption((src.priceFont || src.bodyFont) as string).value || d.priceFont,
+    borderRadius: normalizePx(src.borderRadius, d.borderRadius),
+    imageRadius: normalizePx(src.imageRadius, d.imageRadius),
+    buttonRadius: normalizePx(src.buttonRadius, d.buttonRadius),
+    badgeRadius: normalizePx(src.badgeRadius, d.badgeRadius),
+    shadowStrength: normalizeEnum(src.shadowStrength, ['none', 'soft', 'medium', 'strong'] as const, d.shadowStrength),
+    borderStyle: normalizeEnum(src.borderStyle, ['none', 'subtle', 'defined', 'accent'] as const, d.borderStyle),
+    cardStyle: normalizeEnum(src.cardStyle, ['flat', 'elevated', 'bordered', 'glassmorphic'] as const, d.cardStyle),
+    buttonStyle: normalizeEnum(src.buttonStyle, ['solid', 'outline', 'pill', 'soft'] as const, d.buttonStyle),
+    buttonSize: normalizeEnum(src.buttonSize, ['sm', 'md', 'lg'] as const, d.buttonSize),
+    badgeStyle: normalizeEnum(src.badgeStyle, ['soft', 'solid', 'outline'] as const, d.badgeStyle),
+    spacing: normalizeEnum(src.spacing, ['compact', 'comfortable', 'spacious'] as const, d.spacing),
+    menuLayout: normalizeEnum(src.menuLayout, ['grid', 'compact-list', 'editorial', 'cards'] as const, d.menuLayout),
+    headerStyle: normalizeEnum(src.headerStyle, ['brand-first', 'minimal-bar', 'banner', 'utility'] as const, d.headerStyle),
+    typography,
+  };
+}
+
+export function cloneCustomThemeConfig(config?: Partial<CustomThemeConfig> | null): CustomThemeConfig {
+  return normalizeCustomThemeConfig(config || DEFAULT_CUSTOM_THEME);
+}
+
+export function isCustomThemeConfigEqual(a?: CustomThemeConfig | null, b?: CustomThemeConfig | null): boolean {
+  return JSON.stringify(normalizeCustomThemeConfig(a)) === JSON.stringify(normalizeCustomThemeConfig(b));
 }

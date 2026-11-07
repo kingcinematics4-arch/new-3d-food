@@ -15,8 +15,8 @@ import {
   ContemporaryPremiumTemplate,
   CustomTemplate,
 } from '@/components/menu/templates';
-import type { CustomThemeConfig } from '@/lib/customTheme';
-import { customThemeToCssVars } from '@/lib/customTheme';
+import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customTheme';
+import { customThemeToCssVars } from '@/components/menu/MenuThemeProvider';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 const Dish3DModal = dynamic(() => import('@/components/menu/Dish3DModal'), { ssr: false });
@@ -1099,7 +1099,7 @@ export default function MenuContent({
           background: 'var(--bg-primary)',
           fontFamily: 'var(--font-body)',
           ...(hotel?.menu_theme === 'custom'
-            ? (customThemeToCssVars(hotel?.custom_theme_config) as React.CSSProperties)
+            ? (customThemeToCssVars(cloneCustomThemeConfig(hotel?.custom_theme_config) as CustomThemeConfig) as React.CSSProperties)
             : {}),
         }}
       >
@@ -1139,7 +1139,7 @@ export default function MenuContent({
           fontFamily: 'var(--font-body)',
           paddingBottom: '6rem',
           ...(hotel?.menu_theme === 'custom'
-            ? (customThemeToCssVars(hotel?.custom_theme_config) as React.CSSProperties)
+            ? (customThemeToCssVars(cloneCustomThemeConfig(hotel?.custom_theme_config) as CustomThemeConfig) as React.CSSProperties)
             : {}),
         }}
       >

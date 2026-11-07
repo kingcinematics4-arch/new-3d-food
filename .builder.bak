@@ -1,0 +1,1018 @@
+'use client';
+
+import React, { useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  CustomThemeConfig,
+  DEFAULT_CUSTOM_THEME,
+  TEMPLATE_PRESETS,
+  FONT_OPTIONS,
+  BORDER_RADIUS_OPTIONS,
+  CARD_STYLE_OPTIONS,
+  BUTTON_STYLE_OPTIONS,
+  MENU_LAYOUT_OPTIONS,
+} from '@/lib/customTheme';
+import CustomTemplate from './templates/CustomTemplate';
+import type { PublicMenuItem, PublicHotel, PublicCategory } from '@/app/menu/[slug]/MenuContent';
+import type { Hotel } from '@/lib/useHotel';
+
+interface CustomThemeBuilderProps {
+  hotel: Hotel;
+  initialConfig?: CustomThemeConfig | null;
+  onSaved?: (config: CustomThemeConfig) => void;
+  onCancel?: () => void;
+  editingThemeId?: string;
+  initialThemeName?: string;
+}
+
+const FIELD_LABEL: CSSProperties = {
+  display: 'block',
+  marginBottom: 6,
+  fontSize: '0.75rem',
+  fontWeight: 500,
+  color: 'var(--text-secondary)',
+  lineHeight: 1.35,
+  whiteSpace: 'nowrap',
+};
+
+const TEXT_INPUT: CSSProperties = {
+  width: '100%',
+  minWidth: 0,
+  borderRadius: 10,
+  border: '1px solid var(--border-warm)',
+  background: 'var(--bg-surface-2)',
+  color: 'var(--text-primary)',
+  padding: '0.625rem 0.75rem',
+  fontSize: '0.8125rem',
+  lineHeight: 1.4,
+  outline: 'none',
+};
+
+function Section({
+  number,
+  title,
+  children,
+}: {
+  number: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-5">
+      <div className="flex items-baseline gap-2.5">
+        <span
+          style={{
+            fontSize: '0.625rem',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            color: 'var(--gold)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {number}
+        </span>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.01em',
+            lineHeight: 1.3,
+          }}
+        >
+          {title}
+        </h3>
+      </div>
+      <div className="flex flex-col gap-5">{children}</div>
+    </section>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <label style={FIELD_LABEL}>{label}</label>
+      <div
+        className="flex items-center gap-2.5"
+        style={{
+          borderRadius: 10,
+          border: '1px solid var(--border-warm)',
+          background: 'var(--bg-surface-2)',
+          padding: '0.375rem 0.625rem',
+        }}
+      >
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-label={label}
+          style={{
+            width: 34,
+            height: 34,
+            border: 'none',
+            borderRadius: 8,
+            padding: 0,
+            background: 'transparent',
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="focus:outline-none"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-primary)',
+            fontSize: '0.8125rem',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            textTransform: 'uppercase',
+            padding: 0,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function OptionTile({
+  active,
+  onClick,
+  title,
+  description,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title: string;
+  description: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        textAlign: 'left',
+        borderRadius: 10,
+        border: `1px solid ${active ? 'var(--gold)' : 'var(--border-warm)'}`,
+        background: active ? 'rgba(184,164,122,0.08)' : 'var(--bg-surface-2)',
+        padding: '0.75rem 0.875rem',
+        cursor: 'pointer',
+        transition: 'border-color 150ms, background 150ms',
+      }}
+    >
+      <span
+        style={{
+          display: 'block',
+          fontSize: '0.8125rem',
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          lineHeight: 1.3,
+        }}
+      >
+        {title}
+      </span>
+      <span
+        style={{
+          display: 'block',
+          marginTop: 3,
+          fontSize: '0.6875rem',
+          color: 'var(--text-muted)',
+          lineHeight: 1.4,
+        }}
+      >
+        {description}
+      </span>
+    </button>
+  );
+}
+
+const SAMPLE_PREVIEW_ITEMS: PublicMenuItem[] = [
+  {
+    id: 'sample-1',
+    category_id: 'cat-1',
+    name: 'Truffle & Forest Mushroom Risotto',
+    description: 'Wild morels, aged Parmigiano-Reggiano, and freshly shaved black winter truffle.',
+    price: 34,
+    image_url: 'https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?auto=format&fit=crop&w=800&q=80',
+    model_url_glb: 'sample',
+    model_url_usdz: null,
+    is_veg: true,
+    calories: 520,
+    preparation_time_mins: 22,
+    ingredients: ['Arborio Rice', 'Truffle', 'Mushrooms'],
+    allergens: ['Dairy'],
+    dietary_tags: ['Vegetarian'],
+    rating: 4.9,
+    order_count: 142,
+    is_featured: true,
+    is_popular: false,
+  },
+  {
+    id: 'sample-2',
+    category_id: 'cat-1',
+    name: 'Dry-Aged Wagyu Striploin',
+    description: 'Miyazaki A5 beef seared over binchotan charcoal with roasted shallot reduction.',
+    price: 68,
+    image_url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+    model_url_glb: 'sample',
+    model_url_usdz: null,
+    is_veg: false,
+    calories: 680,
+    preparation_time_mins: 25,
+    ingredients: ['A5 Wagyu', 'Bone Marrow'],
+    allergens: [],
+    dietary_tags: ['Chef Signature'],
+    rating: 5.0,
+    order_count: 210,
+    is_featured: true,
+    is_popular: true,
+  },
+  {
+    id: 'sample-3',
+    category_id: 'cat-2',
+    name: 'Crispy Saffron Arancini',
+    description: 'Golden arborio spheres filled with smoked scamorza and sun-dried tomato coulis.',
+    price: 18,
+    image_url: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=800&q=80',
+    model_url_glb: null,
+    model_url_usdz: null,
+    is_veg: true,
+    calories: 340,
+    preparation_time_mins: 15,
+    ingredients: ['Saffron', 'Rice', 'Scamorza'],
+    allergens: ['Dairy'],
+    dietary_tags: ['Vegetarian'],
+    rating: 4.8,
+    order_count: 98,
+    is_featured: false,
+    is_popular: true,
+  },
+  {
+    id: 'sample-4',
+    category_id: 'cat-2',
+    name: 'Artisan Matcha Panna Cotta',
+    description: 'Ceremonial grade Uji matcha cream topped with passionfruit gelee.',
+    price: 16,
+    image_url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
+    model_url_glb: null,
+    model_url_usdz: null,
+    is_veg: true,
+    calories: 280,
+    preparation_time_mins: 10,
+    ingredients: ['Matcha', 'Cream', 'Passionfruit'],
+    allergens: ['Dairy'],
+    dietary_tags: ['Vegetarian'],
+    rating: 4.9,
+    order_count: 85,
+    is_featured: false,
+    is_popular: false,
+  },
+];
+
+const PREVIEW_CATEGORIES: PublicCategory[] = [
+  { id: 'cat-1', name: 'Main Courses', position: 1 },
+  { id: 'cat-2', name: 'Small Plates & Desserts', position: 2 },
+];
+
+export default function CustomThemeBuilder({
+  hotel,
+  initialConfig,
+  onSaved,
+  onCancel,
+  editingThemeId,
+  initialThemeName,
+}: CustomThemeBuilderProps) {
+  const [config, setConfig] = useState<CustomThemeConfig>(
+    initialConfig || hotel.custom_theme_config || DEFAULT_CUSTOM_THEME
+  );
+
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [themeName, setThemeName] = useState(initialThemeName || '');
+  const [savingToLibrary, setSavingToLibrary] = useState(false);
+
+  // Update a single configuration field
+  const updateConfig = <K extends keyof CustomThemeConfig>(key: K, value: CustomThemeConfig[K]) => {
+    setConfig((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Reset to a built-in template's configuration
+  const handleResetToTemplate = (templateKey: string) => {
+    const preset = TEMPLATE_PRESETS[templateKey];
+    if (preset) {
+      setConfig({ ...preset.config });
+      setResetMessage(`Reset to "${preset.name}" preset!`);
+      setTimeout(() => setResetMessage(null), 3000);
+    }
+  };
+
+  // Save custom theme config to the hotel's active theme slot
+  const handleSave = async () => {
+    if (!hotel.id) return;
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/hotel/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hotel_id: hotel.id,
+          menu_theme: 'custom',
+          custom_theme_config: config,
+        }),
+      });
+      const json = await res.json();
+
+      if (!json.success) {
+        if (res.status === 503) {
+          throw new Error(
+            json.error ||
+              'The database is missing the theme columns. Run supabase/migrations/012_theme_columns_idempotent.sql in the Supabase SQL Editor, then save again.'
+          );
+        }
+        throw new Error(json.error || 'Failed to save custom theme configuration');
+      }
+
+      setSaveSuccess(true);
+      if (onSaved) onSaved(config);
+      setTimeout(() => setSaveSuccess(false), 3500);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save custom theme');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save the current design as a NAMED theme in the hotel's library. This does
+  // NOT touch the active theme — it just stores a restorable copy. The owner
+  // must later Apply it from the Custom Themes page. When editingThemeId is
+  // set, this updates the existing saved theme instead of creating a new one.
+  const handleSaveToLibrary = async () => {
+    if (!hotel.id || !themeName.trim()) return;
+    setSavingToLibrary(true);
+    setError(null);
+
+    const isEdit = Boolean(editingThemeId);
+    try {
+      const res = await fetch(
+        isEdit
+          ? `/api/hotel/themes/${editingThemeId}`
+          : '/api/hotel/themes',
+        {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hotel_id: hotel.id,
+            name: themeName.trim(),
+            theme_config: config,
+            apply_now: false,
+          }),
+        }
+      );
+      const json = await res.json();
+
+      if (!json.success) {
+        throw new Error(json.error || isEdit ? 'Failed to update theme' : 'Failed to save theme to library');
+      }
+
+      setSaveSuccess(true);
+      setShowSaveDialog(false);
+      setThemeName('');
+      if (onSaved) onSaved(config);
+      setTimeout(() => setSaveSuccess(false), 3500);
+    } catch (err: any) {
+      setError(err.message || (isEdit ? 'Failed to update theme' : 'Failed to save theme to library'));
+    } finally {
+      setSavingToLibrary(false);
+    }
+  };
+
+  // Mock public hotel data for live preview
+  const previewHotel: PublicHotel = {
+    id: hotel.id,
+    name: hotel.name,
+    slug: hotel.slug,
+    logo_url: hotel.logo_url,
+    currency: hotel.currency || 'INR (₹)',
+    welcome_text: hotel.welcome_text || 'Bespoke Dining Experience',
+    primary_color: config.primaryColor,
+    secondary_color: '#10b981',
+    menu_style: config.menuLayout,
+    card_style: config.cardStyle,
+    dark_mode: true,
+    typography: config.bodyFont,
+    menu_theme: 'custom',
+    custom_theme_config: config,
+    tax_rate: hotel.tax_rate ?? 5,
+    service_charge: hotel.service_charge ?? 10,
+    city: hotel.city,
+  };
+
+  const previewProps = {
+    hotel: previewHotel,
+    customConfig: config,
+    currency: hotel.currency || 'INR (₹)',
+    tableNumber: '4',
+    categories: PREVIEW_CATEGORIES,
+    pills: ['All', 'Mains', 'Desserts'],
+    selectedCategory: 'All',
+    onSelectCategory: () => {},
+    search: '',
+    onSearchChange: () => {},
+    filteredItems: SAMPLE_PREVIEW_ITEMS,
+    featuredItems: SAMPLE_PREVIEW_ITEMS.filter((i) => i.is_featured),
+    popularItems: SAMPLE_PREVIEW_ITEMS.filter((i) => i.is_popular && !i.is_featured),
+    regularItems: SAMPLE_PREVIEW_ITEMS.filter((i) => !i.is_featured && !i.is_popular),
+    cart: [{ menuItem: SAMPLE_PREVIEW_ITEMS[0], quantity: 1 }],
+    totalCount: 1,
+    totalPrice: SAMPLE_PREVIEW_ITEMS[0].price,
+    onAdd: () => {},
+    onRemove: () => {},
+    onItemClick: () => {},
+    onView3D: () => {},
+    onOpenCart: () => {},
+  };
+
+  return (
+    <div className="flex h-full min-h-0 w-full flex-col bg-neutral-950/40">
+      {/* ================= HEADER ================= */}
+      <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-6 py-5 sm:px-8">
+        <div className="flex flex-col gap-1">
+          <h2
+            style={{
+              margin: 0,
+              fontSize: '1.25rem',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.01em',
+              lineHeight: 1.3,
+            }}
+          >
+            Edit Theme
+          </h2>
+          <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            Customize your menu appearance with real-time preview.
+          </p>
+        </div>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
+            aria-label="Close"
+            disabled={saving || savingToLibrary}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M12 4L4 12M4 4l8 8" />
+            </svg>
+          </button>
+        )}
+      </header>
+
+      {(saveSuccess || resetMessage || error) && (
+        <div className="flex flex-col gap-2 border-b border-white/10 px-6 py-3 sm:px-8">
+          {saveSuccess && (
+            <div className="d3-note d3-note-accent" style={{ margin: 0 }}>
+              <span style={{ fontSize: '0.8125rem' }}>
+                {editingThemeId
+                  ? 'Theme saved to your library.'
+                  : `Custom theme published. Live at /menu/${hotel.slug}.`}
+              </span>
+            </div>
+          )}
+          {resetMessage && (
+            <div
+              style={{
+                borderRadius: 10,
+                border: '1px solid var(--border-warm)',
+                background: 'var(--bg-surface-2)',
+                color: 'var(--text-secondary)',
+                padding: '0.625rem 0.75rem',
+                fontSize: '0.8125rem',
+              }}
+            >
+              {resetMessage}
+            </div>
+          )}
+          {error && (
+            <div className="d3-note d3-note-danger" style={{ margin: 0 }}>
+              <span style={{ fontSize: '0.8125rem' }}>{error}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(360px,1fr)] lg:grid-cols-[minmax(380px,42%)_minmax(0,58%)] lg:grid-rows-1">
+        {/* ================= SETTINGS (independently scrollable) ================= */}
+        <section
+          className="flex min-h-0 flex-col border-b border-white/10 lg:border-b-0 lg:border-r lg:overflow-hidden"
+          aria-label="Theme settings"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-6 sm:px-8 sm:py-7">
+            <div className="mx-auto flex w-full max-w-[580px] flex-col gap-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  Adjust settings to update the live preview in real time.
+                </p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <label
+                    htmlFor="d3-reset-preset"
+                    style={{
+                      fontSize: '0.6875rem',
+                      fontWeight: 600,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-dimmed)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Reset
+                  </label>
+                  <select
+                    id="d3-reset-preset"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleResetToTemplate(e.target.value);
+                        e.target.value = '';
+                      }
+                    }}
+                    defaultValue=""
+                    style={{ ...TEXT_INPUT, width: 'auto', maxWidth: 200, padding: '0.4375rem 0.625rem', fontSize: '0.75rem' }}
+                  >
+                    <option value="" disabled>
+                      Choose preset…
+                    </option>
+                    {Object.entries(TEMPLATE_PRESETS).map(([key, p]) => (
+                      <option key={key} value={key}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <Section number="01" title="Colors &amp; Palette">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <ColorField label="Page background" value={config.pageBg} onChange={(v) => updateConfig('pageBg', v)} />
+                  <ColorField label="Card background" value={config.cardBg} onChange={(v) => updateConfig('cardBg', v)} />
+                  <ColorField label="Primary / accent" value={config.primaryColor} onChange={(v) => updateConfig('primaryColor', v)} />
+                  <ColorField label="Text color" value={config.textColor} onChange={(v) => updateConfig('textColor', v)} />
+                </div>
+              </Section>
+
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
+
+              <Section number="02" title="Typography &amp; Fonts">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div style={{ minWidth: 0 }}>
+                    <label style={FIELD_LABEL}>Heading font</label>
+                    <select value={config.headingFont} onChange={(e) => updateConfig('headingFont', e.target.value)} style={TEXT_INPUT}>
+                      {FONT_OPTIONS.map((f) => (
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <label style={FIELD_LABEL}>Body font</label>
+                    <select value={config.bodyFont} onChange={(e) => updateConfig('bodyFont', e.target.value)} style={TEXT_INPUT}>
+                      {FONT_OPTIONS.map((f) => (
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <label style={FIELD_LABEL}>Price font</label>
+                    <select value={config.priceFont} onChange={(e) => updateConfig('priceFont', e.target.value)} style={TEXT_INPUT}>
+                      {FONT_OPTIONS.map((f) => (
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </Section>
+
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
+
+              <Section number="03" title="Cards &amp; Components">
+                <div>
+                  <label style={FIELD_LABEL}>Card style</label>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {CARD_STYLE_OPTIONS.map((cs) => (
+                      <OptionTile
+                        key={cs.value}
+                        active={config.cardStyle === cs.value}
+                        onClick={() => updateConfig('cardStyle', cs.value)}
+                        title={cs.label}
+                        description={cs.description}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
+
+              <Section number="04" title="Buttons &amp; Interactions">
+                <div>
+                  <label style={FIELD_LABEL}>Button style</label>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {BUTTON_STYLE_OPTIONS.map((bs) => (
+                      <OptionTile
+                        key={bs.value}
+                        active={config.buttonStyle === bs.value}
+                        onClick={() => updateConfig('buttonStyle', bs.value)}
+                        title={bs.label}
+                        description={bs.description}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
+
+              <Section number="05" title="Layout &amp; Spacing">
+                <div>
+                  <label style={FIELD_LABEL}>Border radius</label>
+                  <div className="flex flex-wrap gap-2">
+                    {BORDER_RADIUS_OPTIONS.map((r) => {
+                      const active = config.borderRadius === r.value;
+                      return (
+                        <button
+                          key={r.value}
+                          type="button"
+                          onClick={() => updateConfig('borderRadius', r.value)}
+                          style={{
+                            borderRadius: 8,
+                            border: `1px solid ${active ? 'var(--gold)' : 'var(--border-warm)'}`,
+                            background: active ? 'rgba(184,164,122,0.1)' : 'var(--bg-surface-2)',
+                            color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            padding: '0.4375rem 0.75rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {r.value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <label style={FIELD_LABEL}>Menu layout</label>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {MENU_LAYOUT_OPTIONS.map((ml) => (
+                      <OptionTile
+                        key={ml.value}
+                        active={config.menuLayout === ml.value}
+                        onClick={() => updateConfig('menuLayout', ml.value)}
+                        title={ml.label}
+                        description={ml.description}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
+
+              <Section number="06" title="Additional Styling">
+                <div
+                  style={{
+                    borderRadius: 10,
+                    border: '1px solid var(--border-warm)',
+                    background: 'var(--bg-surface-2)',
+                    padding: '0.75rem 0.875rem',
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                        Header &amp; navigation
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: '0.6875rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                        Fixed style for consistent customer navigation.
+                      </p>
+                    </div>
+                    <span className="d3-chip" style={{ flexShrink: 0, fontSize: '0.625rem' }}>
+                      Sticky Blur Bar
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setThemeName('');
+                    setShowSaveDialog(true);
+                  }}
+                  disabled={saving}
+                  className="d3-btn-subtle"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                >
+                  Save as named theme…
+                </button>
+              </Section>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= PREVIEW (stable) ================= */}
+        <section className="flex min-h-0 flex-col bg-neutral-950/30" aria-label="Live preview">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-5 py-3.5 sm:px-6">
+            <div className="flex items-center gap-2.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-400/90" aria-hidden="true" />
+              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>
+                Live preview
+              </span>
+            </div>
+            <div
+              className="flex items-center"
+              style={{
+                borderRadius: 10,
+                border: '1px solid var(--border-warm)',
+                background: 'var(--bg-surface-2)',
+                padding: 3,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('mobile')}
+                style={{
+                  borderRadius: 7,
+                  border: 'none',
+                  padding: '0.375rem 0.875rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: previewDevice === 'mobile' ? 'var(--bg-surface)' : 'transparent',
+                  color: previewDevice === 'mobile' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  boxShadow: previewDevice === 'mobile' ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+                  transition: 'all 150ms',
+                }}
+              >
+                Mobile
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('desktop')}
+                style={{
+                  borderRadius: 7,
+                  border: 'none',
+                  padding: '0.375rem 0.875rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: previewDevice === 'desktop' ? 'var(--bg-surface)' : 'transparent',
+                  color: previewDevice === 'desktop' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  boxShadow: previewDevice === 'desktop' ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+                  transition: 'all 150ms',
+                }}
+              >
+                Desktop
+              </button>
+            </div>
+          </div>
+
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-6 sm:p-8">
+            {previewDevice === 'mobile' ? (
+              <div
+                className="mx-auto flex h-full w-full max-w-[400px] flex-col overflow-hidden"
+                style={{
+                  minHeight: 480,
+                  maxHeight: '100%',
+                  borderRadius: 28,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'var(--bg-primary)',
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+                }}
+              >
+                <div
+                  className="flex h-7 shrink-0 items-center justify-center"
+                  style={{ borderBottom: '1px solid var(--border-warm)', background: 'var(--bg-surface)' }}
+                >
+                  <div style={{ width: 64, height: 4, borderRadius: 999, background: 'var(--border-light)' }} />
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <CustomTemplate {...previewProps} />
+                </div>
+                <div
+                  className="flex h-5 shrink-0 items-center justify-center"
+                  style={{ borderTop: '1px solid var(--border-warm)', background: 'var(--bg-surface)' }}
+                >
+                  <div style={{ width: 96, height: 4, borderRadius: 999, background: 'var(--border-light)' }} />
+                </div>
+              </div>
+            ) : (
+              <div
+                className="flex h-full w-full max-w-[1100px] flex-col overflow-hidden"
+                style={{
+                  minHeight: 480,
+                  maxHeight: '100%',
+                  borderRadius: 14,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'var(--bg-primary)',
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.32)',
+                }}
+              >
+                <div
+                  className="flex shrink-0 items-center gap-3 px-4 py-2.5"
+                  style={{ borderBottom: '1px solid var(--border-warm)', background: 'var(--bg-surface)' }}
+                >
+                  <div className="flex gap-1.5" aria-hidden="true">
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: 'rgba(239,68,68,0.7)' }} />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: 'rgba(245,158,11,0.7)' }} />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: 'rgba(16,185,129,0.7)' }} />
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      maxWidth: 420,
+                      margin: '0 auto',
+                      borderRadius: 8,
+                      border: '1px solid var(--border-warm)',
+                      background: 'var(--bg-surface-2)',
+                      padding: '0.25rem 0.625rem',
+                      fontSize: '0.6875rem',
+                      color: 'var(--text-dimmed)',
+                      textAlign: 'center',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    dine3d.app/menu/{hotel.slug}
+                  </div>
+                  <div style={{ width: 52 }} />
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <CustomTemplate {...previewProps} />
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* ================= FIXED FOOTER ================= */}
+      <footer
+        className="flex shrink-0 items-center justify-between gap-3 border-t border-white/10 px-6 py-3.5 sm:px-8"
+        style={{ background: 'rgba(10,10,10,0.7)', backdropFilter: 'blur(10px)' }}
+      >
+        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-dimmed)', lineHeight: 1.4 }}>
+          {editingThemeId ? 'Saving updates this theme in your library.' : 'Publishing applies this design to your live customer menu.'}
+        </p>
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <button type="button" onClick={onCancel} className="d3-btn-subtle" disabled={saving || savingToLibrary}>
+              Cancel
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || savingToLibrary}
+            className="d3-btn-primary"
+            style={{ padding: '0.625rem 1.25rem', opacity: saving ? 0.7 : 1 }}
+          >
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </footer>
+
+      {/* Save as Named Theme dialog */}
+      {showSaveDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+          onClick={() => {
+            if (!savingToLibrary) setShowSaveDialog(false);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-white/15 bg-neutral-900 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-white/10">
+              <h3 className="text-base font-bold text-white tracking-tight">Save as Named Theme</h3>
+              <p className="text-xs text-neutral-400 mt-1">
+                Stored in your theme library. This does not change your active menu — apply it later from Custom Themes.
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Live mini preview */}
+              <div
+                className="rounded-xl p-4 flex items-center gap-4"
+                style={{
+                  background: config.pageBg,
+                  color: config.textColor,
+                  fontFamily: config.bodyFont,
+                  borderRadius: config.borderRadius,
+                  border: config.cardStyle === 'bordered' ? `1px solid ${config.primaryColor}` : 'none',
+                }}
+              >
+                <div
+                  className="w-14 h-14 rounded-lg flex items-center justify-center text-lg font-bold flex-shrink-0"
+                  style={{ background: config.primaryColor, color: '#fff' }}
+                >
+                  D
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm truncate">Dish preview</p>
+                  <p className="text-xs opacity-70 truncate">
+                    {config.menuLayout} · {config.cardStyle} · {config.headingFont}
+                  </p>
+                </div>
+                <div
+                  className="ml-auto px-3 py-1 rounded-full text-xs font-bold flex-shrink-0"
+                  style={{ background: config.primaryColor, color: '#fff' }}
+                >
+                  ${12}
+                </div>
+              </div>
+
+              <div>
+                <label className="d3-label mb-1.5">Theme name</label>
+                <input
+                  type="text"
+                  value={themeName}
+                  onChange={(e) => setThemeName(e.target.value)}
+                  placeholder="e.g. Summer Garden, Monochrome Gold…"
+                  maxLength={80}
+                  autoFocus
+                  className="w-full bg-neutral-950 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#E5A93C]"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveToLibrary();
+                    if (e.key === 'Escape') setShowSaveDialog(false);
+                  }}
+                />
+              </div>
+
+              {error && (
+                <div className="d3-note d3-note-danger text-xs">
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!savingToLibrary) setShowSaveDialog(false);
+                }}
+                disabled={savingToLibrary}
+                className="px-4 py-2 rounded-lg border border-white/20 text-neutral-300 hover:text-white text-xs font-semibold transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveToLibrary}
+                disabled={savingToLibrary || !themeName.trim()}
+                className="px-4 py-2 rounded-lg bg-[#E5A93C] hover:bg-[#F0BC5E] text-black text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingToLibrary ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2" />
+                      <path d="M8 2a6 6 0 016 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span>Saving…</span>
+                  </>
+                ) : (
+                  <span>Save to Library</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

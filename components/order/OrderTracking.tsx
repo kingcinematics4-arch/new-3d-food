@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
@@ -6,7 +6,9 @@ import Dine3DLogo from '@/components/Dine3DLogo';
 import { menuThemeClass } from '@/lib/menuThemes';
 import { formatPrice } from '@/lib/menu';
 import { supabaseClient, isSupabaseConfigured } from '@/lib/supabaseBrowser';
-import { customThemeToCssVars, type CustomThemeConfig } from '@/lib/customTheme';
+import { customThemeToCssVars } from '@/components/menu/MenuThemeProvider';
+import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customTheme';
+import { CustomThemeFontLoader } from '@/components/menu/CustomThemeFontLoader';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,6 +38,7 @@ interface LiveOrder {
   updated_at?: string | null;
   items: LiveOrderItem[];
   hotel_theme: string | null;
+  menu_theme?: string | null;
   hotel_custom_theme_config?: CustomThemeConfig | null;
   hotel_slug: string | null;
   currency?: string | null;
@@ -46,16 +49,16 @@ interface LiveOrder {
 }
 
 // ---------------------------------------------------------------------------
-// Status → stage mapping
+// Status â†’ stage mapping
 //
 // Stored statuses (written by the hotel dashboard API):
-//   pending   → Order Placed          (just received)
-//   accepted  → Accepted by Restaurant (restaurant confirmed)
-//   preparing → Preparing              (kitchen working on it)
-//   ready     → Ready                  (food ready)
-//   completed → Completed              (order closed)
-//   delivered → treated as completed
-//   cancelled → terminal error state
+//   pending   â†’ Order Placed          (just received)
+//   accepted  â†’ Accepted by Restaurant (restaurant confirmed)
+//   preparing â†’ Preparing              (kitchen working on it)
+//   ready     â†’ Ready                  (food ready)
+//   completed â†’ Completed              (order closed)
+//   delivered â†’ treated as completed
+//   cancelled â†’ terminal error state
 //
 // The STAGES array drives the visual progress bar. Five stages are shown so
 // the 'accepted' step is always visible and never silently skipped.
@@ -66,7 +69,7 @@ const STAGES = [
   { key: 'accepted',  title: 'Accepted by Restaurant', desc: 'The restaurant has confirmed your order' },
   { key: 'preparing', title: 'Preparing',              desc: 'The kitchen is working on your food' },
   { key: 'ready',     title: 'Ready',                  desc: 'Your order is ready for service' },
-  { key: 'completed', title: 'Completed',              desc: 'Order complete — enjoy your meal!' },
+  { key: 'completed', title: 'Completed',              desc: 'Order complete â€” enjoy your meal!' },
 ];
 
 function statusToStageIndex(status: string): number {
@@ -100,7 +103,7 @@ function isTerminal(status: string): boolean {
    * redirect is gated on payment_status becoming 'paid', which the
    * hotel sets AFTER completion. If polling/realtime stopped the moment
    * the order hit 'completed', a guest who refreshed between completion
-   * and payment would never see the paid transition — and never be
+   * and payment would never see the paid transition â€” and never be
    * redirected. So the tracking page stays live until the order is
    * both terminal AND paid (or cancelled).
    */
@@ -287,7 +290,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       setItemQtyUpdating(null);
     }
   }, [orderId]);
-  // Initial load — fires once on mount. Without this the page stays on
+  // Initial load â€” fires once on mount. Without this the page stays on
   // `loading=true` forever because every other effect below guards on
   // `order` being non-null first.
   // -----------------------------------------------------------------------
@@ -300,7 +303,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // Supabase Realtime subscription
   //
   // We subscribe to postgres_changes on the specific order row so the page
-  // updates the moment the hotel writes a new status — no poll needed for the
+  // updates the moment the hotel writes a new status â€” no poll needed for the
   // happy path.
   //
   // Security: uses the public anon key (supabaseClient). The filter limits
@@ -343,7 +346,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
           if (!dead) setRealtimeOk(status === 'SUBSCRIBED');
         });
     } catch {
-      // Realtime not available — polling fallback handles it.
+      // Realtime not available â€” polling fallback handles it.
     }
 
     return () => {
@@ -358,11 +361,11 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // -----------------------------------------------------------------------
   // Polling fallback (and safety-net when Realtime is active)
   //
-  // • Every poll fetches the current order status every 5 s
-  // • Uses recursive setTimeout (not setInterval) so a previous in-flight
-  //   fetch always completes before the next poll starts — no overlapping
+  // â€¢ Every poll fetches the current order status every 5 s
+  // â€¢ Uses recursive setTimeout (not setInterval) so a previous in-flight
+  //   fetch always completes before the next poll starts â€” no overlapping
   //   API requests.
-  // • Terminal order → stop polling
+  // â€¢ Terminal order â†’ stop polling
   // -----------------------------------------------------------------------
   useEffect(() => {
     if (!order) return;
@@ -389,12 +392,12 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // -----------------------------------------------------------------------
   // Auto-redirect to Google Review URL once payment is marked PAID
   //
-  // • Triggered ONLY when payment_status becomes 'paid' (staff marks it).
-  // • Only once per order (sessionStorage guard survives refresh)
-  // • If paid but URL is missing from current payload (stale initial data),
+  // â€¢ Triggered ONLY when payment_status becomes 'paid' (staff marks it).
+  // â€¢ Only once per order (sessionStorage guard survives refresh)
+  // â€¢ If paid but URL is missing from current payload (stale initial data),
   //   force one authoritative refresh from /api/public/orders/[id] before
   //   showing NOT CONFIGURED. Never fabricate a URL.
-  // • Redirect happens on the guest's device via real-time / polling
+  // â€¢ Redirect happens on the guest's device via real-time / polling
   // -----------------------------------------------------------------------
   useEffect(() => {
     if (!order) return;
@@ -491,16 +494,23 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
 
   return (
     <div
-      className={`min-h-screen ${menuThemeClass(order?.hotel_theme || undefined)}`}
+      className={`min-h-screen ${menuThemeClass(order?.hotel_theme || order?.menu_theme || undefined)}`}
       style={{
         background: 'var(--bg-primary)',
         color: 'var(--text-primary)',
         fontFamily: 'var(--font-body)',
-        ...(order?.hotel_theme === 'custom'
-          ? (customThemeToCssVars(order?.hotel_custom_theme_config) as React.CSSProperties)
+        ...(((order?.hotel_theme === 'custom' || order?.menu_theme === 'custom') && order?.hotel_custom_theme_config)
+          ? (customThemeToCssVars(cloneCustomThemeConfig(order.hotel_custom_theme_config) as CustomThemeConfig) as React.CSSProperties)
           : {}),
       }}
     >
+      {((order?.hotel_theme === 'custom' || order?.menu_theme === 'custom') && order?.hotel_custom_theme_config) ? (
+        <CustomThemeFontLoader fonts={[
+          cloneCustomThemeConfig(order.hotel_custom_theme_config).headingFont,
+          cloneCustomThemeConfig(order.hotel_custom_theme_config).bodyFont,
+          cloneCustomThemeConfig(order.hotel_custom_theme_config).priceFont,
+        ]} />
+      ) : null}
       <header
         className="sticky top-0 z-30"
         style={{
@@ -557,7 +567,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
               </h1>
               <p style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', margin: 0 }}>
                 {order?.order_number ? `Ref #${order.order_number}` : 'Order status'}
-                {order?.table_number ? ` · Table ${order.table_number}` : ''}
+                {order?.table_number ? ` Â· Table ${order.table_number}` : ''}
               </p>
             </div>
           </div>
@@ -595,7 +605,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
               <circle cx="12" cy="12" r="10" stroke="var(--gold)" strokeOpacity="0.2" strokeWidth="1.5" />
               <path d="M12 2A10 10 0 0 1 22 12" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Loading your order…</p>
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Loading your orderâ€¦</p>
           </div>
         ) : order ? (
           <div style={PANEL}>
@@ -639,7 +649,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                     className="d3-btn-inline d3-btn-danger"
                     style={{ opacity: cancelling ? 0.6 : 1, minHeight: 32 }}
                   >
-                    {cancelling ? 'Cancelling…' : 'Cancel Order'}
+                    {cancelling ? 'Cancellingâ€¦' : 'Cancel Order'}
                   </button>
                 )}
               </div>
@@ -791,7 +801,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                                     className="d3-btn-subtle"
                                     style={{ width: 32, height: 32, padding: 0, borderRadius: 'var(--d3-input-radius)' }}
                                   >
-                                    −
+                                    âˆ’
                                   </button>
                                   <span style={{ fontSize: '0.8125rem', minWidth: 18, textAlign: 'center', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</span>
                                   <button
@@ -813,7 +823,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                                   className="d3-btn-inline d3-btn-danger"
                                   style={{ minHeight: 32 }}
                                 >
-                                  {itemCancelling === item.id ? '…' : 'Cancel Item'}
+                                  {itemCancelling === item.id ? 'â€¦' : 'Cancel Item'}
                                 </button>
                               )}
                             </div>
@@ -950,7 +960,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                         }}
                       >
                         <span>{reason}</span>
-                        {cancellationReason === reason && <span style={{ color: 'var(--gold)' }}>●</span>}
+                        {cancellationReason === reason && <span style={{ color: 'var(--gold)' }}>â—</span>}
                       </button>
                     ))}
                     {cancellationReason === 'Other' && (
@@ -985,7 +995,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       className="d3-btn-primary d3-btn-danger"
                       style={{ width: '100%', opacity: !cancellationReason || cancelling ? 0.6 : 1 }}
                     >
-                      {cancelling ? 'Cancelling…' : 'Confirm Cancellation'}
+                      {cancelling ? 'Cancellingâ€¦' : 'Confirm Cancellation'}
                     </button>
                   </div>
                 </div>
@@ -1024,3 +1034,4 @@ export default function OrderTracking({ orderId, hotelSlug }: { orderId: string;
     </Suspense>
   );
 }
+
