@@ -2,19 +2,50 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHotel } from '@/lib/useHotel';
 
 export default function ReviewsDashboardPage() {
-  const { hotel, loading: hotelLoading } = useHotel();
+  const { hotel, loading: hotelLoading, refetch } = useHotel();
+  // Local input state is seeded from the cached hotel row. It is the only
+  // source of truth for what is typed; the badge below is derived from the
+  // saved value so it reflects the database, not the text box.
   const [googleReviewUrl, setGoogleReviewUrl] = useState(hotel?.google_review_url || '');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
+  const [savedUrl, setSavedUrl] = useState<string | null>(hotel?.google_review_url || null);
 
-  const handleSave = useCallback(async () => {
+  // After a successful save the shared `hotel` cache is still stale (the
+  // background refetch has not resolved yet). The sync effect below would
+  // otherwise overwrite the just-persisted URL with that stale null and the
+  // field would appear empty — the URL "disappearing" bug. This flag skips
+  // exactly one sync cycle after a save so the server's response wins.
+  const justSavedRef = useRef(false);
+
+  // Keep the local input in sync if the cached hotel row changes (e.g. after
+  // a refetch, or after switching accounts). Never overwrite a value the user
+  // just saved — the justSavedRef guard handles that.
+  useEffect(() => {
+    if (justSavedRef.current) {
+      justSavedRef.current = false;
+      return;
+    }
+    if (saving) return;
+    const cached = hotel?.google_review_url || null;
+    setSavedUrl(cached);
+    setGoogleReviewUrl(cached || '');
+  }, [hotel?.google_review_url, saving]);
+
+  // Persist a URL (or clear it) to the database. This is the ONLY function
+  // that writes `google_review_url`. A normal SAVE with a non-empty input
+  // always reports "saved"; an explicit REMOVE action is what reports
+  // "removed". An empty input on SAVE is treated as "no change intended"
+  // and the existing database value is preserved — it is never interpreted
+  // as a deletion.
+  const persistUrl = useCallback(async (url: string | null, explicitRemove: boolean) => {
     if (!hotel?.id) return;
-    const trimmed = googleReviewUrl.trim();
+    const trimmed = (url || '').trim();
 
     // Validate URL when non-empty
     if (trimmed && !isValidUrl(trimmed)) {
@@ -35,8 +66,25 @@ export default function ReviewsDashboardPage() {
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Failed to save');
-      setStatus('saved');
-      setStatusMessage('Google Review URL saved.');
+
+      // The server returns the persisted hotel row. Use its
+      // google_review_url (the exact pasted value, never a generated one)
+      // so the badge and input update immediately and survive the stale
+      // cache. Mark justSaved so the sync effect does not clear it.
+      const persistedUrl = json?.hotel?.google_review_url || null;
+      setSavedUrl(persistedUrl);
+      setGoogleReviewUrl(persistedUrl || '');
+      justSavedRef.current = true;
+
+      if (explicitRemove) {
+        setStatus('saved');
+        setStatusMessage('Google Review URL removed.');
+      } else {
+        setStatus('saved');
+        setStatusMessage(persistedUrl ? 'Google Review URL saved.' : 'Google Review URL saved.');
+      }
+      // Refresh the shared cache so other pages see the change too.
+      try { await refetch(); } catch {}
       setTimeout(() => setStatus('idle'), 3000);
     } catch (err: any) {
       setStatus('error');
@@ -44,7 +92,18 @@ export default function ReviewsDashboardPage() {
     } finally {
       setSaving(false);
     }
-  }, [hotel?.id, googleReviewUrl]);
+  }, [hotel?.id, refetch]);
+
+  // SAVE: only saves or updates the URL. Never deletes.
+  const handleSave = useCallback(() => {
+    persistUrl(googleReviewUrl, false);
+  }, [googleReviewUrl, persistUrl]);
+
+  // REMOVE URL: an explicit administrator action that deletes the URL.
+  const handleRemove = useCallback(() => {
+    if (!window.confirm('Remove the Google Review URL? This action can be undone by saving a new URL.')) return;
+    persistUrl('', true);
+  }, [persistUrl]);
 
   const isValidUrl = (value: string): boolean => {
     try {
@@ -55,7 +114,8 @@ export default function ReviewsDashboardPage() {
     }
   };
 
-  const hasUrl = Boolean(hotel?.google_review_url);
+  // Badge reflects the saved value, not the cached hotel row.
+  const hasUrl = Boolean(savedUrl || hotel?.google_review_url);
 
   if (hotelLoading) {
     return (
@@ -138,6 +198,17 @@ export default function ReviewsDashboardPage() {
               }}
             >
               {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={saving || !savedUrl}
+              className="d3-btn-ghost"
+              style={{ fontSize: '0.75rem', fontWeight: 600, opacity: savedUrl ? 1 : 0.4 }}
+            >
+              Remove URL
             </button>
           </div>
           {status === 'saved' && (
