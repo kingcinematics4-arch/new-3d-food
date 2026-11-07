@@ -624,9 +624,9 @@ function CreateThemeEditor({ hotel, themeToEdit, onDone }: CreateThemeEditorProp
       onClick={handleClose}
     >
       <div
-        className="w-full max-w-2xl rounded-2xl border border-white/15 bg-neutral-900 shadow-2xl overflow-hidden flex flex-col"
+        className="w-full rounded-2xl border border-white/15 bg-neutral-900 shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+        style={{ width: 'min(1200px, calc(100vw - 2rem))', height: 'min(90vh, 860px)' }}
       >
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
           <div>
@@ -646,33 +646,17 @@ function CreateThemeEditor({ hotel, themeToEdit, onDone }: CreateThemeEditorProp
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto">
           <CustomThemeBuilder
             hotel={hotel}
             initialConfig={themeToEdit?.theme_config || undefined}
             editingThemeId={themeToEdit?.id || undefined}
             initialThemeName={themeToEdit?.name || undefined}
+            onCancel={handleClose}
             onSaved={() => {
               handleClose();
             }}
           />
-        </div>
-
-        <div className="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="px-4 py-2 rounded-lg border border-white/20 text-neutral-300 hover:text-white text-xs font-semibold transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="px-4 py-2 rounded-lg bg-[#E5A93C] hover:bg-[#F0BC5E] text-black text-xs font-bold transition-all"
-          >
-            {themeToEdit ? 'Save Changes' : 'Save Theme'}
-          </button>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, type CSSProperties, type ReactNode } from 'react';
 import {
   CustomThemeConfig,
   DEFAULT_CUSTOM_THEME,
@@ -19,8 +19,183 @@ interface CustomThemeBuilderProps {
   hotel: Hotel;
   initialConfig?: CustomThemeConfig | null;
   onSaved?: (config: CustomThemeConfig) => void;
+  onCancel?: () => void;
   editingThemeId?: string;
   initialThemeName?: string;
+}
+
+const FIELD_LABEL: CSSProperties = {
+  display: 'block',
+  marginBottom: 6,
+  fontSize: '0.75rem',
+  fontWeight: 500,
+  color: 'var(--text-secondary)',
+  lineHeight: 1.35,
+  whiteSpace: 'nowrap',
+};
+
+const TEXT_INPUT: CSSProperties = {
+  width: '100%',
+  minWidth: 0,
+  borderRadius: 10,
+  border: '1px solid var(--border-warm)',
+  background: 'var(--bg-surface-2)',
+  color: 'var(--text-primary)',
+  padding: '0.625rem 0.75rem',
+  fontSize: '0.8125rem',
+  lineHeight: 1.4,
+  outline: 'none',
+};
+
+function Section({
+  number,
+  title,
+  children,
+}: {
+  number: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-5">
+      <div className="flex items-baseline gap-2.5">
+        <span
+          style={{
+            fontSize: '0.625rem',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            color: 'var(--gold)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {number}
+        </span>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.01em',
+            lineHeight: 1.3,
+          }}
+        >
+          {title}
+        </h3>
+      </div>
+      <div className="flex flex-col gap-5">{children}</div>
+    </section>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <label style={FIELD_LABEL}>{label}</label>
+      <div
+        className="flex items-center gap-2.5"
+        style={{
+          borderRadius: 10,
+          border: '1px solid var(--border-warm)',
+          background: 'var(--bg-surface-2)',
+          padding: '0.375rem 0.625rem',
+        }}
+      >
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-label={label}
+          style={{
+            width: 34,
+            height: 34,
+            border: 'none',
+            borderRadius: 8,
+            padding: 0,
+            background: 'transparent',
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="focus:outline-none"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-primary)',
+            fontSize: '0.8125rem',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            textTransform: 'uppercase',
+            padding: 0,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function OptionTile({
+  active,
+  onClick,
+  title,
+  description,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title: string;
+  description: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        textAlign: 'left',
+        borderRadius: 10,
+        border: `1px solid ${active ? 'var(--gold)' : 'var(--border-warm)'}`,
+        background: active ? 'rgba(184,164,122,0.08)' : 'var(--bg-surface-2)',
+        padding: '0.75rem 0.875rem',
+        cursor: 'pointer',
+        transition: 'border-color 150ms, background 150ms',
+      }}
+    >
+      <span
+        style={{
+          display: 'block',
+          fontSize: '0.8125rem',
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          lineHeight: 1.3,
+        }}
+      >
+        {title}
+      </span>
+      <span
+        style={{
+          display: 'block',
+          marginTop: 3,
+          fontSize: '0.6875rem',
+          color: 'var(--text-muted)',
+          lineHeight: 1.4,
+        }}
+      >
+        {description}
+      </span>
+    </button>
+  );
 }
 
 const SAMPLE_PREVIEW_ITEMS: PublicMenuItem[] = [
@@ -115,6 +290,7 @@ export default function CustomThemeBuilder({
   hotel,
   initialConfig,
   onSaved,
+  onCancel,
   editingThemeId,
   initialThemeName,
 }: CustomThemeBuilderProps) {
@@ -249,460 +425,474 @@ export default function CustomThemeBuilder({
     city: hotel.city,
   };
 
+  const previewProps = {
+    hotel: previewHotel,
+    customConfig: config,
+    currency: hotel.currency || 'INR (₹)',
+    tableNumber: '4',
+    categories: PREVIEW_CATEGORIES,
+    pills: ['All', 'Mains', 'Desserts'],
+    selectedCategory: 'All',
+    onSelectCategory: () => {},
+    search: '',
+    onSearchChange: () => {},
+    filteredItems: SAMPLE_PREVIEW_ITEMS,
+    featuredItems: SAMPLE_PREVIEW_ITEMS.filter((i) => i.is_featured),
+    popularItems: SAMPLE_PREVIEW_ITEMS.filter((i) => i.is_popular && !i.is_featured),
+    regularItems: SAMPLE_PREVIEW_ITEMS.filter((i) => !i.is_featured && !i.is_popular),
+    cart: [{ menuItem: SAMPLE_PREVIEW_ITEMS[0], quantity: 1 }],
+    totalCount: 1,
+    totalPrice: SAMPLE_PREVIEW_ITEMS[0].price,
+    onAdd: () => {},
+    onRemove: () => {},
+    onItemClick: () => {},
+    onView3D: () => {},
+    onOpenCart: () => {},
+  };
+
   return (
-    <div className="flex flex-col gap-8 w-full min-h-0">
-      {/* Notifications */}
-      {saveSuccess && (
-        <div className="d3-note d3-note-accent flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M2 8l4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+    <div className="flex h-full min-h-0 w-full flex-col bg-neutral-950/40">
+      {/* ================= HEADER ================= */}
+      <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-6 py-5 sm:px-8">
+        <div className="flex flex-col gap-1">
+          <h2
+            style={{
+              margin: 0,
+              fontSize: '1.25rem',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.01em',
+              lineHeight: 1.3,
+            }}
+          >
+            Edit Theme
+          </h2>
+          <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            Customize your menu appearance with real-time preview.
+          </p>
+        </div>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
+            aria-label="Close"
+            disabled={saving || savingToLibrary}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M12 4L4 12M4 4l8 8" />
             </svg>
-            <span className="font-semibold">
-              Custom theme published! Your public menu at /menu/{hotel.slug} is now live with this design.
-            </span>
-          </div>
+          </button>
+        )}
+      </header>
+
+      {(saveSuccess || resetMessage || error) && (
+        <div className="flex flex-col gap-2 border-b border-white/10 px-6 py-3 sm:px-8">
+          {saveSuccess && (
+            <div className="d3-note d3-note-accent" style={{ margin: 0 }}>
+              <span style={{ fontSize: '0.8125rem' }}>
+                {editingThemeId
+                  ? 'Theme saved to your library.'
+                  : `Custom theme published. Live at /menu/${hotel.slug}.`}
+              </span>
+            </div>
+          )}
+          {resetMessage && (
+            <div
+              style={{
+                borderRadius: 10,
+                border: '1px solid var(--border-warm)',
+                background: 'var(--bg-surface-2)',
+                color: 'var(--text-secondary)',
+                padding: '0.625rem 0.75rem',
+                fontSize: '0.8125rem',
+              }}
+            >
+              {resetMessage}
+            </div>
+          )}
+          {error && (
+            <div className="d3-note d3-note-danger" style={{ margin: 0 }}>
+              <span style={{ fontSize: '0.8125rem' }}>{error}</span>
+            </div>
+          )}
         </div>
       )}
 
-      {resetMessage && (
-        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
-          {resetMessage}
-        </div>
-      )}
-
-      {error && (
-        <div className="d3-note d3-note-danger flex items-center gap-2">
-          <span>✕</span>
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Main Studio Grid: Controls on Left, Live Preview on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0 h-[calc(100vh-6rem)]">
-        {/* ================= CONTROLS COLUMN (5 Cols) ================= */}
-        <div className="lg:col-span-5 flex flex-col gap-6 min-h-0 h-full overflow-y-auto">
-          {/* Header & Reset Action */}
-          <div className="d3-panel p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-white/10">
-              <div>
-                <h2 className="text-base font-bold text-white tracking-tight">Theme Studio</h2>
-                <p className="text-xs text-neutral-400">Design your bespoke guest menu</p>
-              </div>
-
-              {/* Reset to Template Dropdown */}
-              <div className="flex items-center gap-2">
-                <label className="text-[0.65rem] uppercase font-bold text-neutral-400">Reset:</label>
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      handleResetToTemplate(e.target.value);
-                      e.target.value = '';
-                    }
-                  }}
-                  defaultValue=""
-                  className="bg-neutral-900 border border-white/20 rounded px-2.5 py-1 text-xs text-[#E5A93C] focus:outline-none cursor-pointer"
-                >
-                  <option value="" disabled>
-                    Choose preset…
-                  </option>
-                  {Object.entries(TEMPLATE_PRESETS).map(([key, p]) => (
-                    <option key={key} value={key} className="bg-neutral-900 text-white">
-                      {p.name}
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(360px,1fr)] lg:grid-cols-[minmax(380px,42%)_minmax(0,58%)] lg:grid-rows-1">
+        {/* ================= SETTINGS (independently scrollable) ================= */}
+        <section
+          className="flex min-h-0 flex-col border-b border-white/10 lg:border-b-0 lg:border-r lg:overflow-hidden"
+          aria-label="Theme settings"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-6 sm:px-8 sm:py-7">
+            <div className="mx-auto flex w-full max-w-[580px] flex-col gap-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  Adjust settings to update the live preview in real time.
+                </p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <label
+                    htmlFor="d3-reset-preset"
+                    style={{
+                      fontSize: '0.6875rem',
+                      fontWeight: 600,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-dimmed)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Reset
+                  </label>
+                  <select
+                    id="d3-reset-preset"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleResetToTemplate(e.target.value);
+                        e.target.value = '';
+                      }
+                    }}
+                    defaultValue=""
+                    style={{ ...TEXT_INPUT, width: 'auto', maxWidth: 200, padding: '0.4375rem 0.625rem', fontSize: '0.75rem' }}
+                  >
+                    <option value="" disabled>
+                      Choose preset…
                     </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* 1. Page & Card Backgrounds */}
-            <div className="space-y-4 mb-6">
-              <span className="text-[0.65rem] uppercase font-bold tracking-wider text-[#E5A93C]">
-                1. Colors &amp; Palette
-              </span>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="d3-label mb-1">Page Background</label>
-                  <div className="flex items-center gap-2 bg-neutral-900/80 border border-white/15 rounded-lg p-1.5">
-                    <input
-                      type="color"
-                      value={config.pageBg}
-                      onChange={(e) => updateConfig('pageBg', e.target.value)}
-                      className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
-                    />
-                    <input
-                      type="text"
-                      value={config.pageBg}
-                      onChange={(e) => updateConfig('pageBg', e.target.value)}
-                      className="w-full bg-transparent text-xs text-white font-mono uppercase focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="d3-label mb-1">Card Background</label>
-                  <div className="flex items-center gap-2 bg-neutral-900/80 border border-white/15 rounded-lg p-1.5">
-                    <input
-                      type="color"
-                      value={config.cardBg}
-                      onChange={(e) => updateConfig('cardBg', e.target.value)}
-                      className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
-                    />
-                    <input
-                      type="text"
-                      value={config.cardBg}
-                      onChange={(e) => updateConfig('cardBg', e.target.value)}
-                      className="w-full bg-transparent text-xs text-white font-mono uppercase focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="d3-label mb-1">Primary / Accent</label>
-                  <div className="flex items-center gap-2 bg-neutral-900/80 border border-white/15 rounded-lg p-1.5">
-                    <input
-                      type="color"
-                      value={config.primaryColor}
-                      onChange={(e) => updateConfig('primaryColor', e.target.value)}
-                      className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
-                    />
-                    <input
-                      type="text"
-                      value={config.primaryColor}
-                      onChange={(e) => updateConfig('primaryColor', e.target.value)}
-                      className="w-full bg-transparent text-xs text-white font-mono uppercase focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="d3-label mb-1">Text Color</label>
-                  <div className="flex items-center gap-2 bg-neutral-900/80 border border-white/15 rounded-lg p-1.5">
-                    <input
-                      type="color"
-                      value={config.textColor}
-                      onChange={(e) => updateConfig('textColor', e.target.value)}
-                      className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
-                    />
-                    <input
-                      type="text"
-                      value={config.textColor}
-                      onChange={(e) => updateConfig('textColor', e.target.value)}
-                      className="w-full bg-transparent text-xs text-white font-mono uppercase focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Typography */}
-            <div className="space-y-4 mb-6">
-              <span className="text-[0.65rem] uppercase font-bold tracking-wider text-[#E5A93C]">
-                2. Typography Fonts
-              </span>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="d3-label mb-1">Heading Font</label>
-                  <select
-                    value={config.headingFont}
-                    onChange={(e) => updateConfig('headingFont', e.target.value)}
-                    className="w-full bg-neutral-900 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#E5A93C]"
-                  >
-                    {FONT_OPTIONS.map((f) => (
-                      <option key={f.value} value={f.value} className="bg-neutral-900">
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="d3-label mb-1">Body Font</label>
-                  <select
-                    value={config.bodyFont}
-                    onChange={(e) => updateConfig('bodyFont', e.target.value)}
-                    className="w-full bg-neutral-900 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#E5A93C]"
-                  >
-                    {FONT_OPTIONS.map((f) => (
-                      <option key={f.value} value={f.value} className="bg-neutral-900">
-                        {f.label}
+                    {Object.entries(TEMPLATE_PRESETS).map(([key, p]) => (
+                      <option key={key} value={key}>
+                        {p.name}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
-            </div>
 
-            {/* 3. Border Radius & Card Style */}
-            <div className="space-y-4 mb-6">
-              <span className="text-[0.65rem] uppercase font-bold tracking-wider text-[#E5A93C]">
-                3. Shapes &amp; Surfaces
-              </span>
-
-              <div>
-                <label className="d3-label mb-1.5">Border Radius</label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
-                  {BORDER_RADIUS_OPTIONS.map((r) => (
-                    <button
-                      key={r.value}
-                      type="button"
-                      onClick={() => updateConfig('borderRadius', r.value)}
-                      className={`px-2 py-1.5 rounded text-[0.65rem] font-bold transition-all ${
-                        config.borderRadius === r.value
-                          ? 'bg-[#E5A93C] text-black shadow-sm'
-                          : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-white/10'
-                      }`}
-                    >
-                      {r.value}
-                    </button>
-                  ))}
+              <Section number="01" title="Colors &amp; Palette">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <ColorField label="Page background" value={config.pageBg} onChange={(v) => updateConfig('pageBg', v)} />
+                  <ColorField label="Card background" value={config.cardBg} onChange={(v) => updateConfig('cardBg', v)} />
+                  <ColorField label="Primary / accent" value={config.primaryColor} onChange={(v) => updateConfig('primaryColor', v)} />
+                  <ColorField label="Text color" value={config.textColor} onChange={(v) => updateConfig('textColor', v)} />
                 </div>
-              </div>
+              </Section>
 
-              <div>
-                <label className="d3-label mb-1.5">Card Style</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CARD_STYLE_OPTIONS.map((cs) => (
-                    <button
-                      key={cs.value}
-                      type="button"
-                      onClick={() => updateConfig('cardStyle', cs.value)}
-                      className={`p-2.5 rounded-lg text-left transition-all border ${
-                        config.cardStyle === cs.value
-                          ? 'border-[#E5A93C] bg-[#E5A93C]/10 text-white'
-                          : 'border-white/10 bg-neutral-900 hover:bg-neutral-850 text-neutral-300'
-                      }`}
-                    >
-                      <span className="block text-xs font-bold">{cs.label}</span>
-                      <span className="block text-[0.6rem] text-neutral-400 mt-0.5">{cs.description}</span>
-                    </button>
-                  ))}
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
+
+              <Section number="02" title="Typography &amp; Fonts">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div style={{ minWidth: 0 }}>
+                    <label style={FIELD_LABEL}>Heading font</label>
+                    <select value={config.headingFont} onChange={(e) => updateConfig('headingFont', e.target.value)} style={TEXT_INPUT}>
+                      {FONT_OPTIONS.map((f) => (
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <label style={FIELD_LABEL}>Body font</label>
+                    <select value={config.bodyFont} onChange={(e) => updateConfig('bodyFont', e.target.value)} style={TEXT_INPUT}>
+                      {FONT_OPTIONS.map((f) => (
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
+              </Section>
 
-              <div>
-                <label className="d3-label mb-1.5">Button Style</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {BUTTON_STYLE_OPTIONS.map((bs) => (
-                    <button
-                      key={bs.value}
-                      type="button"
-                      onClick={() => updateConfig('buttonStyle', bs.value)}
-                      className={`p-2.5 rounded-lg text-left transition-all border ${
-                        config.buttonStyle === bs.value
-                          ? 'border-[#E5A93C] bg-[#E5A93C]/10 text-white'
-                          : 'border-white/10 bg-neutral-900 hover:bg-neutral-850 text-neutral-300'
-                      }`}
-                    >
-                      <span className="block text-xs font-bold">{bs.label}</span>
-                      <span className="block text-[0.6rem] text-neutral-400 mt-0.5">{bs.description}</span>
-                    </button>
-                  ))}
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
+
+              <Section number="03" title="Cards &amp; Components">
+                <div>
+                  <label style={FIELD_LABEL}>Card style</label>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {CARD_STYLE_OPTIONS.map((cs) => (
+                      <OptionTile
+                        key={cs.value}
+                        active={config.cardStyle === cs.value}
+                        onClick={() => updateConfig('cardStyle', cs.value)}
+                        title={cs.label}
+                        description={cs.description}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </Section>
 
-            {/* 4. Menu Layout */}
-            <div className="space-y-4 mb-6">
-              <span className="text-[0.65rem] uppercase font-bold tracking-wider text-[#E5A93C]">
-                4. Layout
-              </span>
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
 
-              <div>
-                <label className="d3-label mb-1.5">Menu Layout</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {MENU_LAYOUT_OPTIONS.map((ml) => (
-                    <button
-                      key={ml.value}
-                      type="button"
-                      onClick={() => updateConfig('menuLayout', ml.value)}
-                      className={`p-2.5 rounded-lg text-left transition-all border ${
-                        config.menuLayout === ml.value
-                          ? 'border-[#E5A93C] bg-[#E5A93C]/10 text-white'
-                          : 'border-white/10 bg-neutral-900 hover:bg-neutral-850 text-neutral-300'
-                      }`}
-                    >
-                      <span className="block text-xs font-bold">{ml.label}</span>
-                      <span className="block text-[0.6rem] text-neutral-400 mt-0.5">{ml.description}</span>
-                    </button>
-                  ))}
+              <Section number="04" title="Buttons &amp; Interactions">
+                <div>
+                  <label style={FIELD_LABEL}>Button style</label>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {BUTTON_STYLE_OPTIONS.map((bs) => (
+                      <OptionTile
+                        key={bs.value}
+                        active={config.buttonStyle === bs.value}
+                        onClick={() => updateConfig('buttonStyle', bs.value)}
+                        title={bs.label}
+                        description={bs.description}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </Section>
 
-            {/* Save Action */}
-            <div className="pt-4 border-t border-white/10 space-y-3">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full py-3 px-4 rounded-xl bg-[#E5A93C] hover:bg-[#F0BC5E] text-black font-bold text-xs uppercase tracking-wider transition-all shadow-[0_4px_20px_rgba(229,169,60,0.3)] flex items-center justify-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 16 16" fill="none">
-                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2" />
-                      <path d="M8 2a6 6 0 016 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    <span>Saving Custom Theme…</span>
-                  </>
-                ) : (
-                  <span>Save &amp; Publish Custom Theme</span>
-                )}
-              </button>
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
 
-              <button
-                type="button"
-                onClick={() => {
-                  setThemeName('');
-                  setShowSaveDialog(true);
-                }}
-                disabled={saving}
-                className="w-full py-2.5 px-4 rounded-xl border border-white/20 hover:border-[#E5A93C] text-neutral-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4">
-                  <path d="M7 2V9M4 6H10" strokeLinecap="round" />
-                  <rect x="2" y="2" width="10" height="10" rx="2" />
-                </svg>
-                Save as Named Theme…
-              </button>
+              <Section number="05" title="Layout &amp; Spacing">
+                <div>
+                  <label style={FIELD_LABEL}>Border radius</label>
+                  <div className="flex flex-wrap gap-2">
+                    {BORDER_RADIUS_OPTIONS.map((r) => {
+                      const active = config.borderRadius === r.value;
+                      return (
+                        <button
+                          key={r.value}
+                          type="button"
+                          onClick={() => updateConfig('borderRadius', r.value)}
+                          style={{
+                            borderRadius: 8,
+                            border: `1px solid ${active ? 'var(--gold)' : 'var(--border-warm)'}`,
+                            background: active ? 'rgba(184,164,122,0.1)' : 'var(--bg-surface-2)',
+                            color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            padding: '0.4375rem 0.75rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {r.value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <label style={FIELD_LABEL}>Menu layout</label>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {MENU_LAYOUT_OPTIONS.map((ml) => (
+                      <OptionTile
+                        key={ml.value}
+                        active={config.menuLayout === ml.value}
+                        onClick={() => updateConfig('menuLayout', ml.value)}
+                        title={ml.label}
+                        description={ml.description}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              <div style={{ height: 1, background: 'var(--border-warm)', opacity: 0.7 }} />
+
+              <Section number="06" title="Additional Styling">
+                <div
+                  style={{
+                    borderRadius: 10,
+                    border: '1px solid var(--border-warm)',
+                    background: 'var(--bg-surface-2)',
+                    padding: '0.75rem 0.875rem',
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                        Header &amp; navigation
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: '0.6875rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                        Fixed style for consistent customer navigation.
+                      </p>
+                    </div>
+                    <span className="d3-chip" style={{ flexShrink: 0, fontSize: '0.625rem' }}>
+                      Sticky Blur Bar
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setThemeName('');
+                    setShowSaveDialog(true);
+                  }}
+                  disabled={saving}
+                  className="d3-btn-subtle"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                >
+                  Save as named theme…
+                </button>
+              </Section>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* ================= LIVE PREVIEW COLUMN (7 Cols) ================= */}
-        <div className="lg:col-span-7 flex flex-col gap-4 h-full lg:sticky lg:top-4 shrink-0 min-h-0 overflow-hidden">
-          {/* Top Bar with Mobile / Desktop Toggle */}
-          <div className="flex items-center justify-between bg-neutral-900/90 border border-white/10 px-4 py-2.5 rounded-xl shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
-                Real-Time Live Preview
+        {/* ================= PREVIEW (stable) ================= */}
+        <section className="flex min-h-0 flex-col bg-neutral-950/30" aria-label="Live preview">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-5 py-3.5 sm:px-6">
+            <div className="flex items-center gap-2.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-400/90" aria-hidden="true" />
+              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>
+                Live preview
               </span>
             </div>
-
-            {/* Mobile / Desktop View Mode Segment */}
-            <div className="flex items-center bg-black/60 p-1 rounded-lg border border-white/10">
+            <div
+              className="flex items-center"
+              style={{
+                borderRadius: 10,
+                border: '1px solid var(--border-warm)',
+                background: 'var(--bg-surface-2)',
+                padding: 3,
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setPreviewDevice('mobile')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                  previewDevice === 'mobile'
-                    ? 'bg-[#E5A93C] text-black shadow-sm font-bold'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
+                style={{
+                  borderRadius: 7,
+                  border: 'none',
+                  padding: '0.375rem 0.875rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: previewDevice === 'mobile' ? 'var(--bg-surface)' : 'transparent',
+                  color: previewDevice === 'mobile' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  boxShadow: previewDevice === 'mobile' ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+                  transition: 'all 150ms',
+                }}
               >
-                <span>📱</span>
-                <span>Mobile</span>
+                Mobile
               </button>
-
               <button
                 type="button"
                 onClick={() => setPreviewDevice('desktop')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                  previewDevice === 'desktop'
-                    ? 'bg-[#E5A93C] text-black shadow-sm font-bold'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
+                style={{
+                  borderRadius: 7,
+                  border: 'none',
+                  padding: '0.375rem 0.875rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: previewDevice === 'desktop' ? 'var(--bg-surface)' : 'transparent',
+                  color: previewDevice === 'desktop' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  boxShadow: previewDevice === 'desktop' ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+                  transition: 'all 150ms',
+                }}
               >
-                <span>💻</span>
-                <span>Desktop</span>
+                Desktop
               </button>
             </div>
           </div>
 
-          {/* Interactive Preview Container */}
-          <div className="flex flex-col min-h-0 pt-2 bg-neutral-950/80 border border-white/10 rounded-2xl p-4 sm:p-6 max-h-full">
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-6 sm:p-8">
             {previewDevice === 'mobile' ? (
-              /* SMARTPHONE FRAME */
-              <div className="max-w-[380px] max-h-full aspect-[9/16] shrink-0 mx-auto rounded-[32px] border-4 border-neutral-700 bg-neutral-950 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col relative">
-                {/* Speaker notch */}
-                <div className="w-full h-6 bg-neutral-900 flex items-center justify-center relative flex-shrink-0 z-40 border-b border-white/5">
-                  <div className="w-16 h-3 bg-black rounded-full" />
+              <div
+                className="mx-auto flex h-full w-full max-w-[400px] flex-col overflow-hidden"
+                style={{
+                  minHeight: 480,
+                  maxHeight: '100%',
+                  borderRadius: 28,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'var(--bg-primary)',
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+                }}
+              >
+                <div
+                  className="flex h-7 shrink-0 items-center justify-center"
+                  style={{ borderBottom: '1px solid var(--border-warm)', background: 'var(--bg-surface)' }}
+                >
+                  <div style={{ width: 64, height: 4, borderRadius: 999, background: 'var(--border-light)' }} />
                 </div>
-
-                {/* Inner Phone Viewport with scroll */}
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                  <CustomTemplate
-                    hotel={previewHotel}
-                    customConfig={config}
-                    currency={hotel.currency || 'INR (₹)'}
-                    tableNumber="4"
-                    categories={PREVIEW_CATEGORIES}
-                    pills={['All', 'Mains', 'Desserts']}
-                    selectedCategory="All"
-                    onSelectCategory={() => {}}
-                    search=""
-                    onSearchChange={() => {}}
-                    filteredItems={SAMPLE_PREVIEW_ITEMS}
-                    featuredItems={SAMPLE_PREVIEW_ITEMS.filter((i) => i.is_featured)}
-                    popularItems={SAMPLE_PREVIEW_ITEMS.filter((i) => i.is_popular && !i.is_featured)}
-                    regularItems={SAMPLE_PREVIEW_ITEMS.filter((i) => !i.is_featured && !i.is_popular)}
-                    cart={[{ menuItem: SAMPLE_PREVIEW_ITEMS[0], quantity: 1 }]}
-                    totalCount={1}
-                    totalPrice={SAMPLE_PREVIEW_ITEMS[0].price}
-                    onAdd={() => {}}
-                    onRemove={() => {}}
-                    onItemClick={() => {}}
-                    onView3D={() => {}}
-                    onOpenCart={() => {}}
-                  />
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <CustomTemplate {...previewProps} />
                 </div>
-
-                {/* Bottom home bar */}
-                <div className="w-full h-4 bg-neutral-900 flex items-center justify-center flex-shrink-0">
-                  <div className="w-24 h-1 bg-neutral-600 rounded-full" />
+                <div
+                  className="flex h-5 shrink-0 items-center justify-center"
+                  style={{ borderTop: '1px solid var(--border-warm)', background: 'var(--bg-surface)' }}
+                >
+                  <div style={{ width: 96, height: 4, borderRadius: 999, background: 'var(--border-light)' }} />
                 </div>
               </div>
             ) : (
-              /* WIDESCREEN DESKTOP BROWSER FRAME */
-              <div className="w-full max-h-full rounded-xl border border-white/15 bg-neutral-950 shadow-2xl overflow-hidden flex flex-col">
-                {/* Browser address bar mockup */}
-                <div className="px-4 py-2 bg-neutral-900 border-b border-white/10 flex items-center gap-3 flex-shrink-0">
-                  <div className="flex gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+              <div
+                className="flex h-full w-full max-w-[1100px] flex-col overflow-hidden"
+                style={{
+                  minHeight: 480,
+                  maxHeight: '100%',
+                  borderRadius: 14,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'var(--bg-primary)',
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.32)',
+                }}
+              >
+                <div
+                  className="flex shrink-0 items-center gap-3 px-4 py-2.5"
+                  style={{ borderBottom: '1px solid var(--border-warm)', background: 'var(--bg-surface)' }}
+                >
+                  <div className="flex gap-1.5" aria-hidden="true">
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: 'rgba(239,68,68,0.7)' }} />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: 'rgba(245,158,11,0.7)' }} />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: 'rgba(16,185,129,0.7)' }} />
                   </div>
-                  <div className="flex-1 max-w-sm mx-auto bg-black/40 rounded px-3 py-0.5 text-[0.65rem] font-mono text-neutral-400 text-center truncate">
-                    https://dine3d.app/menu/{hotel.slug}
+                  <div
+                    style={{
+                      flex: 1,
+                      maxWidth: 420,
+                      margin: '0 auto',
+                      borderRadius: 8,
+                      border: '1px solid var(--border-warm)',
+                      background: 'var(--bg-surface-2)',
+                      padding: '0.25rem 0.625rem',
+                      fontSize: '0.6875rem',
+                      color: 'var(--text-dimmed)',
+                      textAlign: 'center',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    dine3d.app/menu/{hotel.slug}
                   </div>
+                  <div style={{ width: 52 }} />
                 </div>
-
-                {/* Inner Desktop Viewport */}
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                  <CustomTemplate
-                    hotel={previewHotel}
-                    customConfig={config}
-                    currency={hotel.currency || 'INR (₹)'}
-                    tableNumber="4"
-                    categories={PREVIEW_CATEGORIES}
-                    pills={['All', 'Mains', 'Desserts']}
-                    selectedCategory="All"
-                    onSelectCategory={() => {}}
-                    search=""
-                    onSearchChange={() => {}}
-                    filteredItems={SAMPLE_PREVIEW_ITEMS}
-                    featuredItems={SAMPLE_PREVIEW_ITEMS.filter((i) => i.is_featured)}
-                    popularItems={SAMPLE_PREVIEW_ITEMS.filter((i) => i.is_popular && !i.is_featured)}
-                    regularItems={SAMPLE_PREVIEW_ITEMS.filter((i) => !i.is_featured && !i.is_popular)}
-                    cart={[{ menuItem: SAMPLE_PREVIEW_ITEMS[0], quantity: 1 }]}
-                    totalCount={1}
-                    totalPrice={SAMPLE_PREVIEW_ITEMS[0].price}
-                    onAdd={() => {}}
-                    onRemove={() => {}}
-                    onItemClick={() => {}}
-                    onView3D={() => {}}
-                    onOpenCart={() => {}}
-                  />
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <CustomTemplate {...previewProps} />
                 </div>
               </div>
             )}
           </div>
-        </div>
+        </section>
       </div>
+
+      {/* ================= FIXED FOOTER ================= */}
+      <footer
+        className="flex shrink-0 items-center justify-between gap-3 border-t border-white/10 px-6 py-3.5 sm:px-8"
+        style={{ background: 'rgba(10,10,10,0.7)', backdropFilter: 'blur(10px)' }}
+      >
+        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-dimmed)', lineHeight: 1.4 }}>
+          {editingThemeId ? 'Saving updates this theme in your library.' : 'Publishing applies this design to your live customer menu.'}
+        </p>
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <button type="button" onClick={onCancel} className="d3-btn-subtle" disabled={saving || savingToLibrary}>
+              Cancel
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || savingToLibrary}
+            className="d3-btn-primary"
+            style={{ padding: '0.625rem 1.25rem', opacity: saving ? 0.7 : 1 }}
+          >
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </footer>
 
       {/* Save as Named Theme dialog */}
       {showSaveDialog && (
