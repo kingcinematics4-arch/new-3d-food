@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 import { requireOwnedHotelId } from '@/lib/hotelAccess';
+import { getHotelGoogleReviewUrl } from '@/lib/customThemeStore.server';
 
 const updatePaymentStatusSchema = z.object({
   order_id: z.string().min(1, 'order_id is required'),
@@ -23,28 +24,10 @@ const updatePaymentStatusSchema = z.object({
 });
 
 /** Resolve the Google Review URL for the exact hotel that owns this order.
- *  Uses the service-role client (server-side only) so public/guest flows
- *  are not blocked by RLS; never uses the admin's session hotel context. */
+ *  Uses server-side access (RLS-safe; never uses admin session hotel context)
+ *  and falls back to existing custom_theme_config storage when needed. */
 async function getHotelReviewUrl(hotelId: string | null | undefined): Promise<string | null> {
-  if (!hotelId) return null;
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('hotels')
-      .select('google_review_url')
-      .eq('id', hotelId)
-      .maybeSingle();
-    if (error) {
-      // Missing column on older deployments — treat as not configured.
-      if (error.code && ['42703', 'PGRST204', 'PGRST205'].includes(error.code)) return null;
-      console.error('[update-payment-status] hotel review URL lookup failed:', error.message);
-      return null;
-    }
-    const url = (data as any)?.google_review_url;
-    return typeof url === 'string' && url.trim() ? url : null;
-  } catch (err: any) {
-    console.error('[update-payment-status] hotel review URL lookup threw:', err?.message);
-    return null;
-  }
+  return getHotelGoogleReviewUrl(hotelId);
 }
 
 export async function POST(request: Request) {
@@ -108,6 +91,9 @@ export async function POST(request: Request) {
     // even when the payment transition is a no-op.
     if (currentOrder.payment_status === validated.payment_status) {
       const reviewUrl = await getHotelReviewUrl(currentOrder.hotel_id);
+      console.log('[orders/update-payment-status][googleReview]', JSON.stringify({
+        orderId: currentOrder.id, orderHotelId: currentOrder.hotel_id, hasGoogleReviewUrl: Boolean(reviewUrl), noop: true,
+      }));
       return new NextResponse(JSON.stringify({ success: true, order: { ...currentOrder, google_review_url: reviewUrl } }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -139,6 +125,12 @@ export async function POST(request: Request) {
     // Attach the hotel's google_review_url (resolved from the order's own
     // hotel_id) so the guest tracking page can redirect after payment.
     const reviewUrl = await getHotelReviewUrl(currentOrder.hotel_id);
+    console.log('[orders/update-payment-status][googleReview]', JSON.stringify({
+      orderId: updatedOrder?.id || currentOrder.id,
+      orderHotelId: currentOrder.hotel_id,
+      hasGoogleReviewUrl: Boolean(reviewUrl),
+      paymentStatus: validated.payment_status,
+    }));
     const responseOrder = { ...updatedOrder, google_review_url: reviewUrl };
     return new NextResponse(JSON.stringify({ success: true, order: responseOrder }), {
       status: 200,

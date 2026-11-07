@@ -9,7 +9,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { findHotelOwnedByUser } from '@/lib/hotelAccess';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
-import { getStoredCustomTheme } from '@/lib/customThemeStore.server';
+import { getStoredCustomTheme, getHotelGoogleReviewUrl } from '@/lib/customThemeStore.server';
 import { listSavedCustomThemes, getActiveSavedCustomTheme } from '@/lib/hotelCustomThemes.server';
 import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 
@@ -43,8 +43,14 @@ export async function GET() {
     const storedCustomConfig = await getStoredCustomTheme(owned.id);
     const savedThemes = await listSavedCustomThemes(owned.id);
     const activeSavedTheme = await getActiveSavedCustomTheme(owned.id);
+    const googleReviewUrl = await getHotelGoogleReviewUrl(owned.id);
 
-    const hotelOut: any = { ...hotel, menu_theme: hotel?.menu_theme || storedTheme || DEFAULT_MENU_THEME, custom_theme_config: hotel?.custom_theme_config || storedCustomConfig || null };
+    const hotelOut: any = {
+      ...hotel,
+      google_review_url: googleReviewUrl ?? (hotel as any)?.google_review_url ?? null,
+      menu_theme: hotel?.menu_theme || storedTheme || DEFAULT_MENU_THEME,
+      custom_theme_config: hotel?.custom_theme_config || storedCustomConfig || null,
+    };
     delete hotelOut.hotel_public_id; delete hotelOut.user_id;
     return NextResponse.json({ success: true, hotel: hotelOut, saved_themes: savedThemes, active_saved_theme_id: activeSavedTheme?.id || null });
   } catch (error: any) {

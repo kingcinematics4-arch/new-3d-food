@@ -367,38 +367,61 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // Auto-redirect to Google Review URL once payment is marked PAID
   //
   // • Triggered ONLY when payment_status becomes 'paid' (staff marks it).
-  //   The redirect must never fire on order completion alone — payment
-  //   confirmation is the gate, per the payment-to-review workflow.
   // • Only once per order (sessionStorage guard survives refresh)
-  // • Skipped entirely when no Google Review URL is configured; in that
-  //   case a useful message is shown instead of silently doing nothing.
+  // • If paid but URL is missing from current payload (stale initial data),
+  //   force one authoritative refresh from /api/public/orders/[id] before
+  //   showing NOT CONFIGURED. Never fabricate a URL.
   // • Redirect happens on the guest's device via real-time / polling
   // -----------------------------------------------------------------------
   useEffect(() => {
     if (!order) return;
     const paymentStatus = (order.payment_status || '').trim().toLowerCase();
-    if (paymentStatus !== 'paid' || paymentRedirectTriggeredRef.current) return;
+    if (paymentStatus !== 'paid') return;
+    if (paymentRedirectTriggeredRef.current) return;
 
-    const reviewUrl = (order as any).google_review_url;
-    if (!reviewUrl) {
-      setPaymentReviewMessage('Payment confirmed. A Google Review link has not been configured for this hotel.');
-      return;
+    let cancelled = false;
+    const reviewUrl = (order as any).google_review_url as string | null | undefined;
+
+    const doRedirect = (url: string) => {
+      if (cancelled || paymentRedirectTriggeredRef.current) return;
+      const sessionKey = `dpx_payment_review_redirect_${order.id}`;
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(sessionKey)) return;
+      paymentRedirectTriggeredRef.current = true;
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(sessionKey, '1');
+      setPaymentReviewMessage(null);
+      setTimeout(() => {
+        try { window.location.href = url; } catch {}
+      }, 1500);
+    };
+
+    if (typeof reviewUrl === 'string' && reviewUrl.trim()) {
+      doRedirect(reviewUrl);
+      return () => { cancelled = true; };
     }
 
-    const sessionKey = `dpx_payment_review_redirect_${order.id}`;
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(sessionKey)) return;
+    // Paid but URL missing: refresh once from authoritative public API.
+    (async () => {
+      try {
+        const res = await fetch(`/api/public/orders/${encodeURIComponent(orderId)}`, { cache: 'no-store' });
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && json?.success && json?.order) {
+          setOrder(json.order as LiveOrder);
+          const fresh = (json.order as any).google_review_url;
+          if (typeof fresh === 'string' && fresh.trim()) {
+            doRedirect(fresh);
+            return;
+          }
+        }
+      } catch {}
+      if (!cancelled) {
+        setPaymentReviewMessage('Payment confirmed. A Google Review link has not been configured for this hotel.');
+      }
+    })();
 
-    paymentRedirectTriggeredRef.current = true;
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(sessionKey, '1');
-    }
-
-    // Small delay so the guest sees the paid confirmation first.
-    setTimeout(() => {
-      try { window.location.href = reviewUrl; } catch {}
-    }, 1500);
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order, order?.payment_status]);
+  }, [order?.id, order?.payment_status, order?.google_review_url, orderId]);
 
   // -----------------------------------------------------------------------
   // Derived display values

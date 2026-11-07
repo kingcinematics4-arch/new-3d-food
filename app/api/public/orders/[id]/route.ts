@@ -24,6 +24,7 @@ import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
 import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 import { normalizeCurrency } from '@/lib/menu';
 import { orderReference } from '@/lib/orderReference';
+import { getHotelGoogleReviewUrl } from '@/lib/customThemeStore.server';
 
 function isStoredReferenceNumber(value: string): boolean {
   return /^DINE-\d+$/i.test(value);
@@ -145,37 +146,29 @@ export async function GET(
     const reference = orderReference(order as { id: string; order_number?: string | null });
 
     // ------------------------------------------------------------------
-    // Resolve the hotel's Google Review URL explicitly from the order's
-    // own `hotel_id` relationship, rather than trusting the PostgREST
-    // `hotels (...)` join. The join depends on a schema probe and on
-    // PostgREST detecting the FK; an explicit fetch by the order's own
-    // hotel_id is deterministic and always uses the exact hotel the
-    // order was placed with. The service-role client bypasses RLS, so
-    // the public guest page never needs the anon key to read it.
+    // Resolve the hotel's Google Review URL from the EXACT hotel associated
+    // with this order (order.hotel_id). Uses server-side service-role access
+    // (RLS-safe for public guests; never exposes keys). Falls back to
+    // existing custom_theme_config storage when the dedicated column is
+    // unavailable on a deployment.
     // ------------------------------------------------------------------
-    let googleReviewUrl: string | null = (order as any).hotels?.google_review_url || null;
     const orderHotelId = (order as any).hotel_id || (order as any).hotels?.id || null;
+    let googleReviewUrl: string | null = (order as any).hotels?.google_review_url || null;
     if (orderHotelId) {
       try {
-        const { data: hotelRow, error: hotelErr } = await supabaseAdmin
-          .from('hotels')
-          .select('google_review_url')
-          .eq('id', orderHotelId)
-          .maybeSingle();
-        if (hotelErr) {
-          // Missing column on older deployments: keep join/fallback value.
-          if (!['42703', 'PGRST204', 'PGRST205'].includes(hotelErr.code || '')) {
-            console.error('[public/orders/[id]] hotel review URL lookup failed:', hotelErr.message);
-          }
-        } else if (hotelRow) {
-          const direct = (hotelRow as any).google_review_url;
-          if (typeof direct === 'string' && direct.trim()) googleReviewUrl = direct;
-          else if (direct === null) googleReviewUrl = null;
-        }
-      } catch {
-        // Fall back to the join value if the explicit probe fails.
+        const resolved = await getHotelGoogleReviewUrl(orderHotelId);
+        if (resolved) googleReviewUrl = resolved;
+      } catch (e: any) {
+        console.error('[public/orders/[id]] review URL lookup failed', { orderId: order.id, orderHotelId, message: e?.message });
       }
     }
+    // Temporary diagnostic logging (server-side only; no secrets/URLs/PII).
+    console.log('[public/orders/[id]][googleReview]', JSON.stringify({
+      orderId: order.id,
+      orderHotelId: orderHotelId || null,
+      hotelFound: Boolean(orderHotelId),
+      hasGoogleReviewUrl: Boolean(googleReviewUrl),
+    }));
 
     return new NextResponse(JSON.stringify({
       success: true,

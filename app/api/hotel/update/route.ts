@@ -21,7 +21,12 @@ import { getHotelSchema } from '@/lib/hotelSchema';
 import { z } from 'zod';
 import { MENU_THEME_IDS, DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 import { setStoredMenuTheme, getStoredMenuTheme } from '@/lib/menuThemeStore.server';
-import { setStoredCustomTheme, getStoredCustomTheme } from '@/lib/customThemeStore.server';
+import {
+  setStoredCustomTheme,
+  getStoredCustomTheme,
+  getHotelGoogleReviewUrl,
+  setHotelGoogleReviewUrl,
+} from '@/lib/customThemeStore.server';
 
 const updateHotelSchema = z.object({
   hotel_id: z.string().min(1, 'hotel_id is required'),
@@ -101,19 +106,9 @@ export async function PUT(request: Request) {
   }
 
   const reviewUrlRequested = Object.prototype.hasOwnProperty.call(updateData, 'google_review_url');
-  if (reviewUrlRequested && !schema.googleReviewUrl) {
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          'The database is missing the hotels.google_review_url column. ' +
-          'Run supabase/migrations/024_hotel_google_review_url.sql in the Supabase SQL Editor, then save the Google Review URL again. ' +
-          'No existing data was changed.',
-        schema: { googleReviewUrl: schema.googleReviewUrl },
-      },
-      { status: 503 }
-    );
-  }
+  // google_review_url can be persisted in existing custom_theme_config JSONB
+  // when the dedicated column is unavailable, so do not hard-fail solely on
+  // a missing dedicated column. Persistence is handled below.
 
   try {
     // Persist theme & custom configuration to the hotel's own row.
@@ -124,42 +119,93 @@ export async function PUT(request: Request) {
       await setStoredCustomTheme(hotelId, updateData.custom_theme_config);
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('hotels')
-      .update(updateData)
-      .eq('id', hotelId)
-      .select()
-      .single();
+    const strip = (h: any) => {
+      if (!h || typeof h !== 'object') return h;
+      const o = { ...h };
+      delete o.hotel_public_id;
+      delete o.user_id;
+      return o;
+    };
 
-        const strip=(h:any)=>{ if(!h||typeof h!='object') return h; const o={...h}; delete o.hotel_public_id; delete o.user_id; return o; };
+    // Google Review URL: persist via dedicated column when present, and
+    // always mirror into existing custom_theme_config JSONB as a resilient
+    // fallback (same hotel record, no new columns/tables, no data loss).
+    let persistedReviewUrl: string | null | undefined;
+    if (reviewUrlRequested) {
+      const result = await setHotelGoogleReviewUrl(hotelId, (updateData as any).google_review_url ?? null);
+      persistedReviewUrl = result.value;
+      console.log('[googleReview][save]', JSON.stringify({
+        hotelId,
+        hasUrl: Boolean(result.value),
+        storedInColumn: result.storedInColumn,
+        storedInConfig: result.storedInConfig,
+      }));
+    }
+
+    // Build hotel-row update payload. If dedicated google_review_url column
+    // is missing, omit it from the row update (already persisted to config).
+    const rowUpdate: any = { ...updateData };
+    if (reviewUrlRequested && !schema.googleReviewUrl) {
+      delete rowUpdate.google_review_url;
+    }
+    // Avoid sending unknown-only payloads; google_review_url handled above.
+    const rowKeys = Object.keys(rowUpdate).filter((k) => rowUpdate[k] !== undefined);
+    let data: any = null;
+    let error: any = null;
+    if (rowKeys.length > 0) {
+      const res = await supabaseAdmin.from('hotels').update(rowUpdate).eq('id', hotelId).select().single();
+      data = res.data;
+      error = res.error;
+    } else {
+      const res = await supabaseAdmin.from('hotels').select('*').eq('id', hotelId).single();
+      data = res.data;
+      error = res.error;
+    }
+
     if (error) {
-      const { menu_theme, custom_theme_config, google_review_url, ...rest } = updateData as any;
+      // Retry without theme/custom fields (legacy behavior) and without
+      // google_review_url when column may be problematic.
+      const { menu_theme, custom_theme_config, google_review_url, ...rest } = rowUpdate as any;
       if (Object.keys(rest).length > 0) {
         const { data: retryData } = await supabaseAdmin.from('hotels').update(rest).eq('id', hotelId).select().single();
         const storedTheme = await getStoredMenuTheme(hotelId);
         const storedCustomConfig = await getStoredCustomTheme(hotelId);
-        return NextResponse.json({ success: true, hotel: strip({ ...retryData, google_review_url: (retryData as any)?.google_review_url ?? google_review_url ?? null, menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME, custom_theme_config: storedCustomConfig || custom_theme_config || null }) });
-      }
-      // If only the google_review_url/theme fields were being saved and the
-      // column is missing, return an actionable error instead of pretending
-      // success — a missing column means the URL was NOT persisted.
-      if (Object.prototype.hasOwnProperty.call(updateData, 'google_review_url') && !schema.googleReviewUrl) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              'The database is missing hotels.google_review_url. Run supabase/migrations/024_hotel_google_review_url.sql in the Supabase SQL Editor, then save again. No existing data was changed.',
-          },
-          { status: 503 }
-        );
+        const review = reviewUrlRequested ? persistedReviewUrl : await getHotelGoogleReviewUrl(hotelId);
+        return NextResponse.json({
+          success: true,
+          hotel: strip({
+            ...retryData,
+            google_review_url: review ?? null,
+            menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME,
+            custom_theme_config: storedCustomConfig || custom_theme_config || null,
+          }),
+        });
       }
       const { data: currentHotel } = await supabaseAdmin.from('hotels').select('*').eq('id', hotelId).single();
       const storedTheme = await getStoredMenuTheme(hotelId);
       const storedCustomConfig = await getStoredCustomTheme(hotelId);
-      return NextResponse.json({ success: true, hotel: strip({ ...currentHotel, google_review_url: (currentHotel as any)?.google_review_url ?? google_review_url ?? null, menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME, custom_theme_config: storedCustomConfig || custom_theme_config || null }) });
+      const review = reviewUrlRequested ? persistedReviewUrl : await getHotelGoogleReviewUrl(hotelId);
+      return NextResponse.json({
+        success: true,
+        hotel: strip({
+          ...currentHotel,
+          google_review_url: review ?? null,
+          menu_theme: storedTheme || menu_theme || DEFAULT_MENU_THEME,
+          custom_theme_config: storedCustomConfig || custom_theme_config || null,
+        }),
+      });
     }
+
     const storedCustomConfig = await getStoredCustomTheme(hotelId);
-    return NextResponse.json({ success: true, hotel: strip({ ...data, custom_theme_config: data?.custom_theme_config || storedCustomConfig || null }) });
+    const review = reviewUrlRequested ? persistedReviewUrl : await getHotelGoogleReviewUrl(hotelId);
+    return NextResponse.json({
+      success: true,
+      hotel: strip({
+        ...data,
+        google_review_url: review ?? (data as any)?.google_review_url ?? null,
+        custom_theme_config: data?.custom_theme_config || storedCustomConfig || null,
+      }),
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to update hotel settings' },
