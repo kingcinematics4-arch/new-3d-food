@@ -154,6 +154,24 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
     'Other',
   ];
 
+  const PANEL: React.CSSProperties = {
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--d3-card-radius)',
+    background: 'var(--bg-surface)',
+    boxShadow: 'var(--d3-shadow-card)',
+    marginBottom: '1rem',
+    overflow: 'hidden',
+  };
+  const SECTION_TITLE: React.CSSProperties = {
+    margin: 0,
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase',
+    color: 'var(--gold)',
+    lineHeight: 1.3,
+  };
+
   const orderRef = useRef<LiveOrder | null>(null);
   orderRef.current = order;
 
@@ -423,15 +441,19 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order?.id, order?.payment_status, order?.google_review_url, orderId]);
 
-  // -----------------------------------------------------------------------
+   // -----------------------------------------------------------------------
   // Derived display values
   // -----------------------------------------------------------------------
-const placedAt   = order?.created_at ?? null;
-   const status     = (order?.status || '').trim().toLowerCase();
-   const stageIndex = statusToStageIndex(status);
-   const isCancelled = status === 'cancelled';
-   const activeTotal   = order ? order.items.filter(i => (i.status || 'active').toLowerCase() !== 'cancelled').reduce((s, i) => s + Number(i.price_at_time) * i.quantity, 0) : 0;
-  const statusColor = status === 'cancelled' ? '#C46658' : status === 'completed' || status === 'delivered' ? '#4ade80' : status === 'accepted' ? '#b8a47a' : status === 'preparing' ? '#fbbf24' : '#b8a47a';
+  const placedAt = order?.created_at ?? null;
+  const status = (order?.status || '').trim().toLowerCase();
+  const stageIndex = statusToStageIndex(status);
+  const isCancelled = status === 'cancelled';
+  const activeTotal = order
+    ? order.items
+        .filter((i) => (i.status || 'active').toLowerCase() !== 'cancelled')
+        .reduce((s, i) => s + Number(i.price_at_time) * i.quantity, 0)
+    : 0;
+  const statusColor = status === 'cancelled' ? 'var(--text-muted)' : 'var(--gold)';
 
   // Monospace numeric stack reused from the hotel dashboard so figures line up.
   const NUMBER_FONT = 'ui-monospace, SFMono-Regular, Menlo, monospace';
@@ -442,43 +464,103 @@ const placedAt   = order?.created_at ?? null;
 
   return (
     <div
-      className={`min-h-screen flex flex-col ${menuThemeClass(order?.hotel_theme || undefined)}`}
+      className={`min-h-screen ${menuThemeClass(order?.hotel_theme || undefined)}`}
       style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
     >
-      <div className="w-full max-w-md mx-auto px-4 sm:px-5 pb-6 sm:pb-8">
+      <header
+        className="sticky top-0 z-30 d3-header"
+        style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
+      >
+        <div
+          className="mx-auto px-4 flex items-center justify-between gap-3"
+          style={{ maxWidth: 'var(--d3-container-max)', height: '3.5rem' }}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            {backHref !== '/' ? (
+              <Link
+                href={backHref}
+                aria-label="Back to menu"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 'var(--d3-btn-radius)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'var(--bg-surface-2)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-muted)',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
+            ) : null}
+            <div className="min-w-0">
+              <h1
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                  letterSpacing: '-0.01em',
+                  lineHeight: 1.2,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  margin: 0,
+                }}
+              >
+                Your Order
+              </h1>
+              <p style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', margin: 0 }}>
+                {order?.order_number ? `Ref #${order.order_number}` : 'Order status'}
+                {order?.table_number ? ` · Table ${order.table_number}` : ''}
+              </p>
+            </div>
+          </div>
 
-        {/* ── SECTION 1 — ORDER HEADER ── */}
-        <div style={{ marginBottom: '1rem' }}>
-          <h1
+          {!loading && order ? (
+            <Link
+              href={addDishHref}
+              className="d3-btn-primary"
+              style={{ padding: '0.4375rem 0.75rem', fontSize: '0.6875rem', flexShrink: 0 }}
+            >
+              Add Dish
+            </Link>
+          ) : (
+            <span style={{ width: 72, height: 32 }} />
+          )}
+        </div>
+      </header>
+
+      <main
+        className="mx-auto px-4 py-4 pb-10"
+        style={{ maxWidth: 'var(--d3-container-max)' }}
+      >
+        {loading ? (
+          <div
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.5rem',
-              fontWeight: 500,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.01em',
-              lineHeight: 1.2,
-              margin: 0,
+              ...PANEL,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              padding: '2rem 1rem',
             }}
           >
-            Your Order
-          </h1>
-
-          {loading ? (
-            <div
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                marginTop: '0.75rem',
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
-                <circle cx="12" cy="12" r="10" stroke="var(--gold)" strokeOpacity="0.2" strokeWidth="1.5" />
-                <path d="M12 2A10 10 0 0 1 22 12" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Loading your order…</p>
-            </div>
-          ) : order && (
-            <>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginTop: '0.5rem' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+              <circle cx="12" cy="12" r="10" stroke="var(--gold)" strokeOpacity="0.2" strokeWidth="1.5" />
+              <path d="M12 2A10 10 0 0 1 22 12" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Loading your order…</p>
+          </div>
+        ) : order ? (
+          <div style={PANEL}>
+            <div style={{ padding: '1rem 1rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                 <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem', letterSpacing: '0.02em' }}>
                   Ref{' '}
                   <span style={{ fontFamily: NUMBER_FONT, fontWeight: 600, color: 'var(--gold)', fontVariantNumeric: 'tabular-nums' }}>
@@ -492,130 +574,69 @@ const placedAt   = order?.created_at ?? null;
                 )}
               </div>
 
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span
+                    className="d3-chip"
+                    style={{ color: statusColor, borderColor: 'var(--border-light)', background: 'var(--bg-surface-2)' }}
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </span>
+
+                  {!isCancelled && !isTerminal(status) && (
+                    <span className="d3-chip" style={{ color: 'var(--text-muted)' }}>
+                      <span className="d3-live-dot" style={{ width: 4, height: 4 }} />
+                      {realtimeOk ? 'Live updates' : 'Auto-refresh'}
+                    </span>
+                  )}
+                </div>
+
+                {!isCancelled && (status === 'pending' || status === 'accepted') && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={cancelling}
+                    className="d3-btn-inline d3-btn-danger"
+                    style={{ opacity: cancelling ? 0.6 : 1, minHeight: 32 }}
+                  >
+                    {cancelling ? 'Cancelling…' : 'Cancel Order'}
+                  </button>
+                )}
+              </div>
+
               <Link
                 href={addDishHref}
                 className="d3-btn-primary"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '0.5rem',
-                  padding: '0.625rem 1.125rem',
+                  padding: '0.625rem 1rem',
                   fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  borderRadius: 8,
-                  marginTop: '0.5rem',
+                  width: '100%',
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                ADD ANOTHER DISH
+                Add Another Dish
               </Link>
+            </div>
+          </div>
+        ) : null}
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginTop: '0.625rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  {/* Current order status */}
-                  <span
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '0.2rem 0.65rem', borderRadius: 100, fontSize: '0.625rem', fontWeight: 700,
-                      letterSpacing: '0.1em', textTransform: 'uppercase' as const,
-                      background: 'var(--bg-surface-2)', border: '1px solid var(--border-warm)', color: statusColor,
-                    }}
-                  >
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </span>
-
-                  {/* Live / auto-refresh indicator */}
-                  {!isCancelled && !isTerminal(status) && (
-                    <div
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '0.2rem 0.65rem', borderRadius: 100,
-                        background: realtimeOk ? 'rgba(91,165,111,0.10)' : 'rgba(184,164,122,0.08)',
-                        border: realtimeOk ? '1px solid rgba(91,165,111,0.22)' : '1px solid rgba(184,164,122,0.18)',
-                        fontSize: '0.5rem', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-                        color: realtimeOk ? '#6bba85' : 'var(--text-dimmed)',
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 4, height: 4, borderRadius: '50%',
-                          background: realtimeOk ? '#6bba85' : 'var(--gold)',
-                          animation: 'ot-pulse 2s infinite',
-                        }}
-                      />
-                      {realtimeOk ? 'Live updates' : 'Auto-refresh'}
-                    </div>
-                  )}
-                </div>
-                {!isCancelled && (status === 'pending' || status === 'accepted') && (
-                  <button
-                    type="button"
-                    onClick={() => setShowCancelDialog(true)}
-                    disabled={cancelling}
-                    className="d3-btn-quiet d3-btn-danger"
-                    style={{
-                      opacity: cancelling ? 0.6 : 1,
-                      padding: '0.4375rem 1rem',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      borderRadius: 8,
-                      minHeight: 36,
-                    }}
-                  >
-                    {cancelling ? 'Cancelling…' : 'Cancel Order'}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* ── Body ── */}
-        {loading ? null : error ? (
-          <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', border: '1px solid var(--border-subtle)', borderRadius: 16, background: 'var(--bg-surface)' }}>
-            <p style={{ margin: 0, fontSize: '0.9375rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>{error}</p>
+        {error ? (
+          <div style={{ ...PANEL, padding: '1.5rem', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>{error}</p>
           </div>
         ) : order ? (
           <>
-            {/* Cancelled banner */}
             {isCancelled && (
-              <div style={{ padding: '1.25rem 1.5rem', textAlign: 'center', border: '1px solid rgba(196,102,88,0.2)', borderRadius: 16, background: 'rgba(196,102,88,0.04)', marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <p style={{ margin: 0, fontSize: '0.8125rem', color: '#D9A79E', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>
-                    This order was cancelled
-                  </p>
-                  {(() => {
-                    const source = ((order as any).cancellation_source || (order as any).cancelled_by || '').toLowerCase().trim();
-                    if (source === 'hotel' || source === 'restaurant') {
-                      return (
-                        <span
-                          title="Cancelled by Hotel"
-                          aria-label="Cancelled by Hotel"
-                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#D9A79E' }}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                            <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 6 6)" />
-                          </svg>
-                        </span>
-                      );
-                    } else if (source === 'customer') {
-                      return (
-                        <span
-                          title="Cancelled by Customer"
-                          aria-label="Cancelled by Customer"
-                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#D9A79E' }}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                            <path d="M6 2L6 10M6 2L3 5M6 2L9 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
+              <div style={{ ...PANEL, padding: '1rem', textAlign: 'center', borderColor: 'var(--border-light)' }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+                  This order was cancelled
+                </p>
                 {order.cancellation_reason && (
                   <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     Reason: {order.cancellation_reason}
@@ -629,27 +650,34 @@ const placedAt   = order?.created_at ?? null;
               </div>
             )}
 
-            {/* ── SECTION 2 — ORDER PROGRESS ── */}
             {!isCancelled && (
-              <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 10, background: 'var(--bg-surface)', marginBottom: '1rem', overflow: 'hidden' }}>
-<p style={{ margin: 0, padding: '0.875rem 0.875rem 0.5rem', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold)', lineHeight: 1.3 }}>
-                   Order Progress
-                 </p>
+              <div style={PANEL}>
+                <div style={{ padding: '0.875rem 0.875rem 0.5rem' }}>
+                  <p style={SECTION_TITLE}>Order Progress</p>
+                </div>
                 <div style={{ padding: '0.25rem 0.875rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                   {STAGES.map((stage, idx) => {
-                    const reached   = idx <= stageIndex;
+                    const reached = idx <= stageIndex;
                     const isCurrent = idx === stageIndex;
-                    const isLast    = idx === STAGES.length - 1;
-
+                    const isLast = idx === STAGES.length - 1;
                     return (
                       <div key={stage.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingTop: 2 }}>
-                           <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: reached ? 'rgba(184,164,122,0.10)' : 'var(--bg-surface-2)',
-                            border: reached ? '1px solid rgba(184,164,122,0.28)' : '1px solid var(--border-warm)',
-                            color: reached ? 'var(--gold)' : 'var(--text-dimmed)',
-                            boxShadow: isCurrent ? '0 0 0 2px rgba(184,164,122,0.15)' : 'none',
-                            transition: 'all 250ms ease' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingTop: 2 }}>
+                          <div
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 'var(--d3-input-radius)',
+                              flexShrink: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: reached ? 'var(--bg-surface-2)' : 'var(--bg-surface)',
+                              border: reached ? '1px solid var(--border-light)' : '1px solid var(--border-warm)',
+                              color: reached ? 'var(--gold)' : 'var(--text-dimmed)',
+                              transition: 'all 250ms ease',
+                            }}
+                          >
                             {reached ? (
                               <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                                 <path d="M3 8.5L6.5 12L13 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -660,43 +688,35 @@ const placedAt   = order?.created_at ?? null;
                               </svg>
                             )}
                           </div>
-{!isLast && (
-                             <div style={{ width: 1, height: 9, marginTop: 28, background: idx < stageIndex ? 'rgba(184,164,122,0.28)' : 'var(--border-warm)', borderRadius: 2, flexShrink: 0 }} />
-                           )}
+                          {!isLast && (
+                            <div style={{ width: 1, height: 9, marginTop: 2, background: idx < stageIndex ? 'var(--border-light)' : 'var(--border-warm)', borderRadius: 2, flexShrink: 0 }} />
+                          )}
                         </div>
-
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '0.875rem', fontWeight: 500, color: isCurrent ? 'var(--gold)' : reached ? 'var(--text-primary)' : 'var(--text-dimmed)', letterSpacing: '-0.01em', lineHeight: 1.25, margin: 0 }}>
                               {stage.title}
                             </h3>
-                            {isCurrent && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0.125rem 0.4rem', borderRadius: 4, background: 'rgba(184,164,122,0.10)', border: '1px solid rgba(184,164,122,0.28)', color: 'var(--gold)', fontSize: '0.5rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                                CURRENT
-                              </span>
-                            )}
+                            {isCurrent && <span className="d3-chip" style={{ fontSize: '0.5rem', padding: '0.125rem 0.4rem' }}>Current</span>}
                           </div>
-                          <p style={{ fontSize: '0.7rem', color: reached ? 'var(--text-muted)' : 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.4, margin: 0 }}>
+                          <p style={{ fontSize: '0.7rem', color: reached ? 'var(--text-muted)' : 'var(--text-dimmed)', margin: '2px 0 0', lineHeight: 1.4 }}>
                             {stage.desc}
                           </p>
                         </div>
                       </div>
                     );
                   })}
-
-                  
                 </div>
               </div>
             )}
 
-            {/* ── SECTION 3 — ORDER ITEMS ── */}
-            <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 10, background: 'var(--bg-surface)', marginBottom: '1rem', overflow: 'hidden' }}>
+            <div style={PANEL}>
               <div style={{ padding: '0.875rem 0.875rem 0.5rem', display: 'flex', alignItems: 'baseline', gap: 8, justifyContent: 'space-between' }}>
-                <p style={{ margin: 0, fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold)' }}>Items</p>
+                <p style={SECTION_TITLE}>Items</p>
               </div>
-              <div style={{ padding: '0 0.875rem', display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <div style={{ padding: '0 0.875rem 0.5rem', display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {order.items.length === 0 ? (
-                  <p style={{ margin: 0, padding: '0.875rem', fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>No items recorded</p>
+                  <p style={{ margin: 0, padding: '0.875rem 0', fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>No items recorded</p>
                 ) : (
                   order.items.map((item, i) => {
                     const cancelled = (item.status || '').toLowerCase() === 'cancelled';
@@ -704,76 +724,68 @@ const placedAt   = order?.created_at ?? null;
                     const canEditQty = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
                     const unitPrice = Number(item.price_at_time);
                     const lineTotal = unitPrice * item.quantity;
-const last = i === order.items.length - 1;
-                     return (
-                       <div key={item.id} style={{ padding: '0.5rem 0', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
-                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '0.5rem', alignItems: 'start' }}>
-                           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'nowrap', minWidth: 0 }}>
-                               <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                                 {item.name || 'Item'}
-                               </span>
-                             </div>
-<span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
-                                Unit price: {formatPrice(unitPrice, order?.currency)} each
-                              </span>
-                             {cancelled && (
-                               <span style={{ fontSize: '0.625rem', color: '#C46658', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                                 CANCELLED
-                               </span>
-                             )}
-                           </div>
-                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                             <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 600, fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                               {formatPrice(lineTotal, order?.currency)}
-                             </span>
-                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                               {canEditQty ? (
-                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                   <button
-                                     type="button"
-                                     onClick={() => handleUpdateItemQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
-                                     disabled={itemQtyUpdating === item.id}
-                                     style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '1rem', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                                   >
-                                     −
-                                   </button>
-                                   <span style={{ fontSize: '0.8125rem', minWidth: 18, textAlign: 'center', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</span>
-                                   <button
-                                     type="button"
-                                     onClick={() => handleUpdateItemQuantity(item.id, (item.quantity || 1) + 1)}
-                                     disabled={itemQtyUpdating === item.id}
-                                     style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: itemQtyUpdating === item.id ? 'not-allowed' : 'pointer', fontSize: '1rem', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                                   >
-                                     +
-                                   </button>
-                                 </div>
-                               ) : null}
-                               {canCancel && (
-                                 <button
-                                   type="button"
-                                   onClick={() => setShowItemCancelDialog(item.id)}
-                                   disabled={itemCancelling === item.id}
-                                   style={{ fontSize: '0.6875rem', color: '#C46658', background: 'none', border: '1px solid rgba(196,102,88,0.4)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer', whiteSpace: 'nowrap', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                                 >
-                                   {itemCancelling === item.id ? '…' : 'Cancel Item'}
-                                 </button>
-                               )}
-                               {cancelled && (
-                                 <span style={{ fontSize: '0.625rem', color: '#C46658', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.2rem 0.5rem', borderRadius: 6, border: '1px solid rgba(196,102,88,0.4)', background: 'rgba(196,102,88,0.06)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                   CANCELLED
-                                 </span>
-                               )}
-                             </div>
-                           </div>
-                         </div>
+                    const last = i === order.items.length - 1;
+                    return (
+                      <div key={item.id} style={{ padding: '0.625rem 0', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '0.5rem', alignItems: 'start' }}>
+                          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                              {item.name || 'Item'}
+                            </span>
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
+                              Unit price: {formatPrice(unitPrice, order?.currency)} each
+                            </span>
+                            {cancelled && <span className="d3-chip d3-btn-danger" style={{ width: 'fit-content', marginTop: 2 }}>Cancelled</span>}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                            <span className="d3-price" style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 600, fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                              {formatPrice(lineTotal, order?.currency)}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                              {canEditQty ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateItemQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
+                                    disabled={itemQtyUpdating === item.id}
+                                    className="d3-btn-subtle"
+                                    style={{ width: 32, height: 32, padding: 0, borderRadius: 'var(--d3-input-radius)' }}
+                                  >
+                                    −
+                                  </button>
+                                  <span style={{ fontSize: '0.8125rem', minWidth: 18, textAlign: 'center', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateItemQuantity(item.id, (item.quantity || 1) + 1)}
+                                    disabled={itemQtyUpdating === item.id}
+                                    className="d3-btn-subtle"
+                                    style={{ width: 32, height: 32, padding: 0, borderRadius: 'var(--d3-input-radius)' }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              ) : null}
+                              {canCancel && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowItemCancelDialog(item.id)}
+                                  disabled={itemCancelling === item.id}
+                                  className="d3-btn-inline d3-btn-danger"
+                                  style={{ minHeight: 32 }}
+                                >
+                                  {itemCancelling === item.id ? '…' : 'Cancel Item'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                         {showItemCancelDialog === item.id && (
-                          <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)' }}>
-                            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-warm)', borderRadius: 16, padding: '1.5rem', maxWidth: 320, width: '90%' }}>
+                          <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', padding: '1rem' }}>
+                            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-warm)', borderRadius: 'var(--d3-modal-radius)', padding: '1.25rem', maxWidth: 320, width: '100%', boxShadow: 'var(--d3-shadow-elevated)' }}>
                               <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>Cancel this dish?</p>
                               <div style={{ display: 'flex', gap: 8 }}>
-                                <button onClick={() => setShowItemCancelDialog(null)} style={{ flex: 1, padding: '0.5rem', borderRadius: 8, border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)', color: 'var(--text-primary)', cursor: 'pointer' }}>No</button>
-                                <button onClick={() => handleCancelItem(item.id)} style={{ flex: 1, padding: '0.5rem', borderRadius: 8, border: 'none', background: '#C46658', color: '#fff', cursor: 'pointer' }}>Yes, cancel</button>
+                                <button onClick={() => setShowItemCancelDialog(null)} className="d3-btn-subtle" style={{ flex: 1 }}>No</button>
+                                <button onClick={() => handleCancelItem(item.id)} className="d3-btn-primary d3-btn-danger" style={{ flex: 1 }}>Yes, cancel</button>
                               </div>
                             </div>
                           </div>
@@ -785,138 +797,69 @@ const last = i === order.items.length - 1;
               </div>
             </div>
 
-            {/* ── SECTION 4 — ORDER SUMMARY ── */}
-            <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 10, background: 'var(--bg-surface)', marginBottom: '1rem', overflow: 'hidden' }}>
-              <div style={{ padding: '0.875rem 0.875rem 0.5rem', display: 'flex', alignItems: 'baseline', gap: 8, justifyContent: 'space-between' }}>
-                <p style={{ margin: 0, fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold)' }}>Order Summary</p>
+            <div style={PANEL}>
+              <div style={{ padding: '0.875rem 0.875rem 0.5rem' }}>
+                <p style={SECTION_TITLE}>Order Summary</p>
               </div>
-<div style={{ padding: '0 0.875rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-                   <span style={{ fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Order Total</span>
-                   <span style={{ fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 600 }}>
-                     {formatPrice(activeTotal, order?.currency)}
-                   </span>
-                 </div>
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                   {order.payment_method && order.payment_method !== 'pay_at_table' && (
-                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
-                       <span style={{ color: 'var(--text-dimmed)' }}>Payment</span>
-                       <span style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{order.payment_method}</span>
-                     </div>
-                   )}
-                   {order.payment_status === 'paid' && (
-                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
-                       <span style={{ color: 'var(--text-dimmed)' }}>Payment Status</span>
-                       <span style={{ color: 'var(--gold)' }}>Paid</span>
-                     </div>
-                   )}
-                   {order.table_number && (
-                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
-                       <span style={{ color: 'var(--text-dimmed)' }}>Table</span>
-                       <span style={{ color: 'var(--text-secondary)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>{order.table_number}</span>
-                     </div>
-                   )}
-                   {order.customer_name && (
-                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
-                       <span style={{ color: 'var(--text-dimmed)' }}>Customer</span>
-                       <span style={{ color: 'var(--text-secondary)' }}>{order.customer_name}</span>
-                     </div>
-                   )}
-                   {order.notes && (
-                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: 2 }}>
-                       <span style={{ color: 'var(--text-dimmed)' }}>Note: </span>{order.notes}
-                     </div>
-                   )}
-                 </div>
-               </div>
+              <div style={{ padding: '0 0.875rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                  <span style={{ fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Order Total</span>
+                  <span className="d3-price" style={{ fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 600 }}>
+                    {formatPrice(activeTotal, order?.currency)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                  {order.payment_method && order.payment_method !== 'pay_at_table' && (
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
+                      <span style={{ color: 'var(--text-dimmed)' }}>Payment</span>
+                      <span style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{order.payment_method}</span>
+                    </div>
+                  )}
+                  {order.payment_status === 'paid' && (
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
+                      <span style={{ color: 'var(--text-dimmed)' }}>Payment Status</span>
+                      <span style={{ color: 'var(--gold)' }}>Paid</span>
+                    </div>
+                  )}
+                  {order.table_number && (
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
+                      <span style={{ color: 'var(--text-dimmed)' }}>Table</span>
+                      <span style={{ color: 'var(--text-secondary)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>{order.table_number}</span>
+                    </div>
+                  )}
+                  {order.customer_name && (
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
+                      <span style={{ color: 'var(--text-dimmed)' }}>Customer</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{order.customer_name}</span>
+                    </div>
+                  )}
+                  {order.notes && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: 2 }}>
+                      <span style={{ color: 'var(--text-dimmed)' }}>Note: </span>{order.notes}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {itemQtyError && (
-              <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(196,102,88,0.06)', border: '1px solid rgba(196,102,88,0.25)', borderRadius: 8, color: '#C46658', fontSize: '0.75rem' }}>
-                {itemQtyError}
-              </div>
-            )}
+            {itemQtyError && <div className="d3-note d3-note-danger" style={{ marginBottom: '1rem' }}>{itemQtyError}</div>}
+            {paymentReviewMessage && <div className="d3-note d3-note-accent" style={{ marginBottom: '1rem' }}>{paymentReviewMessage}</div>}
+            {cancelError && <div className="d3-note d3-note-danger" style={{ marginBottom: '1rem' }}>{cancelError}</div>}
+            {cancelSuccess && <div className="d3-note d3-note-accent" style={{ marginBottom: '1rem' }}>{cancelSuccess}</div>}
 
-            {/* Payment review message */}
-            {paymentReviewMessage && (
-              <div style={{ padding: '0.875rem 1.25rem', marginBottom: '1.5rem', background: 'rgba(184,164,122,0.08)', border: '1px solid rgba(184,164,122,0.22)', borderRadius: 10, color: 'var(--text-primary)', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ width: 14, height: 14, flexShrink: 0 }}>
-                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="1 6 4 9 9 2" />
-                  </svg>
-                </span>
-                <span>{paymentReviewMessage}</span>
-              </div>
-            )}
-
-            {/* Cancellation notifications and dialog */}
-            {cancelError && (
-              <div
-                style={{
-                  padding: '0.875rem 1.25rem',
-                  marginBottom: '1.5rem',
-                  background: 'rgba(196,102,88,0.06)',
-                  border: '1px solid rgba(196,102,88,0.25)',
-                  borderRadius: 10,
-                  color: '#C46658',
-                  fontSize: '0.8125rem',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}
-              >
-                <span style={{ width: 14, height: 14, flexShrink: 0 }}>
-                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="7" cy="7" r="5.5" />
-                    <line x1="7" y1="3" x2="7" y2="7" />
-                  </svg>
-                </span>
-                <span>{cancelError}</span>
-                <button
-                  type="button"
-                  onClick={() => setCancelError(null)}
-                  style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            {/* Cancellation success notification */}
-            {cancelSuccess && (
-              <div
-                style={{
-                  padding: '0.875rem 1.25rem',
-                  marginBottom: '1.5rem',
-                  background: 'rgba(16,185,129,0.08)',
-                  border: '1px solid rgba(16,185,129,0.25)',
-                  borderRadius: 10,
-                  color: '#10b981',
-                  fontSize: '0.8125rem',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}
-              >
-                <span style={{ width: 14, height: 14, flexShrink: 0 }}>
-                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="1 6 4 9 9 2" />
-                  </svg>
-                </span>
-                <span>{cancelSuccess}</span>
-                <button
-                  type="button"
-                  onClick={() => setCancelSuccess(null)}
-                  style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '0.8125rem', padding: 0 }}
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            {/* Cancellation confirmation dialog */}
             {showCancelDialog && (
               <div
                 style={{
-                  position: 'fixed', inset: 0, zIndex: 50,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 50,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   background: 'rgba(0,0,0,0.55)',
                   overflowX: 'hidden',
                   overflowY: 'auto',
+                  padding: '1rem',
                 }}
               >
                 <div
@@ -924,23 +867,24 @@ const last = i === order.items.length - 1;
                     boxSizing: 'border-box',
                     background: 'var(--bg-surface)',
                     border: '1px solid var(--border-warm)',
-                    borderRadius: 16,
-                    padding: '1.5rem',
-                    maxWidth: '340px',
-                    width: 'min(92vw, 340px)',
+                    borderRadius: 'var(--d3-modal-radius)',
+                    padding: '1.25rem',
+                    maxWidth: 340,
+                    width: '100%',
                     color: 'var(--text-primary)',
                     maxHeight: 'min(90vh, 520px)',
                     overflowY: 'auto',
                     overflowX: 'hidden',
+                    boxShadow: 'var(--d3-shadow-elevated)',
                   }}
                 >
-                  <h3 style={{ margin: '0 0 1rem', fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    Why do you want to cancel this order?
+                  <h3 style={{ margin: '0 0 0.5rem', fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                    Why cancel this order?
                   </h3>
-                  <p style={{ margin: '0 0 1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  <p style={{ margin: '0 0 1rem', fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                     Select one reason. Your choice helps the restaurant improve.
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {CANCELLATION_REASONS.map((reason) => (
                       <button
                         key={reason}
@@ -953,54 +897,38 @@ const last = i === order.items.length - 1;
                         style={{
                           boxSizing: 'border-box',
                           width: '100%',
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '0.75rem 1rem', borderRadius: 10, fontSize: '0.875rem',
-                          border: `1px solid ${cancellationReason === reason ? 'var(--gold)' : 'var(--border-warm)'}`,
-                          background: cancellationReason === reason ? 'rgba(184,164,122,0.10)' : 'var(--bg-surface-2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem 1rem',
+                          borderRadius: 'var(--d3-input-radius)',
+                          fontSize: '0.875rem',
+                          border: `1px solid ${cancellationReason === reason ? 'var(--border-medium)' : 'var(--border-warm)'}`,
+                          background: cancellationReason === reason ? 'var(--bg-surface-2)' : 'var(--bg-surface)',
                           color: 'var(--text-primary)',
                           cursor: cancelling ? 'not-allowed' : 'pointer',
                         }}
                       >
                         <span>{reason}</span>
-                        {cancellationReason === reason && (
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="8" cy="8" r="3" fill="currentColor" />
-                          </svg>
-                        )}
+                        {cancellationReason === reason && <span style={{ color: 'var(--gold)' }}>●</span>}
                       </button>
                     ))}
                     {cancellationReason === 'Other' && (
-                      <div style={{ marginTop: 0.5 }}>
-                        <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-dimmed)', marginBottom: 0.5 }}>
-                          Please tell us more
-                        </label>
+                      <div style={{ marginTop: '0.25rem' }}>
+                        <label className="d3-label">Please tell us more</label>
                         <textarea
                           value={otherReason}
                           onChange={(e) => setOtherReason(e.target.value)}
                           placeholder="e.g. I found a better option nearby"
                           rows={3}
-                          style={{
-                            boxSizing: 'border-box',
-                            width: '100%', padding: '0.625rem 0.875rem', borderRadius: 8,
-                            border: '1px solid var(--border-warm)', background: 'var(--bg-surface-2)',
-                            color: 'var(--text-primary)', fontSize: '0.875rem',
-                            resize: 'vertical',
-                          }}
+                          className="d3-input"
+                          style={{ resize: 'vertical' }}
                         />
                       </div>
                     )}
                   </div>
-                  <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                    <button
-                      type="button"
-                      onClick={() => setShowCancelDialog(false)}
-                      className="d3-btn-quiet"
-                      style={{
-                        boxSizing: 'border-box',
-                        width: '100%',
-                        padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 600,
-                      }}
-                    >
+                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button type="button" onClick={() => setShowCancelDialog(false)} className="d3-btn-subtle" style={{ width: '100%' }}>
                       Keep Order
                     </button>
                     <button
@@ -1015,12 +943,7 @@ const last = i === order.items.length - 1;
                       }}
                       disabled={cancelling || !cancellationReason}
                       className="d3-btn-primary d3-btn-danger"
-                      style={{
-                        boxSizing: 'border-box',
-                        width: '100%',
-                        padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 600,
-                        opacity: (!cancellationReason || cancelling) ? 0.6 : 1,
-                      }}
+                      style={{ width: '100%', opacity: !cancellationReason || cancelling ? 0.6 : 1 }}
                     >
                       {cancelling ? 'Cancelling…' : 'Confirm Cancellation'}
                     </button>
@@ -1028,21 +951,19 @@ const last = i === order.items.length - 1;
                 </div>
               </div>
             )}
-            </>
-          ) : null}
-      </div>
 
-      {/* ── SECTION 5 — NAVIGATION ── */}
-      <div className="pb-8 pt-4 text-center">
-        <Link href={backHref} className="d3-btn-text" style={{ fontSize: '0.8125rem', fontWeight: 500 }}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginRight: 4 }}>
-            <path d="M10 2L2 6L10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Back to Menu
-        </Link>
-      </div>
+            <div style={{ padding: '0.25rem 0 0.5rem', textAlign: 'center' }}>
+              <Link href={backHref} className="d3-btn-text" style={{ fontSize: '0.8125rem', fontWeight: 500 }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginRight: 4 }}>
+                  <path d="M10 2L2 6L10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Back to Menu
+              </Link>
+            </div>
+          </>
+        ) : null}
+      </main>
 
-      {/* Inline keyframes for the live-indicator pulse */}
       <style>{`
         @keyframes ot-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
       `}</style>
