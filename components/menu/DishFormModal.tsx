@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import type { Category, MenuItem } from '@/lib/useHotel';
 import { CubeIcon } from './DishCard';
@@ -390,8 +389,8 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-warm)',
           borderRadius: 10,
-          overflow: 'hidden',
-          margin: 'auto',
+           overflow: 'visible',
+           margin: 'auto',
         }}
       >
         {/* Header */}
@@ -534,15 +533,15 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
                         <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
-                    {categoryOpen && typeof document !== 'undefined' && createPortal(
+                    {categoryOpen && (
                       <ul
                         ref={categoryPortalRef}
                         style={{
-                          position: 'fixed',
-                          top: (categoryRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
-                          left: categoryRef.current?.getBoundingClientRect().left ?? 0,
-                          width: categoryRef.current?.getBoundingClientRect().width ?? 0,
-                          zIndex: 9999,
+                          position: 'absolute',
+                          top: 'calc(100% + 4px)',
+                          left: 0,
+                          right: 0,
+                          zIndex: 60,
                           margin: 0,
                           padding: '0.375rem',
                           listStyle: 'none',
@@ -623,8 +622,7 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
                             + Add New Category
                           </button>
                         </li>
-                      </ul>,
-                      document.body
+                      </ul>
                     )}
                   </div>
                 </div>
@@ -752,7 +750,7 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
                             height: 4,
                             background: 'var(--bg-surface-2)',
                             borderRadius: 2,
-                            overflow: 'hidden',
+overflow: 'visible',
                           }}
                         >
                           <div
