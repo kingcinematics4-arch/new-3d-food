@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import Dine3DLogo from '@/components/Dine3DLogo';
 import { menuThemeClass } from '@/lib/menuThemes';
 import { formatPrice } from '@/lib/menu';
 import { supabaseClient, isSupabaseConfigured } from '@/lib/supabaseBrowser';
@@ -155,7 +156,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   ];
 
   const PANEL: React.CSSProperties = {
-    border: '1px solid var(--border-subtle)',
+    border: '1px solid var(--border-light)',
     borderRadius: 'var(--d3-card-radius)',
     background: 'var(--bg-surface)',
     boxShadow: 'var(--d3-shadow-card)',
@@ -453,7 +454,29 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
         .filter((i) => (i.status || 'active').toLowerCase() !== 'cancelled')
         .reduce((s, i) => s + Number(i.price_at_time) * i.quantity, 0)
     : 0;
-  const statusColor = status === 'cancelled' ? 'var(--text-muted)' : 'var(--gold)';
+
+  function statusBadgeKey(status: string): string {
+    switch ((status || '').trim().toLowerCase()) {
+      case 'pending':
+      case 'placed':
+        return 'placed';
+      case 'accepted':
+        return 'accepted';
+      case 'preparing':
+        return 'preparing';
+      case 'ready':
+        return 'ready';
+      case 'completed':
+      case 'delivered':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return 'placed';
+    }
+  }
+
+  const statusBadge = statusBadgeKey(status);
 
   // Monospace numeric stack reused from the hotel dashboard so figures line up.
   const NUMBER_FONT = 'ui-monospace, SFMono-Regular, Menlo, monospace';
@@ -468,8 +491,13 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
     >
       <header
-        className="sticky top-0 z-30 d3-header"
-        style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
+        className="sticky top-0 z-30"
+        style={{
+          background: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-subtle)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+        }}
       >
         <div
           className="mx-auto px-4 flex items-center justify-between gap-3"
@@ -498,6 +526,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 </svg>
               </Link>
             ) : null}
+            <Dine3DLogo size="xs" href="/" priority />
             <div className="min-w-0">
               <h1
                 style={{
@@ -577,8 +606,8 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <span
-                    className="d3-chip"
-                    style={{ color: statusColor, borderColor: 'var(--border-light)', background: 'var(--bg-surface-2)' }}
+                    className={`d3-chip d3-status-${statusBadge}`}
+                    style={{ borderColor: 'var(--border-light)' }}
                   >
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                   </span>
@@ -738,7 +767,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                             {cancelled && <span className="d3-chip d3-btn-danger" style={{ width: 'fit-content', marginTop: 2 }}>Cancelled</span>}
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                            <span className="d3-price" style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 600, fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                            <span className="d3-price" style={{ fontSize: '0.875rem', color: 'var(--gold)', fontWeight: 600, fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textAlign: 'right' }}>
                               {formatPrice(lineTotal, order?.currency)}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
