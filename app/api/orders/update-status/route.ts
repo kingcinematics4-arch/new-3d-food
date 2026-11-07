@@ -62,13 +62,45 @@ export async function POST(request: Request) {
       });
     }
 
-    // Validate status transition
-    const currentStatus = currentOrder.status;
+    // Validate status transition (case-normalized). Same-status requests are
+    // treated as an idempotent no-op to prevent duplicate/realtime/retry
+    // clicks from failing with "Invalid status transition" and to avoid
+    // unnecessary DB writes/history churn. Does NOT bypass validation for
+    // real transitions.
+    const currentStatus = String(currentOrder.status || '').trim().toLowerCase();
+    const requestedStatus = String(validated.status || '').trim().toLowerCase();
+
+    if (currentStatus === requestedStatus) {
+      // No DB write, no history record, no error. Server-side guard so
+      // duplicate clicks, retries, stale UI, or any client path is safe.
+      console.log('[orders/update-status][noop]', JSON.stringify({
+        orderId: currentOrder.id, hotelId: currentOrder.hotel_id, status: currentStatus,
+      }));
+      const { data: existingOrder } = await supabaseAdmin
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('id', validated.order_id)
+        .maybeSingle();
+      return new NextResponse(JSON.stringify({
+        success: true,
+        noop: true,
+        order: existingOrder || currentOrder,
+      }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+    }
+
     const allowedTransitions = VALID_TRANSITIONS[currentStatus] || [];
-    if (!allowedTransitions.includes(validated.status)) {
+    if (!allowedTransitions.includes(requestedStatus)) {
       return new NextResponse(JSON.stringify({
         success: false,
-        error: `Invalid status transition: ${currentStatus} → ${validated.status}. Allowed: ${allowedTransitions.join(', ') || 'none'}`,
+        error: `Invalid status transition: ${currentStatus} → ${requestedStatus}. Allowed: ${allowedTransitions.join(', ') || 'none'}`,
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -76,10 +108,10 @@ export async function POST(request: Request) {
     }
 
     // 1. Update order status (updated_at will be set by trigger)
-    const updatePayload: Record<string, any> = { status: validated.status };
+    const updatePayload: Record<string, any> = { status: requestedStatus };
 
     // If cancelling, record who initiated the cancellation (hotel/restaurant)
-    if (validated.status === 'cancelled') {
+    if (requestedStatus === 'cancelled') {
       const cancellationSourceExists = await columnExists('orders', 'cancellation_source');
       const cancelledByExists = await columnExists('orders', 'cancelled_by');
       const cancelledAtExists = await columnExists('orders', 'cancelled_at');
@@ -116,8 +148,8 @@ export async function POST(request: Request) {
     // 2. Add history record
     await supabaseAdmin.from('order_status_history').insert({
       order_id: validated.order_id,
-      status: validated.status,
-      note: validated.note || `Status changed to ${validated.status}`,
+      status: requestedStatus,
+      note: validated.note || `Status changed to ${requestedStatus}`,
     });
 
     return new NextResponse(JSON.stringify({ success: true, order: updatedOrder }), {

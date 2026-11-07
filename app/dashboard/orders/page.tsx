@@ -172,8 +172,11 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
   }, []);
 
   const handleAction = async (newStatus: string) => {
+    const current = String(order.status || '').trim().toLowerCase();
+    const next = String(newStatus || '').trim().toLowerCase();
+    if (updatingOrderIds.has(order.id) || (current && current === next)) return; // in-flight or no-op
     try {
-      await onStatusUpdate(order.id, newStatus);
+      await onStatusUpdate(order.id, next);
       onClose();
     } catch (err: any) {
       onError(err.message || 'Failed to update order status');
@@ -435,13 +438,25 @@ export default function LiveOrdersPage() {
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
+  const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showSuccess = useCallback((msg: string) => {
+    if (successTimer.current) clearTimeout(successTimer.current);
+    setUpdateSuccess(msg);
+    successTimer.current = setTimeout(() => setUpdateSuccess(null), 3000);
+  }, []);
 
   const handleUpdateStatus = useCallback(
     async (id: string, status: string, cancellationReason?: string) => {
+      if (updatingOrderIds.has(id)) return;
+      const current = orders.find((o) => o.id === id)?.status;
+      const next = (status || '').trim().toLowerCase();
+      if (!cancellationReason && current && normalise(current) === next) return; // no-op, no error/DB call
       setUpdateError(null);
       try {
-        if (status === 'cancelled' && cancellationReason) {
+        if (next === 'cancelled' && cancellationReason) {
           const resp = await fetch('/api/orders/update-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -450,14 +465,15 @@ export default function LiveOrdersPage() {
           const json = await resp.json();
           if (!json.success) throw new Error(json.error || 'Failed to cancel order');
         } else {
-          await updateOrderStatus(id, status);
+          await updateOrderStatus(id, next);
         }
+        showSuccess('Order status updated.');
       } catch (err: any) {
         setUpdateError(err.message || 'Failed to update order status');
         throw err;
       }
     },
-    [updateOrderStatus]
+    [updateOrderStatus, updatingOrderIds, orders]
   );
 
   const handleUpdatePaymentStatus = useCallback(
@@ -576,6 +592,12 @@ export default function LiveOrdersPage() {
           <div style={{ padding: '0.875rem 1.25rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, color: '#10b981', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span>{paymentSuccess}</span>
             <button type="button" onClick={() => setPaymentSuccess(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: 0 }}>&#x2715;</button>
+          </div>
+        )}
+        {updateSuccess && (
+          <div style={{ padding: '0.875rem 1.25rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, color: '#10b981', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>{updateSuccess}</span>
+            <button type="button" onClick={() => setUpdateSuccess(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: 0 }}>&#x2715;</button>
           </div>
         )}
 
@@ -775,34 +797,37 @@ export default function LiveOrdersPage() {
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
                       {normalise(order.status) !== 'cancelled' && (
                         <>
-                          {(() => {
-                            const s = normalise(order.status);
-                            let nextStatus = '';
-                            let label = '';
-                            if (s === 'pending' || s === 'placed') { nextStatus = 'accepted'; label = 'ACCEPT ORDER'; }
-                            else if (s === 'accepted') { nextStatus = 'preparing'; label = 'START PREPARING'; }
-                            else if (s === 'preparing') { nextStatus = 'ready'; label = 'MARK AS READY'; }
-                            else if (s === 'ready') { nextStatus = 'completed'; label = 'COMPLETE ORDER'; }
-                            else { return null; }
-                            return (
-                              <button
-                                type="button"
-                                disabled={updatingOrderIds.has(order.id)}
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    await updateOrderStatus(order.id, nextStatus);
-                                  } catch (err: any) {
-                                    setUpdateError(err?.message || 'Failed to update order');
-                                  }
-                                }}
-                                className="d3-btn-primary"
-                                style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                              >
-                                {updatingOrderIds.has(order.id) ? 'Updating...' : 'QUICK PROCESS'}
-                              </button>
-                            );
-                          })()}
+                           {(() => {
+                             const s = normalise(order.status);
+                             let nextStatus = '';
+                             let label = '';
+                             if (s === 'pending' || s === 'placed') { nextStatus = 'accepted'; label = 'ACCEPT ORDER'; }
+                             else if (s === 'accepted') { nextStatus = 'preparing'; label = 'START PREPARING'; }
+                             else if (s === 'preparing') { nextStatus = 'ready'; label = 'MARK AS READY'; }
+                             else if (s === 'ready') { nextStatus = 'completed'; label = 'COMPLETE ORDER'; }
+                             else { return null; }
+                             const isUpdating = updatingOrderIds.has(order.id);
+                             return (
+                               <button
+                                 type="button"
+                                 disabled={isUpdating}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (isUpdating || normalise(order.status) === nextStatus) return;
+                                    try {
+                                      await updateOrderStatus(order.id, nextStatus);
+                                      showSuccess('Order status updated.');
+                                    } catch (err: any) {
+                                      setUpdateError(err?.message || 'Failed to update order');
+                                    }
+                                  }}
+                                 className="d3-btn-primary"
+                                 style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: isUpdating ? 0.6 : 1 }}
+                               >
+                                 {isUpdating ? 'Updating...' : 'QUICK PROCESS'}
+                               </button>
+                             );
+                           })()}
                           <button
                             type="button"
                             disabled={updatingOrderIds.has(order.id)}

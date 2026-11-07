@@ -332,28 +332,38 @@ export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'al
 
   const handleUpdateStatus = useCallback(
     async (id: string, status: string) => {
+      // Guard against duplicate in-flight requests (ref-based, so stale
+      // closures/rerenders can't bypass it) and same-status no-op calls.
       if (updatingOrderIds.current.has(id)) return;
+      const current = (queryClient.getQueryData<Order[]>(queryKeys.orders(hotelId)) || [])
+        .find((o) => o.id === id)?.status;
+      const next = (status || '').trim().toLowerCase();
+      if (current && String(current).trim().toLowerCase() === next) return;
       updatingOrderIds.current.add(id);
       try {
-        await updateOrderStatusMutation.mutateAsync({ orderId: id, status });
+        await updateOrderStatusMutation.mutateAsync({ orderId: id, status: next });
       } finally {
         updatingOrderIds.current.delete(id);
       }
     },
-    [updateOrderStatusMutation]
+    [updateOrderStatusMutation, queryClient, hotelId]
   );
 
   const handleUpdatePaymentStatus = useCallback(
     async (id: string, paymentStatus: 'paid' | 'unpaid') => {
       if (updatingOrderIds.current.has(id)) return;
+      const current = (queryClient.getQueryData<Order[]>(queryKeys.orders(hotelId)) || [])
+        .find((o) => o.id === id)?.payment_status;
+      const next = (paymentStatus || '').trim().toLowerCase();
+      if (current && String(current).trim().toLowerCase() === next) return;
       updatingOrderIds.current.add(id);
       try {
-        await updatePaymentStatusMutation.mutateAsync({ orderId: id, paymentStatus });
+        await updatePaymentStatusMutation.mutateAsync({ orderId: id, paymentStatus: next as 'paid' | 'unpaid' });
       } finally {
         updatingOrderIds.current.delete(id);
       }
     },
-    [updatePaymentStatusMutation]
+    [updatePaymentStatusMutation, queryClient, hotelId]
   );
 
   return {
@@ -363,6 +373,8 @@ export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'al
     refetch,
     updateOrderStatus: handleUpdateStatus,
     updatePaymentStatus: handleUpdatePaymentStatus,
+    // Ref-backed guard (mutated in place) so consumers always see current
+    // in-flight state and rapid clicks/re-renders can't bypass it.
     updatingOrderIds: updatingOrderIds.current,
   };
 }
