@@ -59,11 +59,14 @@ export interface HotelSchema {
  * long-running dev servers.
  */
 export async function getHotelSchema(): Promise<HotelSchema> {
-  return {
-    menuTheme: await columnExists('hotels', 'menu_theme'),
-    customThemeConfig: await columnExists('hotels', 'custom_theme_config'),
-    currency: await columnExists('hotels', 'currency'),
-    hotelPublicId: await columnExists('hotels', 'hotel_public_id'),
-    googleReviewUrl: await columnExists('hotels', 'google_review_url'),
-  };
+  // Probe in parallel to avoid cumulative latency on hot public paths.
+  const [menuTheme, customThemeConfig, currency, hotelPublicId, googleReviewUrl] =
+    await Promise.all([
+      columnExists('hotels', 'menu_theme'),
+      columnExists('hotels', 'custom_theme_config'),
+      columnExists('hotels', 'currency'),
+      columnExists('hotels', 'hotel_public_id'),
+      columnExists('hotels', 'google_review_url'),
+    ]);
+  return { menuTheme, customThemeConfig, currency, hotelPublicId, googleReviewUrl };
 }

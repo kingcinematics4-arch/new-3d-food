@@ -7,12 +7,26 @@ import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const { data: hotel, error } = await supabaseAdmin.from('hotels').select('id, name, slug, logo_url, currency, welcome_text, primary_color, secondary_color, menu_style, card_style, dark_mode, typography, tax_rate, service_charge, city, menu_theme, custom_theme_config, is_active').eq('id', id).maybeSingle();
+    // Use select('*') (server/service-role context) so this remains
+    // schema-tolerant when optional columns are added/missing across
+    // deployments. Public responses still omit sensitive/internal fields.
+    const { data: hotel, error } = await supabaseAdmin
+      .from('hotels')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
     if (error) throw error;
     if (!hotel) return NextResponse.json({ success: false, error: 'Hotel not found' }, { status: 404 });
     const storedTheme = await getStoredMenuTheme(id);
     const storedCustomConfig = await getStoredCustomTheme(id);
-    return NextResponse.json({ success: true, hotel: { ...hotel, menu_theme: (hotel as any)?.menu_theme || storedTheme || DEFAULT_MENU_THEME, custom_theme_config: (hotel as any)?.custom_theme_config || storedCustomConfig || null } });
+    const out: any = {
+      ...hotel,
+      menu_theme: (hotel as any)?.menu_theme || storedTheme || DEFAULT_MENU_THEME,
+      custom_theme_config: (hotel as any)?.custom_theme_config || storedCustomConfig || null,
+    };
+    delete out.user_id;
+    delete out.hotel_public_id;
+    return NextResponse.json({ success: true, hotel: out });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message || 'Failed to fetch hotel' }, { status: 500 });
   }

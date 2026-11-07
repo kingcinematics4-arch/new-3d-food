@@ -73,6 +73,7 @@ export async function GET(
 
     const orderSelectColumns = [
       'id',
+      'hotel_id',
       'status',
       'payment_status',
       'payment_method',
@@ -143,6 +144,39 @@ export async function GET(
     // is identical on every refresh.
     const reference = orderReference(order as { id: string; order_number?: string | null });
 
+    // ------------------------------------------------------------------
+    // Resolve the hotel's Google Review URL explicitly from the order's
+    // own `hotel_id` relationship, rather than trusting the PostgREST
+    // `hotels (...)` join. The join depends on a schema probe and on
+    // PostgREST detecting the FK; an explicit fetch by the order's own
+    // hotel_id is deterministic and always uses the exact hotel the
+    // order was placed with. The service-role client bypasses RLS, so
+    // the public guest page never needs the anon key to read it.
+    // ------------------------------------------------------------------
+    let googleReviewUrl: string | null = (order as any).hotels?.google_review_url || null;
+    const orderHotelId = (order as any).hotel_id || (order as any).hotels?.id || null;
+    if (orderHotelId) {
+      try {
+        const { data: hotelRow, error: hotelErr } = await supabaseAdmin
+          .from('hotels')
+          .select('google_review_url')
+          .eq('id', orderHotelId)
+          .maybeSingle();
+        if (hotelErr) {
+          // Missing column on older deployments: keep join/fallback value.
+          if (!['42703', 'PGRST204', 'PGRST205'].includes(hotelErr.code || '')) {
+            console.error('[public/orders/[id]] hotel review URL lookup failed:', hotelErr.message);
+          }
+        } else if (hotelRow) {
+          const direct = (hotelRow as any).google_review_url;
+          if (typeof direct === 'string' && direct.trim()) googleReviewUrl = direct;
+          else if (direct === null) googleReviewUrl = null;
+        }
+      } catch {
+        // Fall back to the join value if the explicit probe fails.
+      }
+    }
+
     return new NextResponse(JSON.stringify({
       success: true,
       order: {
@@ -161,7 +195,7 @@ export async function GET(
         items,
         hotel_theme: (order as any).hotels?.menu_theme || await getStoredMenuTheme((order as any).hotels?.id) || DEFAULT_MENU_THEME,
         hotel_slug: (order as any).hotels?.slug || null,
-        google_review_url: (order as any).hotels?.google_review_url || null,
+        google_review_url: googleReviewUrl,
         // Normalise the stored currency to INR for display. This is a
         // DISPLAY-ONLY mapping: numeric prices, tax, service charge,
         // payment amounts and historical order rows are never altered.

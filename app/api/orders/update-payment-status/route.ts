@@ -22,22 +22,28 @@ const updatePaymentStatusSchema = z.object({
   payment_status: z.enum(['paid', 'unpaid']),
 });
 
-/** Probe whether a column exists on a table. Returns false gracefully for
- * missing-column PostgREST codes (42703, PGRST204, PGRST205) instead of
- * throwing. */
-async function columnExists(table: string, column: string): Promise<boolean> {
+/** Resolve the Google Review URL for the exact hotel that owns this order.
+ *  Uses the service-role client (server-side only) so public/guest flows
+ *  are not blocked by RLS; never uses the admin's session hotel context. */
+async function getHotelReviewUrl(hotelId: string | null | undefined): Promise<string | null> {
+  if (!hotelId) return null;
   try {
-    const { error } = await supabaseAdmin
-      .from(table)
-      .select(column)
-      .limit(1);
-    if (!error) return true;
-    if (error.code && ['42703', 'PGRST204', 'PGRST205'].includes(error.code)) return false;
-    console.error(`[update-payment-status] column probe for ${table}.${column} failed:`, error.message);
-    return false;
+    const { data, error } = await supabaseAdmin
+      .from('hotels')
+      .select('google_review_url')
+      .eq('id', hotelId)
+      .maybeSingle();
+    if (error) {
+      // Missing column on older deployments — treat as not configured.
+      if (error.code && ['42703', 'PGRST204', 'PGRST205'].includes(error.code)) return null;
+      console.error('[update-payment-status] hotel review URL lookup failed:', error.message);
+      return null;
+    }
+    const url = (data as any)?.google_review_url;
+    return typeof url === 'string' && url.trim() ? url : null;
   } catch (err: any) {
-    console.error(`[update-payment-status] column probe for ${table}.${column} threw:`, err?.message);
-    return false;
+    console.error('[update-payment-status] hotel review URL lookup threw:', err?.message);
+    return null;
   }
 }
 
@@ -96,9 +102,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Duplicate/no-op writes return success without touching the DB
+    // Duplicate/no-op writes return success without touching the DB.
+    // Still attach the hotel's google_review_url (resolved from the
+    // order's own hotel_id) so the guest tracking page can redirect
+    // even when the payment transition is a no-op.
     if (currentOrder.payment_status === validated.payment_status) {
-      return new NextResponse(JSON.stringify({ success: true, order: currentOrder }), {
+      const reviewUrl = await getHotelReviewUrl(currentOrder.hotel_id);
+      return new NextResponse(JSON.stringify({ success: true, order: { ...currentOrder, google_review_url: reviewUrl } }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });
@@ -126,20 +136,11 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    // Attach the hotel's google_review_url (when the column exists on this
-    // deployment) so the guest tracking page can redirect after payment.
-    const googleReviewUrl = await columnExists('hotels', 'google_review_url');
-    let reviewUrl: string | null = null;
-    if (googleReviewUrl) {
-      const { data: hotelRow } = await supabaseAdmin
-        .from('hotels')
-        .select('google_review_url')
-        .eq('id', currentOrder.hotel_id)
-        .maybeSingle();
-      reviewUrl = (hotelRow as any)?.google_review_url || null;
-    }
-
-    return new NextResponse(JSON.stringify({ success: true, order: { ...updatedOrder, google_review_url: reviewUrl } }), {
+    // Attach the hotel's google_review_url (resolved from the order's own
+    // hotel_id) so the guest tracking page can redirect after payment.
+    const reviewUrl = await getHotelReviewUrl(currentOrder.hotel_id);
+    const responseOrder = { ...updatedOrder, google_review_url: reviewUrl };
+    return new NextResponse(JSON.stringify({ success: true, order: responseOrder }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
