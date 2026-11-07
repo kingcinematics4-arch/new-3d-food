@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import type { Category, MenuItem } from '@/lib/useHotel';
 import { CubeIcon } from './DishCard';
@@ -163,6 +164,9 @@ export default function DishFormModal({
 }: DishFormModalProps) {
   const [form, setForm] = useState<FormState>(() => initialState(item, categories));
   const [categoryBusy, setCategoryBusy] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const categoryRef = useRef<HTMLDivElement>(null);
+const categoryPortalRef = useRef<HTMLUListElement>(null);
   const { toast, prompt } = useDashboardDialogs();
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -177,6 +181,21 @@ export default function DishFormModal({
     }));
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!categoryOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (
+        (categoryRef.current && categoryRef.current.contains(e.target as Node)) ||
+        (categoryPortalRef.current && categoryPortalRef.current.contains(e.target as Node))
+      ) {
+        return;
+      }
+      setCategoryOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [categoryOpen]);
 
   const handleModelUpload = async () => {
     if (!form.modelFile || !item) return;
@@ -492,21 +511,122 @@ export default function DishFormModal({
                   <label className="d3-label" htmlFor="dish-category">
                     Category
                   </label>
-                  <select
-                    id="dish-category"
-                    value={form.category}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    disabled={categoryBusy}
-                    className="d3-input"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.name}>
-                        {c.name}
-                      </option>
-                    ))}
-                    <option value="__add_new__">+ Add New Category</option>
-                  </select>
+                  <div ref={categoryRef} style={{ position: 'relative' }}>
+                    <button
+                      id="dish-category"
+                      type="button"
+                      disabled={categoryBusy}
+                      onClick={() => setCategoryOpen((o) => !o)}
+                      className="d3-input"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        textAlign: 'left',
+                        cursor: categoryBusy ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      <span style={{ color: form.category ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        {form.category || 'Select category'}
+                      </span>
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                        <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    {categoryOpen && typeof document !== 'undefined' && createPortal(
+                      <ul
+                        ref={categoryPortalRef}
+                        style={{
+                          position: 'fixed',
+                          top: (categoryRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+                          left: categoryRef.current?.getBoundingClientRect().left ?? 0,
+                          width: categoryRef.current?.getBoundingClientRect().width ?? 0,
+                          zIndex: 9999,
+                          margin: 0,
+                          padding: '0.375rem',
+                          listStyle: 'none',
+                          background: 'var(--bg-surface)',
+                          border: '1px solid var(--border-warm)',
+                          borderRadius: 10,
+                          boxShadow: '0 12px 32px rgba(0,0,0,0.28)',
+                          maxHeight: 240,
+                          overflowY: 'auto',
+                        }}
+                      >
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              set('category', '');
+                              setCategoryOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '0.5rem 0.625rem',
+                              borderRadius: 6,
+                              border: 'none',
+                              background: form.category === '' ? 'rgba(201,169,110,0.08)' : 'transparent',
+                              color: form.category === '' ? 'var(--gold)' : 'var(--text-secondary)',
+                              fontSize: '0.8125rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Select category
+                          </button>
+                        </li>
+                        {categories.map((c) => (
+                          <li key={c.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                set('category', c.name);
+                                setCategoryOpen(false);
+                              }}
+                              style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '0.5rem 0.625rem',
+                                borderRadius: 6,
+                                border: 'none',
+                                background: form.category === c.name ? 'rgba(201,169,110,0.08)' : 'transparent',
+                                color: form.category === c.name ? 'var(--gold)' : 'var(--text-secondary)',
+                                fontSize: '0.8125rem',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {c.name}
+                            </button>
+                          </li>
+                        ))}
+                        <li style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '0.25rem', paddingTop: '0.25rem' }}>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setCategoryOpen(false);
+                              await handleCategoryChange('__add_new__');
+                            }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '0.5rem 0.625rem',
+                              borderRadius: 6,
+                              border: 'none',
+                              background: 'transparent',
+                              color: 'var(--gold)',
+                              fontSize: '0.8125rem',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            + Add New Category
+                          </button>
+                        </li>
+                      </ul>,
+                      document.body
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="d3-label" htmlFor="dish-calories">
