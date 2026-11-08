@@ -1051,6 +1051,17 @@ body {
   background: var(--gold-dim);
 }
 
+/* Hide scrollbars while preserving scroll (used for horizontal pill rails, embedded previews). */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* ============================================
    ANIMATIONS & TRANSITIONS
    ============================================ */

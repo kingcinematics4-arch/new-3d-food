@@ -619,34 +619,34 @@ function CreateThemeEditor({ hotel, themeToEdit, onDone }: CreateThemeEditorProp
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
       onClick={handleClose}
     >
       <div
-        className="w-full rounded-2xl border border-white/10 bg-[#0f1012] shadow-2xl overflow-hidden flex flex-col"
+        className="flex w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0f1012] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
-        style={{ width: 'min(1340px, calc(100vw - 2.5rem))', height: 'min(90vh, 900px)', maxHeight: 'calc(100dvh - 2.5rem)' }}
+        style={{ width: 'min(1520px, calc(100vw - 1.5rem))', height: 'min(82vh, 860px)', maxHeight: 'calc(100dvh - 1.5rem)' }}
       >
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-white tracking-tight">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5 sm:px-5">
+          <div className="min-w-0">
+            <h3 className="truncate text-[0.9375rem] font-bold tracking-tight text-white sm:text-base">
               {themeToEdit ? 'Edit Theme' : 'Create Custom Theme'}
             </h3>
-            <p className="text-xs text-neutral-400 mt-1">
+            <p className="mt-0.5 text-[11px] leading-snug text-neutral-400 sm:text-xs">
               {themeToEdit
                 ? 'Modify the saved theme and save your changes.'
                 : 'Design your theme and give it a name to save it to your library.'}
             </p>
           </div>
-          <button type="button" onClick={handleClose} className="text-neutral-400 hover:text-white">
+          <button type="button" onClick={handleClose} className="shrink-0 rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-white/5 hover:text-white" aria-label="Close">
             <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 6l6 6M12 6l-6 6" />
+              <path d="M2 2l10 10M12 2L2 12" />
             </svg>
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-hidden">
           <CustomThemeBuilder
             hotel={hotel}
             initialConfig={themeToEdit?.theme_config || undefined}
