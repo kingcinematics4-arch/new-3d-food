@@ -107,6 +107,8 @@ export interface OrderItem {
   cancelled_by?: string | null;
   /** Added by migration 027. Stored product name for items without a real menu_items row (e.g. water). */
   item_name?: string | null;
+  /** Added by migration 028. Stable product kind, e.g. 'water'. */
+  item_kind?: string | null;
   menu_item?: {
     name: string;
   };

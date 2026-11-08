@@ -66,30 +66,39 @@ export async function POST(request: Request) {
       });
       if (!rpcErr) {
         const itemSchemaHasStatus = await columnExists('order_items', 'status');
-const itemSelect = itemSchemaHasStatus
-      ? 'id, menu_item_id, quantity, price_at_time, notes, item_name, status, menu_items(name)'
-      : 'id, menu_item_id, quantity, price_at_time, notes, item_name, menu_items(name)';
+        const itemSchemaHasItemName = await columnExists('order_items', 'item_name');
+        const itemSchemaHasItemKind = await columnExists('order_items', 'item_kind');
+        const itemSelect = [
+          'id', 'menu_item_id', 'quantity', 'price_at_time', 'notes',
+          ...(itemSchemaHasItemName ? ['item_name'] : []),
+          ...(itemSchemaHasItemKind ? ['item_kind'] : []),
+          ...(itemSchemaHasStatus ? ['status'] : []),
+          'menu_items(name)',
+        ].join(', ');
         const { data: fullOrder } = await supabaseAdmin
           .from('orders')
-        .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect})`)
+          .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect})`)
           .eq('id', orderId)
           .single();
-const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
+        const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
           id: it.id,
-          name: it.item_name || it.menu_items?.name || null,
+          name: (itemSchemaHasItemName ? it.item_name : null) || it.menu_items?.name || null,
           quantity: it.quantity,
           price_at_time: it.price_at_time,
           notes: it.notes,
+          item_kind: itemSchemaHasItemKind ? (it.item_kind ?? null) : null,
           status: itemSchemaHasStatus ? (it.status ?? 'active') : 'active',
         }));
         const hotelTheme = await getHotelThemeForOrder(orderId);
-        return new NextResponse(JSON.stringify({ success: true, order: { ...(fullOrder||{}), items, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+        return new NextResponse(JSON.stringify({ success: true, order: { ...((fullOrder as any) || {}), items, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
       }
     } catch (e) {
       // continue
     }
 
     const itemSchemaHasStatus = await columnExists('order_items', 'status');
+    const itemSchemaHasItemName = await columnExists('order_items', 'item_name');
+    const itemSchemaHasItemKind = await columnExists('order_items', 'item_kind');
     const { data: item, error: itemError } = await supabaseAdmin
       .from('order_items')
       .select(itemSchemaHasStatus ? 'id, order_id, status, quantity, price_at_time' : 'id, order_id, quantity, price_at_time')
@@ -135,9 +144,13 @@ const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
       .update(updateOrdersPayload)
       .eq('id', orderId);
 
-    const itemSelect2 = itemSchemaHasStatus
-      ? 'id, menu_item_id, quantity, price_at_time, notes, item_name, status, menu_items(name)'
-      : 'id, menu_item_id, quantity, price_at_time, notes, item_name, menu_items(name)';
+    const itemSelect2 = [
+      'id', 'menu_item_id', 'quantity', 'price_at_time', 'notes',
+      ...(itemSchemaHasItemName ? ['item_name'] : []),
+      ...(itemSchemaHasItemKind ? ['item_kind'] : []),
+      ...(itemSchemaHasStatus ? ['status'] : []),
+      'menu_items(name)',
+    ].join(', ');
     const { data: fullOrder, error: fullErr } = await supabaseAdmin
       .from('orders')
       .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect2})`)
@@ -147,15 +160,16 @@ const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
 
     const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
       id: it.id,
-      name: it.item_name || it.menu_items?.name || null,
+      name: (itemSchemaHasItemName ? it.item_name : null) || it.menu_items?.name || null,
       quantity: it.quantity,
       price_at_time: it.price_at_time,
       notes: it.notes,
+      item_kind: itemSchemaHasItemKind ? (it.item_kind ?? null) : null,
       status: itemSchemaHasStatus ? (it.status ?? 'active') : 'active',
     }));
 
     const hotelTheme = await getHotelThemeForOrder(orderId);
-    return new NextResponse(JSON.stringify({ success: true, order: { ...(fullOrder||{}), items, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    return new NextResponse(JSON.stringify({ success: true, order: { ...((fullOrder as any) || {}), items, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (error: any) {
     return new NextResponse(JSON.stringify({ success: false, error: error.message || 'Failed to update quantity' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }

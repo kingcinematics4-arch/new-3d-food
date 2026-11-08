@@ -96,6 +96,29 @@ export async function POST(request: Request) {
       });
     }
 
+    // Water orders: simplified workflow — allow direct delivery from any
+    // non-terminal state (no Accept/Preparing/Ready). Identify via item_kind
+    // (stable type, migration 028), not by name text. Existing status
+    // precedence/pending workflow remains authoritative for all other orders.
+    if (requestedStatus === 'delivered' && !['ready', 'delivered'].includes(currentStatus)) {
+      try {
+        const { data: its } = await supabaseAdmin
+          .from('orders')
+          .select('order_items(item_kind, item_name, menu_item_id)')
+          .eq('id', validated.order_id)
+          .single();
+        const items = (its as any)?.order_items || [];
+        const isWaterOrder = items.length > 0 && items.every((it: any) => {
+          if (it?.item_kind === 'water') return true;
+          if (it?.item_kind) return false;
+          return !it?.menu_item_id && !!it?.item_name; // legacy structural fallback
+        });
+        if (isWaterOrder) {
+          (VALID_TRANSITIONS as any)[currentStatus] = Array.from(new Set([...(VALID_TRANSITIONS[currentStatus] || []), 'delivered']));
+        }
+      } catch { /* item_kind may not exist on older deployments; fall back to standard transitions */ }
+    }
+
     const allowedTransitions = VALID_TRANSITIONS[currentStatus] || [];
     if (!allowedTransitions.includes(requestedStatus)) {
       return new NextResponse(JSON.stringify({

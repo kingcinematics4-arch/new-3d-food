@@ -16,6 +16,7 @@ const STATUS_LABEL: Record<string, string> = {
   accepted:  'Accepted',
   preparing: 'Preparing',
   ready:     'Ready',
+  delivered: 'Delivered',
   completed: 'Completed',
   cancelled: 'Cancelled',
 };
@@ -26,6 +27,7 @@ const STATUS_CLASS: Record<string, string> = {
   accepted:  'd3-status-accepted',
   preparing: 'd3-status-preparing',
   ready:     'd3-status-ready',
+  delivered: 'd3-status-completed',
   completed: 'd3-status-completed',
   cancelled: 'd3-status-cancelled',
 };
@@ -101,6 +103,44 @@ interface NormalisedItem {
   price: number;
   notes?: string | null;
   status?: string | null;
+  item_kind?: string | null;
+}
+
+function WaterDropletIcon({ size = 14 }: { size?: number }) {
+  // Lucide `droplet` path, small/cyan, for water products only.
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#67D4F0"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: 5, opacity: 0.9 }}
+    >
+      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+    </svg>
+  );
+}
+
+function isWaterItem(it: any): boolean {
+  if (!it) return false;
+  const kind = it?.item_kind ?? null;
+  if (kind === 'water') return true;
+  if (kind) return false;
+  // Legacy fallback (migration 028/item_kind absent): water rows have no real menu FK and carry item_name.
+  const menuId = it?.menu_item_id ?? it?.menu_item?.id ?? null;
+  const hasName = !!(it?.item_name || it?.name);
+  return !menuId && hasName;
+}
+
+function isWaterOrder(order: { order_items?: any[] } | null | undefined): boolean {
+  const items = order?.order_items || [];
+  if (!items.length) return false;
+  return items.every((it: any) => isWaterItem(it));
 }
 
 interface ModalState {
@@ -152,6 +192,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
   const status = normalise(order.status);
   const isUpdating = updatingOrderIds.has(order.id);
   const itemIsCancelled = ((item as any).status || '').toLowerCase() === 'cancelled';
+  const water = isWaterOrder(order);
 
   const [cancelStep, setCancelStep] = useState<'none' | 'reason' | 'confirm'>(modal.forceCancel ? 'reason' : 'none');
   const [cancelReason, setCancelReason] = useState<CancelReason | ''>('');
@@ -198,12 +239,14 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
 
   const isCancellable = !['completed', 'cancelled'].includes(status);
 
-  const actionButtons: Array<{ label: string; newStatus: string; primary: boolean; condition: boolean }> = [
-    { label: 'Accept Order',    newStatus: 'accepted',  primary: true,  condition: status === 'pending' },
-    { label: 'Start Preparing', newStatus: 'preparing', primary: status === 'accepted', condition: status === 'accepted' || status === 'pending' },
-    { label: 'Mark as Ready',   newStatus: 'ready',     primary: false, condition: status === 'preparing' },
-    { label: 'Complete Order',  newStatus: 'completed', primary: false, condition: status === 'ready' },
-  ];
+  const actionButtons: Array<{ label: string; newStatus: string; primary: boolean; condition: boolean }> = water
+    ? [{ label: 'Mark as Delivered', newStatus: 'delivered', primary: true, condition: !['delivered', 'completed', 'cancelled'].includes(status) }]
+    : [
+        { label: 'Accept Order',    newStatus: 'accepted',  primary: true,  condition: status === 'pending' },
+        { label: 'Start Preparing', newStatus: 'preparing', primary: status === 'accepted', condition: status === 'accepted' || status === 'pending' },
+        { label: 'Mark as Ready',   newStatus: 'ready',     primary: false, condition: status === 'preparing' },
+        { label: 'Complete Order',  newStatus: 'completed', primary: false, condition: status === 'ready' },
+      ];
 
   return (
     <div
@@ -252,7 +295,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
         {/* Order context */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dimmed)' }}>
-            TABLE {order.table_number || '\u2014'} &middot; <span style={{ fontFamily: 'ui-monospace, monospace' }}>{order.id.slice(0, 8).toUpperCase()}</span>
+            TABLE {order.table_number || '—'} · <span style={{ fontFamily: 'ui-monospace, monospace' }}>{order.id.slice(0, 8).toUpperCase()}</span>
           </div>
           {formatOrderDateIST(order.created_at) && (
             <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>{formatOrderDateIST(order.created_at)}</div>
@@ -266,7 +309,10 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
             SELECTED ITEM
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: itemIsCancelled ? '#C46658' : 'var(--text-primary)' }}>{item.name} {itemIsCancelled ? '(CANCELLED)' : ''}</span>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: itemIsCancelled ? '#C46658' : 'var(--text-primary)', display: 'inline-flex', alignItems: 'center' }}>
+              {isWaterItem(item) && <WaterDropletIcon size={14} />}
+              {item.name} {itemIsCancelled ? '(CANCELLED)' : ''}
+            </span>
             <span style={{ fontSize: '0.8125rem', color: 'var(--gold)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {formatPrice(item.price * item.quantity, currency)}
             </span>
@@ -275,7 +321,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
             <span>Qty: <strong style={{ color: 'var(--text-primary)' }}>{item.quantity}</strong></span>
             <span>Unit: <strong style={{ color: 'var(--text-primary)' }}>{formatPrice(item.price, currency)}</strong></span>
           </div>
-          {item.notes && (
+          {item.notes && !(water && isWaterItem(item) && /^water order:|^normal water request:/i.test((item.notes || '').trim())) && (
             <div style={{ marginTop: 6, fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
               Note: {item.notes}
             </div>
@@ -290,8 +336,11 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
             <div style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dimmed)', marginBottom: 2 }}>
               ORDER ACTIONS
             </div>
-            {status === 'completed' && (
+            {status === 'completed' && !water && (
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem 0' }}>This order is already completed.</p>
+            )}
+            {water && (status === 'delivered' || status === 'completed') && (
+              <p style={{ fontSize: '0.8125rem', color: '#34D399', textAlign: 'center', padding: '0.5rem 0', fontWeight: 600 }}>Delivered</p>
             )}
             {status === 'cancelled' && (
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem 0' }}>This order has been cancelled.</p>
@@ -510,6 +559,7 @@ export default function LiveOrdersPage() {
           price,
           notes: item.notes,
           status: item.status || (item.is_cancelled ? 'cancelled' : 'active'),
+          item_kind: item.item_kind ?? null,
         } as NormalisedItem;
       });
   };
@@ -739,8 +789,11 @@ export default function LiveOrdersPage() {
                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,169,110,0.07)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
-                        <span style={{ fontSize: '0.8125rem', color: itemIsCancelled ? '#C46658' : 'var(--text-primary)' }}>
-                          {item.quantity} &times; {item.name}{itemIsCancelled ? ' [C]' : ''}
+                        <span style={{ fontSize: '0.8125rem', color: itemIsCancelled ? '#C46658' : 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
+                          {isWaterItem(item) && <WaterDropletIcon size={13} />}
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.quantity} × {item.name}{itemIsCancelled ? ' [C]' : ''}
+                          </span>
                         </span>
                         <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', fontWeight: 500, flexShrink: 0 }}>
                           {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
@@ -749,68 +802,117 @@ export default function LiveOrdersPage() {
                     )})}
                   </div>
 
-                  {/* Chef note (compact, fixed) */}
-                  {order.notes && (
-                    <div style={{
-                      flexShrink: 0, marginTop: 8,
-                      padding: '0.4375rem 0.625rem', borderRadius: 5,
-                      background: 'var(--bg-secondary)', border: '1px solid var(--border-warm)',
-                      fontSize: '0.6875rem', lineHeight: 1.5, color: 'var(--text-secondary)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Note:</strong> {order.notes}
-                    </div>
-                  )}
+                  {/* Chef note (compact, fixed) — water product info lives in ORDER ITEMS, not notes */}
+                  {(() => {
+                    const note = (order.notes || '').trim();
+                    const water = isWaterOrder(order);
+                    const isLegacyWaterNote = water && /^water order:|^normal water request:/i.test(note);
+                    if (!note || isLegacyWaterNote) return null;
+                    return (
+                      <div style={{
+                        flexShrink: 0, marginTop: 8,
+                        padding: '0.4375rem 0.625rem', borderRadius: 5,
+                        background: 'var(--bg-secondary)', border: '1px solid var(--border-warm)',
+                        fontSize: '0.6875rem', lineHeight: 1.5, color: 'var(--text-secondary)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Note:</strong> {order.notes}
+                      </div>
+                    );
+                  })()}
 
                   {/* Total — pinned */}
                   {/* Process & Payment actions */}
-                  {normalise(order.status) === 'completed' ? (
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
-                      {normalise(order.payment_status) !== 'paid' && (
-                        <button
-                          type="button"
-                          disabled={updatingOrderIds.has(order.id)}
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            try {
-                              await updatePaymentStatus(order.id, 'paid');
-                            } catch (err: any) {
-                              setPaymentError(err?.message || 'Failed to mark as paid');
-                            }
-                          }}
-                          className="d3-btn-primary"
-                          style={{
-                            flex: 1,
-                            fontSize: '0.72rem',
-                            padding: '0.375rem 0.5rem',
-                            whiteSpace: 'nowrap',
-                            opacity: updatingOrderIds.has(order.id) ? 0.6 : 1,
-                            background: 'var(--gold)',
-                            color: '#0b0b0a',
-                          }}
-                        >
-                          {updatingOrderIds.has(order.id) ? 'Updating...' : 'MARK AS PAID'}
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
-                      {normalise(order.status) !== 'cancelled' && (
-                        <>
-                           {(() => {
-                             const s = normalise(order.status);
-                             let nextStatus = '';
-                             let label = '';
-                             if (s === 'pending' || s === 'placed') { nextStatus = 'accepted'; label = 'ACCEPT ORDER'; }
-                             else if (s === 'accepted') { nextStatus = 'preparing'; label = 'START PREPARING'; }
-                             else if (s === 'preparing') { nextStatus = 'ready'; label = 'MARK AS READY'; }
-                             else if (s === 'ready') { nextStatus = 'completed'; label = 'COMPLETE ORDER'; }
-                             else { return null; }
-                             const isUpdating = updatingOrderIds.has(order.id);
-                             return (
-                               <button
-                                 type="button"
-                                 disabled={isUpdating}
+                  {(() => {
+                    const status = normalise(order.status);
+                    const water = isWaterOrder(order);
+                    const isUpdating = updatingOrderIds.has(order.id);
+
+                    // Water order: only Mark as Delivered / Delivered indicator. No Accept/Preparing/Ready.
+                    if (water) {
+                      const delivered = status === 'delivered' || status === 'completed';
+                      return (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
+                          {delivered ? (
+                            <span
+                              className="d3-badge"
+                              style={{ flex: 1, textAlign: 'center', fontSize: '0.72rem', padding: '0.375rem 0.5rem', color: '#34D399', borderColor: 'rgba(52,211,153,0.35)', background: 'rgba(16,185,129,0.08)' }}
+                            >
+                              DELIVERED
+                            </span>
+                          ) : status === 'cancelled' ? null : (
+                            <button
+                              type="button"
+                              disabled={isUpdating}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (isUpdating) return;
+                                try {
+                                  await updateOrderStatus(order.id, 'delivered');
+                                  showSuccess('Water order marked as delivered.');
+                                } catch (err: any) {
+                                  setUpdateError(err?.message || 'Failed to update order');
+                                }
+                              }}
+                              className="d3-btn-primary"
+                              style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: isUpdating ? 0.6 : 1 }}
+                            >
+                              {isUpdating ? 'Updating...' : 'MARK AS DELIVERED'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // Regular food orders: keep existing workflow exactly.
+                    if (status === 'completed') {
+                      return (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
+                          {normalise(order.payment_status) !== 'paid' && (
+                            <button
+                              type="button"
+                              disabled={isUpdating}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await updatePaymentStatus(order.id, 'paid');
+                                } catch (err: any) {
+                                  setPaymentError(err?.message || 'Failed to mark as paid');
+                                }
+                              }}
+                              className="d3-btn-primary"
+                              style={{
+                                flex: 1,
+                                fontSize: '0.72rem',
+                                padding: '0.375rem 0.5rem',
+                                whiteSpace: 'nowrap',
+                                opacity: isUpdating ? 0.6 : 1,
+                                background: 'var(--gold)',
+                                color: '#0b0b0a',
+                              }}
+                            >
+                              {isUpdating ? 'Updating...' : 'MARK AS PAID'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
+                        {status !== 'cancelled' && (
+                          <>
+                            {(() => {
+                              let nextStatus = '';
+                              if (status === 'pending' || status === 'placed') nextStatus = 'accepted';
+                              else if (status === 'accepted') nextStatus = 'preparing';
+                              else if (status === 'preparing') nextStatus = 'ready';
+                              else if (status === 'ready') nextStatus = 'completed';
+                              else return null;
+                              return (
+                                <button
+                                  type="button"
+                                  disabled={isUpdating}
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     if (isUpdating || normalise(order.status) === nextStatus) return;
@@ -821,29 +923,30 @@ export default function LiveOrdersPage() {
                                       setUpdateError(err?.message || 'Failed to update order');
                                     }
                                   }}
-                                 className="d3-btn-primary"
-                                 style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: isUpdating ? 0.6 : 1 }}
-                               >
-                                 {isUpdating ? 'Updating...' : 'QUICK PROCESS'}
-                               </button>
-                             );
-                           })()}
-                          <button
-                            type="button"
-                            disabled={updatingOrderIds.has(order.id)}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setModal({ order, item: orderItems[0] || { id: order.id, name: orderItems.length > 0 ? orderItems.length + ' items' : 'Order', quantity: 1, price: 0, notes: null }, orderItems, forceCancel: true });
-                            }}
-                            className="d3-btn-inline d3-btn-danger"
-                            style={{ fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: updatingOrderIds.has(order.id) ? 0.6 : 1 }}
-                          >
-                            CANCEL ORDER
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
+                                  className="d3-btn-primary"
+                                  style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: isUpdating ? 0.6 : 1 }}
+                                >
+                                  {isUpdating ? 'Updating...' : 'QUICK PROCESS'}
+                                </button>
+                              );
+                            })()}
+                            <button
+                              type="button"
+                              disabled={isUpdating}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setModal({ order, item: orderItems[0] || { id: order.id, name: orderItems.length > 0 ? orderItems.length + ' items' : 'Order', quantity: 1, price: 0, notes: null }, orderItems, forceCancel: true });
+                              }}
+                              className="d3-btn-inline d3-btn-danger"
+                              style={{ fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: isUpdating ? 0.6 : 1 }}
+                            >
+                              CANCEL ORDER
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   <div style={{
                     flexShrink: 0,

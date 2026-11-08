@@ -11,6 +11,7 @@ const itemSchema = z.object({
   quantity: z.number().int().positive(),
   notes: z.string().optional().nullable(),
   item_name: z.string().optional().nullable(),
+  item_kind: z.string().optional().nullable(),
 });
 
 const schema = z.object({
@@ -91,8 +92,13 @@ export async function POST(request: Request) {
         quantity: it.quantity,
         price_at_time: mi.price,
         notes: it.notes || null,
-        item_name: it.item_name || null,
       };
+      if (await columnExists('order_items', 'item_name')) {
+        insertRow.item_name = it.item_name || null;
+      }
+      if (await columnExists('order_items', 'item_kind') && it.item_kind) {
+        insertRow.item_kind = it.item_kind;
+      }
       if (await columnExists('order_items', 'status')) {
         insertRow.status = 'active';
       }
@@ -103,6 +109,8 @@ export async function POST(request: Request) {
     if (insErr) throw insErr;
 
     const itemSchemaHasStatus = await columnExists('order_items', 'status');
+    const itemSchemaHasItemName = await columnExists('order_items', 'item_name');
+    const itemSchemaHasItemKind = await columnExists('order_items', 'item_kind');
     const { data: allItems } = await supabaseAdmin
       .from('order_items')
       .select(itemSchemaHasStatus ? 'quantity, price_at_time, status' : 'quantity, price_at_time')
@@ -124,9 +132,13 @@ export async function POST(request: Request) {
       await supabaseAdmin.from('order_status_history').insert({ order_id: orderId, status: status === 'accepted' ? 'accepted' : 'pending', note: 'Items added to order by customer' });
     } catch {}
 
-    const itemSelect = itemSchemaHasStatus
-      ? 'id, menu_item_id, quantity, price_at_time, notes, item_name, status, menu_items(name)'
-      : 'id, menu_item_id, quantity, price_at_time, notes, item_name, menu_items(name)';
+    const itemSelect = [
+      'id', 'menu_item_id', 'quantity', 'price_at_time', 'notes',
+      ...(itemSchemaHasItemName ? ['item_name'] : []),
+      ...(itemSchemaHasItemKind ? ['item_kind'] : []),
+      ...(itemSchemaHasStatus ? ['status'] : []),
+      'menu_items(name)',
+    ].join(', ');
     const { data: fullOrder, error: fullErr } = await supabaseAdmin
       .from('orders')
       .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect})`)
@@ -136,14 +148,15 @@ export async function POST(request: Request) {
 
     const itemsOut = ((fullOrder as any)?.order_items || []).map((it: any) => ({
       id: it.id,
-      name: it.item_name || it.menu_items?.name || null,
+      name: (itemSchemaHasItemName ? it.item_name : null) || it.menu_items?.name || null,
       quantity: it.quantity,
       price_at_time: it.price_at_time,
       notes: it.notes,
+      item_kind: itemSchemaHasItemKind ? (it.item_kind ?? null) : null,
       status: itemSchemaHasStatus ? (it.status ?? 'active') : 'active',
     }));
     const hotelTheme = await getHotelThemeForOrder(orderId);
-    return new NextResponse(JSON.stringify({ success: true, order: { ...(fullOrder||{}), items: itemsOut, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    return new NextResponse(JSON.stringify({ success: true, order: { ...((fullOrder as Record<string, any>) || {}), items: itemsOut, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (error: any) {
     return new NextResponse(JSON.stringify({ success: false, error: error.message || 'Failed to add items' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }

@@ -42,6 +42,8 @@ export interface OrderItemsSchema {
   cancelledBy: boolean;
   /** public.order_items.item_name exists (migration 027 applied). */
   itemName: boolean;
+  /** public.order_items.item_kind exists (migration 028 applied). e.g. 'water' */
+  itemKind: boolean;
 }
 
 // Postgres / PostgREST codes for "that column is not in the schema".
@@ -116,5 +118,6 @@ export async function getOrderItemsSchema(): Promise<OrderItemsSchema> {
     cancellationReason: await orderItemColumnExists('cancellation_reason'),
     cancelledBy: await orderItemColumnExists('cancelled_by'),
     itemName: await orderItemColumnExists('item_name'),
+    itemKind: await orderItemColumnExists('item_kind'),
   };
 }

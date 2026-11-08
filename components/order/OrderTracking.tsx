@@ -23,6 +23,7 @@ interface LiveOrderItem {
   price_at_time: number;
   notes: string | null;
   status?: string | null;
+  item_kind?: string | null;
 }
 
 interface LiveOrder {
@@ -69,16 +70,63 @@ interface LiveOrder {
 // the 'accepted' step is always visible and never silently skipped.
 // ---------------------------------------------------------------------------
 
-const STAGES = [
+// Stage definitions for the progress bar (UI-only grouping). `delivered` is
+// terminal and maps to the completed stage for regular food orders.
+const STAGES_FOOD = [
   { key: 'placed',    title: 'Order Placed',           desc: 'Your order has been received by the restaurant' },
   { key: 'accepted',  title: 'Accepted by Restaurant', desc: 'The restaurant has confirmed your order' },
   { key: 'preparing', title: 'Preparing',              desc: 'The kitchen is working on your food' },
   { key: 'ready',     title: 'Ready',                  desc: 'Your order is ready for service' },
-  { key: 'completed', title: 'Completed',              desc: 'Order complete â€” enjoy your meal!' },
+  { key: 'completed', title: 'Completed',              desc: 'Order complete — enjoy your meal!' },
 ];
 
-function statusToStageIndex(status: string): number {
-  switch ((status || '').trim().toLowerCase()) {
+// Water orders skip preparation/acceptance stages.
+const STAGES_WATER = [
+  { key: 'placed',    title: 'Order Placed', desc: 'Your water request has been received' },
+  { key: 'delivered', title: 'Delivered',    desc: 'Your water has been delivered to the table' },
+];
+
+function WaterDropletIcon({ size = 13 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#67D4F0"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ flexShrink: 0, display: 'inline-block', verticalAlign: 'text-bottom', marginRight: 5, opacity: 0.9 }}
+    >
+      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+    </svg>
+  );
+}
+
+function isWaterOrderLive(order: LiveOrder | null | undefined): boolean {
+  const items = order?.items || [];
+  if (!items.length) return false;
+  return items.every((it: any) => {
+    const kind = it?.item_kind ?? null;
+    if (kind === 'water') return true;
+    if (kind) return false;
+    return !!(it?.name); // legacy fallback when item_kind absent but name resolved
+  });
+}
+
+function stagesForOrder(order: LiveOrder | null | undefined) {
+  return isWaterOrderLive(order) ? STAGES_WATER : STAGES_FOOD;
+}
+
+function statusToStageIndex(status: string, water = false): number {
+  const s = (status || '').trim().toLowerCase();
+  if (water) {
+    if (s === 'delivered' || s === 'completed') return 1;
+    return 0; // placed/pending
+  }
+  switch (s) {
     case 'pending':
     case 'placed':
       return 0;
@@ -249,6 +297,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   );
 
   const handleCancelItem = useCallback(async (itemId: string) => {
+    if (isWaterOrderLive(orderRef.current)) return; // water orders use whole-order delivery/cancel only
     setItemCancelling(itemId);
     setCancelError(null);
     try {
@@ -461,7 +510,9 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // -----------------------------------------------------------------------
   const placedAt = order?.created_at ?? null;
   const status = (order?.status || '').trim().toLowerCase();
-  const stageIndex = statusToStageIndex(status);
+  const water = isWaterOrderLive(order);
+  const stages = stagesForOrder(order);
+  const stageIndex = statusToStageIndex(status, water);
   const isCancelled = status === 'cancelled';
   const activeTotal = order
     ? order.items
@@ -735,10 +786,10 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   <p style={SECTION_TITLE}>Order Progress</p>
                 </div>
                 <div style={{ padding: '0.25rem 0.875rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                  {STAGES.map((stage, idx) => {
+                  {stages.map((stage, idx) => {
                     const reached = idx <= stageIndex;
                     const isCurrent = idx === stageIndex;
-                    const isLast = idx === STAGES.length - 1;
+                    const isLast = idx === stages.length - 1;
                     return (
                       <div key={stage.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingTop: 2 }}>
@@ -799,8 +850,8 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 ) : (
                   order.items.map((item, i) => {
                     const cancelled = (item.status || '').toLowerCase() === 'cancelled';
-                    const canCancel = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
-                    const canEditQty = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
+                    const canCancel = !water && !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
+                    const canEditQty = !water && !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
                     const unitPrice = Number(item.price_at_time);
                     const lineTotal = unitPrice * item.quantity;
                     const last = i === order.items.length - 1;
@@ -808,8 +859,9 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       <div key={item.id} style={{ padding: '0.625rem 0', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '0.5rem', alignItems: 'start' }}>
                           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                              {item.name || 'Item'}
+                            <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', display: 'inline-flex', alignItems: 'center' }}>
+                              {item.item_kind === 'water' && <WaterDropletIcon size={13} />}
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name || 'Item'}</span>
                             </span>
                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
                               Unit price: {formatPrice(unitPrice, order?.currency)} each
@@ -932,7 +984,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       <span style={{ color: 'var(--text-secondary)' }}>{order.customer_name}</span>
                     </div>
                   )}
-                  {order.notes && (
+                  {order.notes && !(water && /^water order:|^normal water request:/i.test((order.notes || '').trim())) && (
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: 2 }}>
                       <span style={{ color: 'var(--text-dimmed)' }}>Note: </span>{order.notes}
                     </div>

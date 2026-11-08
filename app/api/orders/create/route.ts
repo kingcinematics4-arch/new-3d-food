@@ -23,6 +23,7 @@ const createOrderSchema = z.object({
       price_at_time: z.number().nonnegative(), // allows 0 for free items like Free Water
       notes: z.string().optional(),
       item_name: z.string().optional().nullable(),
+      item_kind: z.string().optional().nullable(), // e.g. 'water' (migration 028)
     })
   ).min(1, 'Order must contain at least one item'),
 });
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
         notes: item.notes || null,
       };
       if (itemSchema.itemName) row.item_name = item.item_name || null;
+      if (itemSchema.itemKind && item.item_kind) row.item_kind = item.item_kind;
       return row;
     });
 

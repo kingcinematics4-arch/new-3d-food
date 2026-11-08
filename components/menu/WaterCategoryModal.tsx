@@ -84,7 +84,6 @@ export default function WaterCategoryModal({
     setStatusMsg(null);
 
     const qty = quantities.normal || 1;
-    const note = `Normal water request: ${qty} glass(es)`;
 
     try {
       const res = await fetch('/api/orders/create', {
@@ -95,14 +94,14 @@ export default function WaterCategoryModal({
           table_number: tableNumber,
           order_type: 'dine_in',
           payment_method: 'pay_at_table',
-          notes: note,
           items: [
             {
               menu_item_id: null,
               quantity: qty,
               price_at_time: 0,
               item_name: 'Free Water',
-              notes: note,
+              item_kind: 'water',
+              notes: null,
             },
           ],
         }),
@@ -142,14 +141,14 @@ export default function WaterCategoryModal({
           table_number: tableNumber,
           order_type: 'dine_in',
           payment_method: 'pay_at_table',
-          notes: `Water order: ${itemName}`,
           items: [
             {
               menu_item_id: null,
               quantity: qty,
               price_at_time: price,
               item_name: itemName,
-              notes: size ? `Size: ${size}` : '',
+              item_kind: 'water',
+              notes: null,
             },
           ],
         }),
