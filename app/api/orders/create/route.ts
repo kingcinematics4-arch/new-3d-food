@@ -16,7 +16,7 @@ const createOrderSchema = z.object({
     z.object({
       menu_item_id: z.string().min(1),
       quantity: z.number().int().positive(),
-      price_at_time: z.number().positive(),
+      price_at_time: z.number().nonnegative(), // allows 0 for free items like Normal Water
       notes: z.string().optional(),
     })
   ).min(1, 'Order must contain at least one item'),
@@ -33,15 +33,6 @@ export async function POST(request: Request) {
       0
     );
 
-    // The customer-facing reference number (e.g. DINE-10482) is
-    // assigned by the database BEFORE INSERT trigger
-    // (orders_set_order_number) when migration 008 has been applied.
-    // On deployments that have not run 008 yet there is no
-    // order_number column, so the reference is derived from the
-    // stored row's permanent uuid instead (see lib/orderReference).
-    // Either way it comes from the created row itself and is
-    // returned to the caller together with the row's id, which is
-    // the identifier the tracking page resolves by.
     // 1. Insert Order
     const { data: orderData, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -61,9 +52,7 @@ export async function POST(request: Request) {
 
     if (orderError) throw new Error(`Order insertion failed: ${orderError.message}`);
 
-    // The permanent reference shown to the customer: the stored
-    // order_number when the database provides one, otherwise a
-    // stable code derived from the row's id.
+    // The permanent reference shown to the customer
     const storedOrderNumber = (orderData as any).order_number || null;
     const reference = orderReference({ id: orderData.id, order_number: storedOrderNumber });
 
@@ -92,9 +81,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        // The identifier the tracking page resolves the order by:
-        // the row's permanent primary key. It is stable and works
-        // whether or not migration 008 has been applied.
         orderId: orderData.id,
         orderNumber: reference,
         orderCode: reference,

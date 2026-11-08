@@ -1,18 +1,6 @@
 // app/api/hotel/update/route.ts
 //
-// PUT /api/hotel/update — persist hotel settings including menu theme.
-//
-// AUTHORIZATION: the hotel id is ALWAYS resolved from the authenticated
-// Supabase session via `requireOwnedHotelId`. A `hotel_id` in the request body
-// is only accepted when it matches the session's own hotel, so a signed-in
-// owner can never write into another tenant. This route is therefore
-// owner-scoped: no admin role is required, and no global-default theme is
-// writable from here.
-//
-// PERSISTENCE: themes are stored in `public.hotels.menu_theme` and
-// `public.hotels.custom_theme_config` (migrations 010/011). The previous
-// file-based store (`data/menu-themes.json`) failed on Vercel's read-only
-// filesystem with `EROFS: read-only file system, open '/var/task/data/menu-themes.json'`.
+// PUT /api/hotel/update — persist hotel settings including menu theme and water settings.
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
@@ -27,6 +15,7 @@ import {
   getHotelGoogleReviewUrl,
   setHotelGoogleReviewUrl,
 } from '@/lib/customThemeStore.server';
+import { sanitizeWaterSettings } from '@/lib/waterSettings';
 
 const updateHotelSchema = z.object({
   hotel_id: z.string().min(1, 'hotel_id is required'),
@@ -51,6 +40,7 @@ const updateHotelSchema = z.object({
   menu_theme: z.enum(MENU_THEME_IDS).optional(),
   custom_theme_config: z.any().optional(),
   google_review_url: z.string().url('Enter a valid Google Review URL').optional().nullable(),
+  water_settings: z.any().optional(),
 });
 
 export async function PUT(request: Request) {
@@ -106,9 +96,10 @@ export async function PUT(request: Request) {
   }
 
   const reviewUrlRequested = Object.prototype.hasOwnProperty.call(updateData, 'google_review_url');
-  // google_review_url can be persisted in existing custom_theme_config JSONB
-  // when the dedicated column is unavailable, so do not hard-fail solely on
-  // a missing dedicated column. Persistence is handled below.
+
+  if (updateData.water_settings) {
+    updateData.water_settings = sanitizeWaterSettings(updateData.water_settings);
+  }
 
   try {
     // Persist theme & custom configuration to the hotel's own row.
@@ -127,28 +118,20 @@ export async function PUT(request: Request) {
       return o;
     };
 
-    // Google Review URL: persist via dedicated column when present, and
-    // always mirror into existing custom_theme_config JSONB as a resilient
-    // fallback (same hotel record, no new columns/tables, no data loss).
     let persistedReviewUrl: string | null | undefined;
     if (reviewUrlRequested) {
       const result = await setHotelGoogleReviewUrl(hotelId, (updateData as any).google_review_url ?? null);
       persistedReviewUrl = result.value;
-      console.log('[googleReview][save]', JSON.stringify({
-        hotelId,
-        hasUrl: Boolean(result.value),
-        storedInColumn: result.storedInColumn,
-        storedInConfig: result.storedInConfig,
-      }));
     }
 
-    // Build hotel-row update payload. If dedicated google_review_url column
-    // is missing, omit it from the row update (already persisted to config).
     const rowUpdate: any = { ...updateData };
     if (reviewUrlRequested && !schema.googleReviewUrl) {
       delete rowUpdate.google_review_url;
     }
-    // Avoid sending unknown-only payloads; google_review_url handled above.
+    if (rowUpdate.water_settings && !schema.waterSettings) {
+      delete rowUpdate.water_settings;
+    }
+
     const rowKeys = Object.keys(rowUpdate).filter((k) => rowUpdate[k] !== undefined);
     let data: any = null;
     let error: any = null;
@@ -163,9 +146,7 @@ export async function PUT(request: Request) {
     }
 
     if (error) {
-      // Retry without theme/custom fields (legacy behavior) and without
-      // google_review_url when column may be problematic.
-      const { menu_theme, custom_theme_config, google_review_url, ...rest } = rowUpdate as any;
+      const { menu_theme, custom_theme_config, google_review_url, water_settings, ...rest } = rowUpdate as any;
       if (Object.keys(rest).length > 0) {
         const { data: retryData } = await supabaseAdmin.from('hotels').update(rest).eq('id', hotelId).select().single();
         const storedTheme = await getStoredMenuTheme(hotelId);

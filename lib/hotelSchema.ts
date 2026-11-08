@@ -50,6 +50,8 @@ export interface HotelSchema {
   hotelPublicId: boolean;
   /** public.hotels.google_review_url exists (migration 001). */
   googleReviewUrl: boolean;
+  /** public.hotels.water_settings exists (migration 025). */
+  waterSettings: boolean;
 }
 
 /**
@@ -60,13 +62,14 @@ export interface HotelSchema {
  */
 export async function getHotelSchema(): Promise<HotelSchema> {
   // Probe in parallel to avoid cumulative latency on hot public paths.
-  const [menuTheme, customThemeConfig, currency, hotelPublicId, googleReviewUrl] =
+  const [menuTheme, customThemeConfig, currency, hotelPublicId, googleReviewUrl, waterSettings] =
     await Promise.all([
       columnExists('hotels', 'menu_theme'),
       columnExists('hotels', 'custom_theme_config'),
       columnExists('hotels', 'currency'),
       columnExists('hotels', 'hotel_public_id'),
       columnExists('hotels', 'google_review_url'),
+      columnExists('hotels', 'water_settings'),
     ]);
-  return { menuTheme, customThemeConfig, currency, hotelPublicId, googleReviewUrl };
+  return { menuTheme, customThemeConfig, currency, hotelPublicId, googleReviewUrl, waterSettings };
 }

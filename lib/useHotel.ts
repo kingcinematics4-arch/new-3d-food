@@ -31,6 +31,7 @@ export interface Hotel {
   subscription_plan: string;
   menu_theme: string;
   custom_theme_config?: import('./customTheme').CustomThemeConfig | null;
+  water_settings?: import('./waterSettings').HotelWaterSettings | null;
   created_at: string;
   updated_at: string;
 }

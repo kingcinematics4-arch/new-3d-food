@@ -17,6 +17,9 @@ import {
 } from '@/components/menu/templates';
 import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customTheme';
 import { customThemeToCssVars } from '@/components/menu/MenuThemeProvider';
+import ServiceRequestModal from '@/components/menu/ServiceRequestModal';
+import WaterCategoryModal from '@/components/menu/WaterCategoryModal';
+import { HotelWaterSettings } from '@/lib/waterSettings';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 const Dish3DModal = dynamic(() => import('@/components/menu/Dish3DModal'), { ssr: false });
@@ -66,6 +69,7 @@ export interface PublicHotel {
   tax_rate: number | null;
   service_charge: number | null;
   city: string | null;
+  water_settings?: HotelWaterSettings | null;
 }
 
 interface CartItem {
@@ -962,6 +966,8 @@ export default function MenuContent({
   const [inspectItem, setInspectItem] = useState<PublicMenuItem | null>(null);
   const [view3DItem, setView3DItem] = useState<PublicMenuItem | null>(null);
   const [search, setSearch] = useState('');
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [isWaterModalOpen, setIsWaterModalOpen] = useState(false);
 
   // Open detail modal when any food card is clicked
   const handleCardClick = useCallback((item: PublicMenuItem) => {
@@ -1041,7 +1047,8 @@ export default function MenuContent({
   const pills = useMemo(() => {
     const names = categories.map((c) => c.name).filter(Boolean);
     const hasUncategorised = menuItems.some((i) => !i.category_id || !categories.some((c) => c.id === i.category_id));
-    return ['All', ...names, ...(hasUncategorised ? ['Uncategorised'] : [])];
+    const basePills = ['All', 'Water 💧', ...names, ...(hasUncategorised ? ['Uncategorised'] : [])];
+    return basePills;
   }, [categories, menuItems]);
 
   const categoryNameOf = useCallback(
@@ -1151,7 +1158,13 @@ export default function MenuContent({
             categories,
             pills,
             selectedCategory,
-            onSelectCategory: setSelectedCategory,
+            onSelectCategory: (cat: string) => {
+              if (cat === 'Water 💧') {
+                setIsWaterModalOpen(true);
+              } else {
+                setSelectedCategory(cat);
+              }
+            },
             search,
             onSearchChange: setSearch,
             filteredItems,
@@ -1210,6 +1223,79 @@ export default function MenuContent({
             onClose={() => setView3DItem(null)}
           />
         )}
+
+        {/* Call Waiter & Water Order Modals */}
+        <ServiceRequestModal
+          hotelId={hotel.id}
+          tableNumber={initialTableNumber || 'Takeaway'}
+          isOpen={isServiceModalOpen}
+          onClose={() => setIsServiceModalOpen(false)}
+        />
+
+        <WaterCategoryModal
+          waterSettings={hotel.water_settings}
+          currency={currency}
+          isOpen={isWaterModalOpen}
+          onClose={() => setIsWaterModalOpen(false)}
+          onAddToCart={(item, qty, notes) => {
+            setCart((prev) => {
+              const existing = prev.find((c) => c.menuItem.id === item.id);
+              if (existing) return prev.map((c) => (c.menuItem.id === item.id ? { ...c, quantity: c.quantity + qty, notes: notes || c.notes } : c));
+              return [...prev, { menuItem: item, quantity: qty, notes }];
+            });
+          }}
+        />
+
+        {/* Sticky Quick Action Pills: Call Waiter & Order Water */}
+        <div
+          className="fixed top-4 right-4 z-40 flex items-center gap-2"
+          style={{ maxWidth: 'calc(100vw - 2rem)' }}
+        >
+          <button
+            type="button"
+            onClick={() => setIsWaterModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '0.4375rem 0.75rem',
+              borderRadius: 100,
+              background: 'rgba(20, 20, 19, 0.85)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(243, 239, 231, 0.15)',
+              color: 'var(--text-primary)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            }}
+          >
+            <span>💧</span>
+            <span>Water</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsServiceModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '0.4375rem 0.875rem',
+              borderRadius: 100,
+              background: 'var(--gold, #C9A96E)',
+              color: '#0B0B0A',
+              border: 'none',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(201,169,110,0.4)',
+            }}
+          >
+            <span>🔔</span>
+            <span>Call Waiter</span>
+          </button>
+        </div>
 
         {isCartOpen && (
           <CartDrawer

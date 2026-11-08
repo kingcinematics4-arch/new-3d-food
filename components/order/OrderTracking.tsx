@@ -9,6 +9,8 @@ import { supabaseClient, isSupabaseConfigured } from '@/lib/supabaseBrowser';
 import { customThemeToCssVars } from '@/components/menu/MenuThemeProvider';
 import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customTheme';
 import { CustomThemeFontLoader } from '@/components/menu/CustomThemeFontLoader';
+import SplitBillModal from '@/components/order/SplitBillModal';
+import ServiceRequestModal from '@/components/menu/ServiceRequestModal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -41,6 +43,9 @@ interface LiveOrder {
   menu_theme?: string | null;
   hotel_custom_theme_config?: CustomThemeConfig | null;
   hotel_slug: string | null;
+  hotel_id?: string | null;
+  amount_paid?: number | null;
+  remaining_balance?: number | null;
   currency?: string | null;
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
@@ -150,6 +155,8 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const [itemQtyUpdating, setItemQtyUpdating] = useState<string | null>(null);
   const [itemQtyError, setItemQtyError] = useState<string | null>(null);
   const [paymentReviewMessage, setPaymentReviewMessage] = useState<string | null>(null);
+  const [showSplitBill, setShowSplitBill] = useState(false);
+  const [showCallWaiter, setShowCallWaiter] = useState(false);
 
   const CANCELLATION_REASONS = [
     'Dish not needed anymore',
@@ -573,13 +580,35 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
           </div>
 
           {!loading && order ? (
-            <Link
-              href={addDishHref}
-              className="d3-btn-primary"
-              style={{ padding: '0.4375rem 0.75rem', fontSize: '0.6875rem', flexShrink: 0 }}
-            >
-              Add Dish
-            </Link>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowCallWaiter(true)}
+                className="d3-btn-secondary"
+                style={{
+                  padding: '0.4375rem 0.625rem',
+                  fontSize: '0.6875rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  borderRadius: 'var(--d3-btn-radius)',
+                  background: 'var(--bg-surface-2)',
+                  border: '1px solid var(--border-warm)',
+                  color: 'var(--gold)',
+                  cursor: 'pointer',
+                }}
+              >
+                <span>🔔</span>
+                <span className="hidden sm:inline">Call Waiter</span>
+              </button>
+              <Link
+                href={addDishHref}
+                className="d3-btn-primary"
+                style={{ padding: '0.4375rem 0.75rem', fontSize: '0.6875rem', flexShrink: 0 }}
+              >
+                Add Dish
+              </Link>
+            </div>
           ) : (
             <span style={{ width: 72, height: 32 }} />
           )}
@@ -865,10 +894,30 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       <span style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{order.payment_method}</span>
                     </div>
                   )}
-                  {order.payment_status === 'paid' && (
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
+                    <span style={{ color: 'var(--text-dimmed)' }}>Payment Status</span>
+                    <span style={{
+                      color: (order.payment_status === 'paid' || (order.remaining_balance !== undefined && order.remaining_balance !== null && order.remaining_balance <= 0))
+                        ? '#34D399'
+                        : ((order.amount_paid || 0) > 0 || order.payment_status === 'partially_paid')
+                        ? '#F59E0B'
+                        : 'var(--text-secondary)',
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                    }}>
+                      {(order.payment_status === 'paid' || (order.remaining_balance !== undefined && order.remaining_balance !== null && order.remaining_balance <= 0))
+                        ? 'Paid ✓'
+                        : ((order.amount_paid || 0) > 0 || order.payment_status === 'partially_paid')
+                        ? `Partially Paid (${formatPrice(order.amount_paid || 0, order?.currency)} paid)`
+                        : 'Unpaid'}
+                    </span>
+                  </div>
+                  {((order.amount_paid || 0) > 0 && order.payment_status !== 'paid') && (
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
-                      <span style={{ color: 'var(--text-dimmed)' }}>Payment Status</span>
-                      <span style={{ color: 'var(--gold)' }}>Paid</span>
+                      <span style={{ color: 'var(--text-dimmed)' }}>Remaining Balance</span>
+                      <span style={{ color: 'var(--gold)', fontWeight: 600 }}>
+                        {formatPrice(order.remaining_balance ?? Math.max(0, activeTotal - (order.amount_paid || 0)), order?.currency)}
+                      </span>
                     </div>
                   )}
                   {order.table_number && (
@@ -888,6 +937,46 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       <span style={{ color: 'var(--text-dimmed)' }}>Note: </span>{order.notes}
                     </div>
                   )}
+                </div>
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowSplitBill(true)}
+                    className="d3-btn-primary"
+                    style={{
+                      flex: 1,
+                      justifyContent: 'center',
+                      padding: '0.625rem 0.875rem',
+                      fontSize: '0.8125rem',
+                      borderRadius: 'var(--d3-btn-radius)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <span>💳</span>
+                    <span>{order.payment_status === 'paid' ? 'View Bill & Receipts' : 'Split Bill & Pay'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCallWaiter(true)}
+                    className="d3-btn-secondary"
+                    style={{
+                      padding: '0.625rem 0.875rem',
+                      fontSize: '0.8125rem',
+                      borderRadius: 'var(--d3-btn-radius)',
+                      background: 'var(--bg-surface-2)',
+                      border: '1px solid var(--border-light)',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <span>🔔</span>
+                    <span>Call Waiter</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1000,6 +1089,30 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                   </div>
                 </div>
               </div>
+            )}
+
+            {showSplitBill && (
+              <SplitBillModal
+                orderId={order.id}
+                orderNumber={order.order_number}
+                totalAmount={activeTotal}
+                currency={order?.currency}
+                items={order.items || []}
+                isOpen={showSplitBill}
+                onClose={() => setShowSplitBill(false)}
+                onPaymentSuccess={async () => {
+                  await loadOrder(true);
+                }}
+              />
+            )}
+
+            {showCallWaiter && (
+              <ServiceRequestModal
+                hotelId={order.hotel_id || (order as any).hotels?.id || ''}
+                tableNumber={order.table_number || 'Takeaway'}
+                isOpen={showCallWaiter}
+                onClose={() => setShowCallWaiter(false)}
+              />
             )}
 
             <div style={{ padding: '0.25rem 0 0.5rem', textAlign: 'center' }}>

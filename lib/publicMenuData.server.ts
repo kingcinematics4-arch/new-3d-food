@@ -4,6 +4,7 @@ import { getStoredMenuTheme } from './menuThemeStore.server';
 import { getStoredCustomTheme } from './customThemeStore.server';
 import { getActiveSavedCustomTheme } from './hotelCustomThemes.server';
 import { DEFAULT_MENU_THEME } from './menuThemes';
+import { sanitizeWaterSettings, HotelWaterSettings } from './waterSettings';
 
 export const BASE_HOTEL_COLUMNS =
   'id, name, slug, logo_url, currency, welcome_text, primary_color, ' +
@@ -31,6 +32,7 @@ export interface PublicHotelData {
   city: string | null;
   menu_theme: string | null;
   custom_theme_config?: any | null;
+  water_settings?: HotelWaterSettings | null;
 }
 
 export interface PublicCategoryData {
@@ -69,14 +71,10 @@ export interface PublicMenuData {
 
 async function resolveHotelColumns(): Promise<string> {
   const schema = await getHotelSchema();
-  // Select menu_theme AND custom_theme_config together when the migration
-  // has been applied, so the public menu reads the saved theme in the same
-  // row it just looked up. Without this the page made a second probe
-  // (getStoredCustomTheme) for the config, which still worked, but the two
-  // columns now travel as one query.
   const optional = [
     schema.menuTheme ? 'menu_theme' : null,
     schema.customThemeConfig ? 'custom_theme_config' : null,
+    schema.waterSettings ? 'water_settings' : null,
   ].filter(Boolean) as string[];
 
   return optional.length
@@ -117,9 +115,7 @@ export async function fetchPublicMenuData(slug: string): Promise<PublicMenuData>
     }
   }
 
-  // Resolve custom theme configuration per hotel (single source of truth from
-  // the hotel's saved theme). If the active saved-theme library is used but the
-  // hotels row hasn't mirrored config yet, prefer the active saved config.
+  // Resolve custom theme configuration per hotel
   if (!hotel.custom_theme_config) {
     const storedCustomTheme = await getStoredCustomTheme(hotel.id);
     if (storedCustomTheme) {
@@ -131,6 +127,9 @@ export async function fetchPublicMenuData(slug: string): Promise<PublicMenuData>
       hotel.custom_theme_config = null;
     }
   }
+
+  // Sanitize water settings
+  hotel.water_settings = sanitizeWaterSettings(hotel.water_settings);
 
   const [categoriesResult, itemsResult] = await Promise.all([
     supabaseAdmin

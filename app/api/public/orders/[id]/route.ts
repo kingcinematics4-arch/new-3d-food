@@ -1,21 +1,6 @@
 // app/api/public/orders/[id]/route.ts
 // Guest-facing read model behind /order/[orderId].
-//
-// A diner has no session, so this is the only way their order can be
-// followed after checkout. The route accepts EITHER the permanent
-// reference number (DINE-XXXXX, only present once migration 008 has
-// been applied) or the raw uuid the create route navigates with --
-// the customer is navigated straight from "Place Order" with the
-// order's permanent id. Only the columns a guest may see are
-// selected: the restaurant id, the guest's phone number and internal
-// notes are omitted.
-//
-// The select list is built from the deployed schema
-// (lib/ordersSchema): orders.updated_at and orders.order_number
-// only exist once migrations 007/008 have been run in the Supabase
-// SQL Editor, and selecting a column that does not exist makes
-// Postgres fail the whole query (42703), which is what previously
-// broke this page entirely.
+
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getOrdersSchema, getOrderItemsSchema } from '@/lib/ordersSchema';
@@ -30,10 +15,6 @@ function isStoredReferenceNumber(value: string): boolean {
   return /^DINE-\d+$/i.test(value);
 }
 
-// This endpoint is polled every 2 seconds by the customer
-// tracking page to follow a live order. It must never be
-// statically rendered or cached: every poll reads the
-// current database row.
 export const dynamic = 'force-dynamic';
 
 export async function GET(
@@ -54,16 +35,10 @@ export async function GET(
     const hotelSchema = await getHotelSchema();
     const itemSchema = await getOrderItemsSchema();
 
-    // A stored DINE-<digits> reference is resolved against
-    // orders.order_number (indexed, unique). Anything else is the
-    // order's permanent uuid and is resolved against orders.id.
     const column = schema.orderNumber && isStoredReferenceNumber(orderId)
       ? 'order_number'
       : 'id';
 
-    // The select list is assembled from the detected schema, so its
-    // shape cannot be inferred statically; the row is read as untyped
-    // data below.
     const hotelSelect = [
       'id',
       hotelSchema.menuTheme ? 'menu_theme' : '',
@@ -90,9 +65,6 @@ export async function GET(
       ...(schema.updatedAt ? ['updated_at'] : []),
     ];
 
-    // order_items cancellation columns only exist once migration 017
-    // has been applied. Selecting a missing column makes Postgres fail
-    // the whole query (42703), so they are added only when present.
     const itemSelectColumns = [
       'id',
       'menu_item_id',
@@ -106,9 +78,6 @@ export async function GET(
       'menu_items (name)',
     ];
 
-    // The select list is assembled from the detected schema, so
-    // its shape cannot be inferred statically; the row is read
-    // as untyped data below.
     const { data: rawOrder, error } = await supabaseAdmin
       .from('orders')
       .select([...orderSelectColumns, `order_items (${itemSelectColumns.join(', ')})`].join(', '))
@@ -126,8 +95,6 @@ export async function GET(
       });
     }
 
-    // Transform order_items to have menu_item (singular) with name for frontend compatibility.
-    // Cancellation fields are passed through only when the deployed schema has them.
     const items = ((order as any).order_items || []).map((item: any) => ({
       id: item.id,
       name: item.menu_items?.name || null,
@@ -140,19 +107,8 @@ export async function GET(
       ...(itemSchema.cancelledBy ? { cancelled_by: item.cancelled_by ?? null } : {}),
     }));
 
-    // The reference shown to the customer: the stored order_number
-    // when the database has one, otherwise the stable code derived
-    // from this row's id. It is computed from the stored row, so it
-    // is identical on every refresh.
     const reference = orderReference(order as { id: string; order_number?: string | null });
 
-    // ------------------------------------------------------------------
-    // Resolve the hotel's Google Review URL from the EXACT hotel associated
-    // with this order (order.hotel_id). Uses server-side service-role access
-    // (RLS-safe for public guests; never exposes keys). Falls back to
-    // existing custom_theme_config storage when the dedicated column is
-    // unavailable on a deployment.
-    // ------------------------------------------------------------------
     const orderHotelId = (order as any).hotel_id || (order as any).hotels?.id || null;
     let googleReviewUrl: string | null = (order as any).hotels?.google_review_url || null;
     if (orderHotelId) {
@@ -163,13 +119,6 @@ export async function GET(
         console.error('[public/orders/[id]] review URL lookup failed', { orderId: order.id, orderHotelId, message: e?.message });
       }
     }
-    // Temporary diagnostic logging (server-side only; no secrets/URLs/PII).
-    console.log('[public/orders/[id]][googleReview]', JSON.stringify({
-      orderId: order.id,
-      orderHotelId: orderHotelId || null,
-      hotelFound: Boolean(orderHotelId),
-      hasGoogleReviewUrl: Boolean(googleReviewUrl),
-    }));
 
     const hotelTheme =
       (order as any).hotels?.menu_theme ||
@@ -182,10 +131,28 @@ export async function GET(
         : null) ||
       null;
 
+    // Fetch payments for this order to provide real-time split billing status
+    let totalPaid = 0;
+    try {
+      const { data: payments } = await supabaseAdmin
+        .from('order_payments')
+        .select('amount, status')
+        .eq('order_id', order.id)
+        .eq('status', 'successful');
+
+      if (payments && payments.length > 0) {
+        totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      }
+    } catch {}
+
+    const billTotal = Number(order.total_amount || 0);
+    const remainingBalance = Math.max(0, Math.round((billTotal - totalPaid) * 100) / 100);
+
     return new NextResponse(JSON.stringify({
       success: true,
       order: {
         id: order.id,
+        hotel_id: order.hotel_id,
         order_number: reference,
         status: order.status,
         payment_status: order.payment_status,
@@ -195,6 +162,8 @@ export async function GET(
         customer_phone: order.customer_phone,
         notes: order.notes,
         total_amount: order.total_amount,
+        amount_paid: totalPaid,
+        remaining_balance: remainingBalance,
         created_at: order.created_at,
         ...(schema.updatedAt ? { updated_at: (order as any).updated_at } : {}),
         items,
@@ -202,9 +171,6 @@ export async function GET(
         hotel_custom_theme_config: hotelCustomThemeConfig,
         hotel_slug: (order as any).hotels?.slug || null,
         google_review_url: googleReviewUrl,
-        // Normalise the stored currency to INR for display. This is a
-        // DISPLAY-ONLY mapping: numeric prices, tax, service charge,
-        // payment amounts and historical order rows are never altered.
         currency: normalizeCurrency((order as any).hotels?.currency || null),
       },
     }), {

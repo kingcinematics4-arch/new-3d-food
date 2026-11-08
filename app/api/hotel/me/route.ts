@@ -12,6 +12,7 @@ import { getStoredMenuTheme } from '@/lib/menuThemeStore.server';
 import { getStoredCustomTheme, getHotelGoogleReviewUrl } from '@/lib/customThemeStore.server';
 import { listSavedCustomThemes, getActiveSavedCustomTheme } from '@/lib/hotelCustomThemes.server';
 import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
+import { sanitizeWaterSettings } from '@/lib/waterSettings';
 
 export async function GET() {
   try {
@@ -50,6 +51,7 @@ export async function GET() {
       google_review_url: googleReviewUrl ?? (hotel as any)?.google_review_url ?? null,
       menu_theme: hotel?.menu_theme || storedTheme || DEFAULT_MENU_THEME,
       custom_theme_config: hotel?.custom_theme_config || storedCustomConfig || null,
+      water_settings: sanitizeWaterSettings(hotel?.water_settings),
     };
     delete hotelOut.hotel_public_id; delete hotelOut.user_id;
     return NextResponse.json({ success: true, hotel: hotelOut, saved_themes: savedThemes, active_saved_theme_id: activeSavedTheme?.id || null });
