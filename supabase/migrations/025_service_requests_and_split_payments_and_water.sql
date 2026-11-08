@@ -130,3 +130,7 @@ BEGIN
 END $$;
 
 commit;
+
+-- Ensure PostgREST/Supabase API schema cache sees new/altered objects.
+NOTIFY pgrst, 'reload schema';
+NOTIFY pgrst, 'reload config';
