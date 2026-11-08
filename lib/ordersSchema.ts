@@ -26,11 +26,10 @@ export interface OrdersSchema {
 }
 
 /**
- * Which optional order_items cancellation columns this deployment has.
+ * Which optional order_items columns this deployment has.
  * Migration 017 adds status / cancelled_at / cancellation_reason /
- * cancelled_by to public.order_items. The customer-facing public orders
- * route and the cancel-item API must select them only when present, else
- * Postgres answers with 42703 and the whole query fails.
+ * cancelled_by. Migration 027 adds item_name (for water / non-menu items).
+ * Routes must select them only when present, else Postgres answers with 42703.
  */
 export interface OrderItemsSchema {
   /** public.order_items.status exists (migration 017 applied). */
@@ -41,6 +40,8 @@ export interface OrderItemsSchema {
   cancellationReason: boolean;
   /** public.order_items.cancelled_by exists (migration 017 applied). */
   cancelledBy: boolean;
+  /** public.order_items.item_name exists (migration 027 applied). */
+  itemName: boolean;
 }
 
 // Postgres / PostgREST codes for "that column is not in the schema".
@@ -105,7 +106,7 @@ export async function getOrdersSchema(): Promise<OrdersSchema> {
 }
 
 /**
- * Which optional order_items cancellation columns this deployment has.
+ * Which optional order_items columns this deployment has.
  * Probes on each call so a mid-session migration is always detected.
  */
 export async function getOrderItemsSchema(): Promise<OrderItemsSchema> {
@@ -114,5 +115,6 @@ export async function getOrderItemsSchema(): Promise<OrderItemsSchema> {
     cancelledAt: await orderItemColumnExists('cancelled_at'),
     cancellationReason: await orderItemColumnExists('cancellation_reason'),
     cancelledBy: await orderItemColumnExists('cancelled_by'),
+    itemName: await orderItemColumnExists('item_name'),
   };
 }

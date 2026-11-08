@@ -71,6 +71,7 @@ export async function GET(
       'quantity',
       'price_at_time',
       'notes',
+      ...(itemSchema.itemName ? ['item_name'] : []),
       ...(itemSchema.status ? ['status'] : []),
       ...(itemSchema.cancelledAt ? ['cancelled_at'] : []),
       ...(itemSchema.cancellationReason ? ['cancellation_reason'] : []),
@@ -95,17 +96,21 @@ export async function GET(
       });
     }
 
-    const items = ((order as any).order_items || []).map((item: any) => ({
-      id: item.id,
-      name: item.menu_items?.name || null,
-      quantity: item.quantity,
-      price_at_time: item.price_at_time,
-      notes: item.notes,
-      ...(itemSchema.status ? { status: item.status ?? 'active' } : {}),
-      ...(itemSchema.cancelledAt ? { cancelled_at: item.cancelled_at ?? null } : {}),
-      ...(itemSchema.cancellationReason ? { cancellation_reason: item.cancellation_reason ?? null } : {}),
-      ...(itemSchema.cancelledBy ? { cancelled_by: item.cancelled_by ?? null } : {}),
-    }));
+    const items = ((order as any).order_items || []).map((item: any) => {
+      const priceAtTime = item.price_at_time ?? 0;
+      return {
+        id: item.id,
+        name: item.item_name || item.menu_items?.name || null,
+        quantity: Number(item.quantity) || 0,
+        price_at_time: priceAtTime,
+        line_total: Number(priceAtTime) * (Number(item.quantity) || 0),
+        notes: item.notes ?? null,
+        ...(itemSchema.status ? { status: item.status ?? 'active' } : {}),
+        ...(itemSchema.cancelledAt ? { cancelled_at: item.cancelled_at ?? null } : {}),
+        ...(itemSchema.cancellationReason ? { cancellation_reason: item.cancellation_reason ?? null } : {}),
+        ...(itemSchema.cancelledBy ? { cancelled_by: item.cancelled_by ?? null } : {}),
+      };
+    });
 
     const reference = orderReference(order as { id: string; order_number?: string | null });
 

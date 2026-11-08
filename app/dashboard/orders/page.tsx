@@ -505,7 +505,7 @@ export default function LiveOrdersPage() {
           : item.menu_item?.price ?? 0;
         return {
           id: item.id,
-          name: item.name || item.menu_item?.name || 'Unknown',
+          name: item.name || item.item_name || item.menu_item?.name || 'Unknown',
           quantity: item.quantity || 1,
           price,
           notes: item.notes,

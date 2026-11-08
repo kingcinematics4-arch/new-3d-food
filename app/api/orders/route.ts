@@ -1,7 +1,7 @@
 ﻿// app/api/orders/route.ts
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getOrdersSchema } from '@/lib/ordersSchema';
+import { getOrdersSchema, getOrderItemsSchema } from '@/lib/ordersSchema';
 
 const TZ = 'Asia/Kolkata';
 
@@ -38,22 +38,28 @@ export async function GET(request: Request) {
     // updated_at column has not been created, because selecting a
     // missing column fails the whole query (42703).
     const schema = await getOrdersSchema();
+    const itemSchema = await getOrderItemsSchema().catch(() => ({ itemName: false, status: false, cancelledAt: false, cancellationReason: false, cancelledBy: false }));
+
+    const itemCols = [
+      'id',
+      'menu_item_id',
+      'quantity',
+      'price_at_time',
+      'notes',
+      ...(itemSchema.itemName ? ['item_name'] : []),
+      ...(itemSchema.status ? ['status'] : []),
+      ...(itemSchema.cancelledAt ? ['cancelled_at'] : []),
+      ...(itemSchema.cancellationReason ? ['cancellation_reason'] : []),
+      ...(itemSchema.cancelledBy ? ['cancelled_by'] : []),
+      'menu_items ( name, price )',
+    ].join(',\n          ');
 
     let query = supabaseAdmin
       .from('orders')
       .select(`
         *,
         order_items (
-          id,
-          menu_item_id,
-          quantity,
-          price_at_time,
-          notes,
-          status,
-          cancelled_at,
-          cancellation_reason,
-          cancelled_by,
-          menu_items ( name, price )
+          ${itemCols}
         )
       `)
       .eq('hotel_id', hotelId)
@@ -82,11 +88,13 @@ export async function GET(request: Request) {
     const transformedOrders = (orders || []).map((order: any) => ({
       ...order,
       order_items: (order.order_items || []).map((item: any) => {
-        const priceAtTime = item.price_at_time !== undefined && item.price_at_time !== null ? item.price_at_time : (item.menu_items?.price !== undefined && item.menu_items?.price !== null ? item.menu_items.price : 0);
+        const priceAtTime = item.price_at_time ?? item.menu_items?.price ?? 0;
+        const itemName = item.item_name || item.menu_items?.name || null;
         return {
           ...item,
           price_at_time: priceAtTime,
           price: priceAtTime,
+          name: itemName,
           menu_item: item.menu_items ? { name: item.menu_items.name, price: item.menu_items.price } : null,
         };
       }),

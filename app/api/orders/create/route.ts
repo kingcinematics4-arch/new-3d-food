@@ -1,8 +1,12 @@
-// app/api/orders/create/route.ts
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { orderReference } from '@/lib/orderReference';
+import { getOrderItemsSchema } from '@/lib/ordersSchema';
 import { z } from 'zod';
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
 
 const createOrderSchema = z.object({
   hotel_id: z.string().min(1, 'hotel_id is required'),
@@ -14,10 +18,11 @@ const createOrderSchema = z.object({
   notes: z.string().optional(),
   items: z.array(
     z.object({
-      menu_item_id: z.string().min(1),
+      menu_item_id: z.string().min(1).nullable().optional(),
       quantity: z.number().int().positive(),
-      price_at_time: z.number().nonnegative(), // allows 0 for free items like Normal Water
+      price_at_time: z.number().nonnegative(), // allows 0 for free items like Free Water
       notes: z.string().optional(),
+      item_name: z.string().optional().nullable(),
     })
   ).min(1, 'Order must contain at least one item'),
 });
@@ -26,6 +31,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const validated = createOrderSchema.parse(body);
+    const itemSchema = await getOrderItemsSchema().catch(() => ({ itemName: false, status: false } as any));
 
     // Calculate total amount
     const totalAmount = validated.items.reduce(
@@ -56,14 +62,20 @@ export async function POST(request: Request) {
     const storedOrderNumber = (orderData as any).order_number || null;
     const reference = orderReference({ id: orderData.id, order_number: storedOrderNumber });
 
-    // 2. Insert Order Items
-    const orderItemsToInsert = validated.items.map((item) => ({
-      order_id: orderData.id,
-      menu_item_id: item.menu_item_id,
-      quantity: item.quantity,
-      price_at_time: item.price_at_time,
-      notes: item.notes || null,
-    }));
+// 2. Insert Order Items
+    const orderItemsToInsert = validated.items.map((item) => {
+      const rawId = typeof item.menu_item_id === 'string' ? item.menu_item_id.trim() : '';
+      const menuItemId = rawId && isUuid(rawId) ? rawId : null; // non-UUID IDs (e.g. water sentinels) stored as null; item_name carries the label
+      const row: Record<string, any> = {
+        order_id: orderData.id,
+        menu_item_id: menuItemId,
+        quantity: item.quantity,
+        price_at_time: item.price_at_time,
+        notes: item.notes || null,
+      };
+      if (itemSchema.itemName) row.item_name = item.item_name || null;
+      return row;
+    });
 
     const { error: itemsError } = await supabaseAdmin
       .from('order_items')

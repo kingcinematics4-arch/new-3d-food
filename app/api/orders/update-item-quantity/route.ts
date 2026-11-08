@@ -66,17 +66,17 @@ export async function POST(request: Request) {
       });
       if (!rpcErr) {
         const itemSchemaHasStatus = await columnExists('order_items', 'status');
-        const itemSelect = itemSchemaHasStatus
-          ? 'id, menu_item_id, quantity, price_at_time, notes, status, menu_items(name)'
-          : 'id, menu_item_id, quantity, price_at_time, notes, menu_items(name)';
+const itemSelect = itemSchemaHasStatus
+      ? 'id, menu_item_id, quantity, price_at_time, notes, item_name, status, menu_items(name)'
+      : 'id, menu_item_id, quantity, price_at_time, notes, item_name, menu_items(name)';
         const { data: fullOrder } = await supabaseAdmin
           .from('orders')
         .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect})`)
           .eq('id', orderId)
           .single();
-        const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
+const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
           id: it.id,
-          name: it.menu_items?.name || null,
+          name: it.item_name || it.menu_items?.name || null,
           quantity: it.quantity,
           price_at_time: it.price_at_time,
           notes: it.notes,
@@ -136,8 +136,8 @@ export async function POST(request: Request) {
       .eq('id', orderId);
 
     const itemSelect2 = itemSchemaHasStatus
-      ? 'id, menu_item_id, quantity, price_at_time, notes, status, menu_items(name)'
-      : 'id, menu_item_id, quantity, price_at_time, notes, menu_items(name)';
+      ? 'id, menu_item_id, quantity, price_at_time, notes, item_name, status, menu_items(name)'
+      : 'id, menu_item_id, quantity, price_at_time, notes, item_name, menu_items(name)';
     const { data: fullOrder, error: fullErr } = await supabaseAdmin
       .from('orders')
       .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect2})`)
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
 
     const items = ((fullOrder as any)?.order_items || []).map((it: any) => ({
       id: it.id,
-      name: it.menu_items?.name || null,
+      name: it.item_name || it.menu_items?.name || null,
       quantity: it.quantity,
       price_at_time: it.price_at_time,
       notes: it.notes,

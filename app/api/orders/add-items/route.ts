@@ -10,6 +10,7 @@ const itemSchema = z.object({
   menu_item_id: z.string().min(1),
   quantity: z.number().int().positive(),
   notes: z.string().optional().nullable(),
+  item_name: z.string().optional().nullable(),
 });
 
 const schema = z.object({
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
         quantity: it.quantity,
         price_at_time: mi.price,
         notes: it.notes || null,
+        item_name: it.item_name || null,
       };
       if (await columnExists('order_items', 'status')) {
         insertRow.status = 'active';
@@ -123,8 +125,8 @@ export async function POST(request: Request) {
     } catch {}
 
     const itemSelect = itemSchemaHasStatus
-      ? 'id, menu_item_id, quantity, price_at_time, notes, status, menu_items(name)'
-      : 'id, menu_item_id, quantity, price_at_time, notes, menu_items(name)';
+      ? 'id, menu_item_id, quantity, price_at_time, notes, item_name, status, menu_items(name)'
+      : 'id, menu_item_id, quantity, price_at_time, notes, item_name, menu_items(name)';
     const { data: fullOrder, error: fullErr } = await supabaseAdmin
       .from('orders')
       .select(`id, status, payment_status, payment_method, table_number, customer_name, customer_phone, notes, total_amount, created_at, updated_at, order_number, order_items(${itemSelect})`)
@@ -134,7 +136,7 @@ export async function POST(request: Request) {
 
     const itemsOut = ((fullOrder as any)?.order_items || []).map((it: any) => ({
       id: it.id,
-      name: it.menu_items?.name || null,
+      name: it.item_name || it.menu_items?.name || null,
       quantity: it.quantity,
       price_at_time: it.price_at_time,
       notes: it.notes,

@@ -77,31 +77,46 @@ export default function WaterCategoryModal({
     setTimeout(() => setStatusMsg(null), 3500);
   };
 
-  // ── Normal Water → Service Request ───────────────────────────────────────────
+  // ── Normal Water → Direct Order (free) ───────────────────────────────────────
   const handleNormalWater = async () => {
     if (loading) return;
     setLoading('normal');
     setStatusMsg(null);
+
+    const qty = quantities.normal || 1;
+    const note = `Normal water request: ${qty} glass(es)`;
+
     try {
-      const res = await fetch('/api/service-requests', {
+      const res = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           hotel_id: hotelId,
           table_number: tableNumber,
-          request_type: 'drinking_water',
-          message: `${quantities.normal || 1} glass(es) of normal water requested`,
+          order_type: 'dine_in',
+          payment_method: 'pay_at_table',
+          notes: note,
+          items: [
+            {
+              menu_item_id: null,
+              quantity: qty,
+              price_at_time: 0,
+              item_name: 'Free Water',
+              notes: note,
+            },
+          ],
         }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Request failed');
-      if (data.duplicate) {
-        showStatus('normal', 'success', '✓ Water already requested – waiter has been notified!');
-      } else {
-        showStatus('normal', 'success', `✓ Free water requested! Waiter will bring ${quantities.normal || 1} glass(es) to Table ${tableNumber}.`);
-      }
+      if (!res.ok || !data.success) throw new Error(data.error || 'Order failed');
+      showStatus(
+        'normal',
+        'success',
+        `✓ Free water ordered! ${qty}x Free Water. Order #${data.orderNumber || data.orderId} for Table ${tableNumber}.`
+      );
+      setQuantities((prev) => ({ ...prev, normal: 1 }));
     } catch (err: any) {
-      showStatus('normal', 'error', err.message || 'Could not send request. Please try again.');
+      showStatus('normal', 'error', err.message || 'Could not place order. Please try again.');
     } finally {
       setLoading(null);
     }
@@ -117,7 +132,6 @@ export default function WaterCategoryModal({
     const price = getPriceForType(type);
     const size = selectedSizes[type];
     const itemName = size ? `${title} (${size})` : title;
-    const menuItemId = `water-${type}-${size || 'std'}`;
 
     try {
       const res = await fetch('/api/orders/create', {
@@ -131,9 +145,10 @@ export default function WaterCategoryModal({
           notes: `Water order: ${itemName}`,
           items: [
             {
-              menu_item_id: menuItemId,
+              menu_item_id: null,
               quantity: qty,
               price_at_time: price,
+              item_name: itemName,
               notes: size ? `Size: ${size}` : '',
             },
           ],
