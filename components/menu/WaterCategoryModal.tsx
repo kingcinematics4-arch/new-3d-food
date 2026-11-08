@@ -2,23 +2,32 @@
 
 import React, { useState } from 'react';
 import { formatPrice } from '@/lib/menu';
-import { HotelWaterSettings, WaterSizeOption } from '@/lib/waterSettings';
-import { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
+import { HotelWaterSettings } from '@/lib/waterSettings';
 
 interface WaterCategoryModalProps {
   waterSettings?: HotelWaterSettings | null;
   currency: string | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddToCart: (item: PublicMenuItem, qty: number, notes: string) => void;
+  hotelId: string;
+  tableNumber: string;
 }
+
+type WaterType = 'normal' | 'mineral' | 'cold';
+
+type StatusMsg = {
+  type: 'success' | 'error';
+  text: string;
+  key: WaterType;
+} | null;
 
 export default function WaterCategoryModal({
   waterSettings,
   currency,
   isOpen,
   onClose,
-  onAddToCart,
+  hotelId,
+  tableNumber,
 }: WaterCategoryModalProps) {
   const [quantities, setQuantities] = useState<Record<string, number>>({
     normal: 1,
@@ -31,15 +40,30 @@ export default function WaterCategoryModal({
     cold: '500ml',
   });
 
-  const [addedNotice, setAddedNotice] = useState<string | null>(null);
+  const [loading, setLoading] = useState<WaterType | null>(null);
+  const [statusMsg, setStatusMsg] = useState<StatusMsg>(null);
 
   if (!isOpen) return null;
 
   const normalConfig = waterSettings?.normal ?? { enabled: true, price: 0 };
-  const mineralConfig = waterSettings?.mineral ?? { enabled: true, price: 20, sizes: [{ size: '500ml', price: 10, enabled: true }, { size: '1L', price: 20, enabled: true }] };
-  const coldConfig = waterSettings?.cold ?? { enabled: true, price: 25, sizes: [{ size: '500ml', price: 15, enabled: true }, { size: '1L', price: 25, enabled: true }] };
+  const mineralConfig = waterSettings?.mineral ?? {
+    enabled: true,
+    price: 20,
+    sizes: [
+      { size: '500ml', price: 10, enabled: true },
+      { size: '1L', price: 20, enabled: true },
+    ],
+  };
+  const coldConfig = waterSettings?.cold ?? {
+    enabled: true,
+    price: 25,
+    sizes: [
+      { size: '500ml', price: 15, enabled: true },
+      { size: '1L', price: 25, enabled: true },
+    ],
+  };
 
-  const getPriceForType = (type: 'normal' | 'mineral' | 'cold') => {
+  const getPriceForType = (type: WaterType): number => {
     if (type === 'normal') return 0;
     const cfg = type === 'mineral' ? mineralConfig : coldConfig;
     const size = selectedSizes[type];
@@ -48,36 +72,111 @@ export default function WaterCategoryModal({
     return cfg.price || 0;
   };
 
-  const handleAdd = (type: 'normal' | 'mineral' | 'cold', title: string) => {
+  const showStatus = (key: WaterType, type: 'success' | 'error', text: string) => {
+    setStatusMsg({ key, type, text });
+    setTimeout(() => setStatusMsg(null), 3500);
+  };
+
+  // ── Normal Water → Service Request ───────────────────────────────────────────
+  const handleNormalWater = async () => {
+    if (loading) return;
+    setLoading('normal');
+    setStatusMsg(null);
+    try {
+      const res = await fetch('/api/service-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hotel_id: hotelId,
+          table_number: tableNumber,
+          request_type: 'drinking_water',
+          message: `${quantities.normal || 1} glass(es) of normal water requested`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Request failed');
+      if (data.duplicate) {
+        showStatus('normal', 'success', '✓ Water already requested – waiter has been notified!');
+      } else {
+        showStatus('normal', 'success', `✓ Free water requested! Waiter will bring ${quantities.normal || 1} glass(es) to Table ${tableNumber}.`);
+      }
+    } catch (err: any) {
+      showStatus('normal', 'error', err.message || 'Could not send request. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  // ── Mineral / Cold Water → Direct Order ──────────────────────────────────────
+  const handleOrderNow = async (type: 'mineral' | 'cold', title: string) => {
+    if (loading) return;
+    setLoading(type);
+    setStatusMsg(null);
+
     const qty = quantities[type] || 1;
     const price = getPriceForType(type);
-    const size = type !== 'normal' ? selectedSizes[type] : undefined;
+    const size = selectedSizes[type];
+    const itemName = size ? `${title} (${size})` : title;
+    const menuItemId = `water-${type}-${size || 'std'}`;
 
-    const pseudoId = `water-${type}-${size || 'std'}`;
-    const pseudoItem: PublicMenuItem = {
-      id: pseudoId,
-      category_id: 'water-category',
-      name: size ? `${title} (${size})` : title,
-      description: type === 'normal' ? 'Complimentary pure drinking water' : `${title} served chilled or bottled`,
-      price: price,
-      image_url: null,
-      model_url_glb: null,
-      model_url_usdz: null,
-      is_veg: true,
-      calories: 0,
-      preparation_time_mins: 2,
-      ingredients: ['Water'],
-      allergens: [],
-      dietary_tags: ['Beverage', 'Water'],
-      rating: 5,
-      order_count: 100,
-      is_featured: false,
-      is_popular: false,
-    };
+    try {
+      const res = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hotel_id: hotelId,
+          table_number: tableNumber,
+          order_type: 'dine_in',
+          payment_method: 'pay_at_table',
+          notes: `Water order: ${itemName}`,
+          items: [
+            {
+              menu_item_id: menuItemId,
+              quantity: qty,
+              price_at_time: price,
+              notes: size ? `Size: ${size}` : '',
+            },
+          ],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Order failed');
+      showStatus(
+        type,
+        'success',
+        `✓ ${qty}x ${itemName} ordered! Order #${data.orderNumber || data.orderId} placed for Table ${tableNumber}.`
+      );
+      // Reset quantity after successful order
+      setQuantities((prev) => ({ ...prev, [type]: 1 }));
+    } catch (err: any) {
+      showStatus(type, 'error', err.message || 'Could not place order. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
 
-    onAddToCart(pseudoItem, qty, size ? `Size: ${size}` : '');
-    setAddedNotice(`Added ${qty}x ${pseudoItem.name} to order`);
-    setTimeout(() => setAddedNotice(null), 2500);
+  const btnStyle = (disabled: boolean): React.CSSProperties => ({
+    padding: '0.5rem 1rem',
+    borderRadius: 8,
+    background: disabled ? 'rgba(201,169,110,0.4)' : 'var(--gold, #C9A96E)',
+    color: '#0B0B0A',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    border: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.7 : 1,
+    transition: 'opacity 0.15s',
+    whiteSpace: 'nowrap' as const,
+  });
+
+  const qtyBtnStyle: React.CSSProperties = {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    background: 'rgba(243,239,231,0.08)',
+    border: 'none',
+    color: 'var(--text-primary, #F3EFE7)',
+    cursor: 'pointer',
   };
 
   return (
@@ -115,7 +214,7 @@ export default function WaterCategoryModal({
                 Water Selection
               </h2>
               <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-dimmed, #7A766F)' }}>
-                Fresh drinking water & packaged mineral options
+                Table {tableNumber} · Orders placed instantly
               </p>
             </div>
           </div>
@@ -138,24 +237,9 @@ export default function WaterCategoryModal({
           </button>
         </div>
 
-        {addedNotice && (
-          <div
-            style={{
-              background: 'rgba(16, 185, 129, 0.15)',
-              borderBottom: '1px solid #10B981',
-              color: '#34D399',
-              padding: '0.5rem 1rem',
-              fontSize: '0.8125rem',
-              textAlign: 'center',
-              fontWeight: 500,
-            }}
-          >
-            ✓ {addedNotice}
-          </div>
-        )}
-
         <div className="p-5 flex flex-col gap-4">
-          {/* 1. Normal Water */}
+
+          {/* ── 1. Normal Water ── */}
           {normalConfig.enabled !== false && (
             <div
               style={{
@@ -177,7 +261,7 @@ export default function WaterCategoryModal({
                     </h3>
                   </div>
                   <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-muted, #9E988D)' }}>
-                    Filtered drinking water served complimentary by the restaurant.
+                    Filtered drinking water served complimentary. Sent as a service request.
                   </p>
                 </div>
                 <span
@@ -189,26 +273,35 @@ export default function WaterCategoryModal({
                     fontSize: '0.75rem',
                     fontWeight: 700,
                     letterSpacing: '0.05em',
+                    flexShrink: 0,
                   }}
                 >
                   FREE
                 </span>
               </div>
 
+              {/* Status for normal */}
+              {statusMsg?.key === 'normal' && (
+                <div
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: 8,
+                    fontSize: '0.8125rem',
+                    background: statusMsg.type === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                    color: statusMsg.type === 'success' ? '#34D399' : '#F87171',
+                    border: `1px solid ${statusMsg.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  }}
+                >
+                  {statusMsg.text}
+                </div>
+              )}
+
               <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(243,239,231,0.05)' }}>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setQuantities({ ...quantities, normal: Math.max(1, (quantities.normal || 1) - 1) })}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'rgba(243,239,231,0.08)',
-                      border: 'none',
-                      color: 'var(--text-primary, #F3EFE7)',
-                      cursor: 'pointer',
-                    }}
+                    style={qtyBtnStyle}
                   >
                     -
                   </button>
@@ -218,15 +311,7 @@ export default function WaterCategoryModal({
                   <button
                     type="button"
                     onClick={() => setQuantities({ ...quantities, normal: (quantities.normal || 1) + 1 })}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'rgba(243,239,231,0.08)',
-                      border: 'none',
-                      color: 'var(--text-primary, #F3EFE7)',
-                      cursor: 'pointer',
-                    }}
+                    style={qtyBtnStyle}
                   >
                     +
                   </button>
@@ -234,25 +319,17 @@ export default function WaterCategoryModal({
 
                 <button
                   type="button"
-                  onClick={() => handleAdd('normal', 'Normal Water')}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    borderRadius: 8,
-                    background: 'var(--gold, #C9A96E)',
-                    color: '#0B0B0A',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
+                  disabled={loading === 'normal'}
+                  onClick={handleNormalWater}
+                  style={btnStyle(loading === 'normal')}
                 >
-                  Add Free Water
+                  {loading === 'normal' ? '⏳ Sending…' : 'Request Free Water'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* 2. Mineral Water */}
+          {/* ── 2. Mineral Water ── */}
           {mineralConfig.enabled && (
             <div
               style={{
@@ -283,15 +360,16 @@ export default function WaterCategoryModal({
                     color: 'var(--gold, #C9A96E)',
                     fontSize: '1rem',
                     fontWeight: 600,
+                    flexShrink: 0,
                   }}
                 >
                   {formatPrice(getPriceForType('mineral'), currency)}
                 </span>
               </div>
 
-              {/* Sizes selector */}
+              {/* Sizes */}
               {mineralConfig.sizes && mineralConfig.sizes.filter((s) => s.enabled).length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed, #7A766F)', textTransform: 'uppercase' }}>Size:</span>
                   {mineralConfig.sizes.filter((s) => s.enabled).map((s) => {
                     const active = (selectedSizes.mineral || mineralConfig.sizes![0].size) === s.size;
@@ -318,20 +396,28 @@ export default function WaterCategoryModal({
                 </div>
               )}
 
+              {/* Status for mineral */}
+              {statusMsg?.key === 'mineral' && (
+                <div
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: 8,
+                    fontSize: '0.8125rem',
+                    background: statusMsg.type === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                    color: statusMsg.type === 'success' ? '#34D399' : '#F87171',
+                    border: `1px solid ${statusMsg.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  }}
+                >
+                  {statusMsg.text}
+                </div>
+              )}
+
               <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(243,239,231,0.05)' }}>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setQuantities({ ...quantities, mineral: Math.max(1, (quantities.mineral || 1) - 1) })}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'rgba(243,239,231,0.08)',
-                      border: 'none',
-                      color: 'var(--text-primary, #F3EFE7)',
-                      cursor: 'pointer',
-                    }}
+                    style={qtyBtnStyle}
                   >
                     -
                   </button>
@@ -341,15 +427,7 @@ export default function WaterCategoryModal({
                   <button
                     type="button"
                     onClick={() => setQuantities({ ...quantities, mineral: (quantities.mineral || 1) + 1 })}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'rgba(243,239,231,0.08)',
-                      border: 'none',
-                      color: 'var(--text-primary, #F3EFE7)',
-                      cursor: 'pointer',
-                    }}
+                    style={qtyBtnStyle}
                   >
                     +
                   </button>
@@ -357,25 +435,19 @@ export default function WaterCategoryModal({
 
                 <button
                   type="button"
-                  onClick={() => handleAdd('mineral', 'Mineral Water')}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    borderRadius: 8,
-                    background: 'var(--gold, #C9A96E)',
-                    color: '#0B0B0A',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
+                  disabled={loading === 'mineral'}
+                  onClick={() => handleOrderNow('mineral', 'Mineral Water')}
+                  style={btnStyle(loading === 'mineral')}
                 >
-                  Add to Order • {formatPrice(getPriceForType('mineral') * (quantities.mineral || 1), currency)}
+                  {loading === 'mineral'
+                    ? '⏳ Ordering…'
+                    : `Order Now • ${formatPrice(getPriceForType('mineral') * (quantities.mineral || 1), currency)}`}
                 </button>
               </div>
             </div>
           )}
 
-          {/* 3. Cold Water */}
+          {/* ── 3. Cold Water ── */}
           {coldConfig.enabled && (
             <div
               style={{
@@ -406,15 +478,16 @@ export default function WaterCategoryModal({
                     color: 'var(--gold, #C9A96E)',
                     fontSize: '1rem',
                     fontWeight: 600,
+                    flexShrink: 0,
                   }}
                 >
                   {formatPrice(getPriceForType('cold'), currency)}
                 </span>
               </div>
 
-              {/* Sizes selector */}
+              {/* Sizes */}
               {coldConfig.sizes && coldConfig.sizes.filter((s) => s.enabled).length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed, #7A766F)', textTransform: 'uppercase' }}>Size:</span>
                   {coldConfig.sizes.filter((s) => s.enabled).map((s) => {
                     const active = (selectedSizes.cold || coldConfig.sizes![0].size) === s.size;
@@ -441,20 +514,28 @@ export default function WaterCategoryModal({
                 </div>
               )}
 
+              {/* Status for cold */}
+              {statusMsg?.key === 'cold' && (
+                <div
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: 8,
+                    fontSize: '0.8125rem',
+                    background: statusMsg.type === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                    color: statusMsg.type === 'success' ? '#34D399' : '#F87171',
+                    border: `1px solid ${statusMsg.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  }}
+                >
+                  {statusMsg.text}
+                </div>
+              )}
+
               <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(243,239,231,0.05)' }}>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setQuantities({ ...quantities, cold: Math.max(1, (quantities.cold || 1) - 1) })}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'rgba(243,239,231,0.08)',
-                      border: 'none',
-                      color: 'var(--text-primary, #F3EFE7)',
-                      cursor: 'pointer',
-                    }}
+                    style={qtyBtnStyle}
                   >
                     -
                   </button>
@@ -464,15 +545,7 @@ export default function WaterCategoryModal({
                   <button
                     type="button"
                     onClick={() => setQuantities({ ...quantities, cold: (quantities.cold || 1) + 1 })}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'rgba(243,239,231,0.08)',
-                      border: 'none',
-                      color: 'var(--text-primary, #F3EFE7)',
-                      cursor: 'pointer',
-                    }}
+                    style={qtyBtnStyle}
                   >
                     +
                   </button>
@@ -480,23 +553,18 @@ export default function WaterCategoryModal({
 
                 <button
                   type="button"
-                  onClick={() => handleAdd('cold', 'Cold Water')}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    borderRadius: 8,
-                    background: 'var(--gold, #C9A96E)',
-                    color: '#0B0B0A',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
+                  disabled={loading === 'cold'}
+                  onClick={() => handleOrderNow('cold', 'Cold Water')}
+                  style={btnStyle(loading === 'cold')}
                 >
-                  Add to Order • {formatPrice(getPriceForType('cold') * (quantities.cold || 1), currency)}
+                  {loading === 'cold'
+                    ? '⏳ Ordering…'
+                    : `Order Now • ${formatPrice(getPriceForType('cold') * (quantities.cold || 1), currency)}`}
                 </button>
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>

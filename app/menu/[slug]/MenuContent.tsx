@@ -1237,13 +1237,8 @@ export default function MenuContent({
           currency={currency}
           isOpen={isWaterModalOpen}
           onClose={() => setIsWaterModalOpen(false)}
-          onAddToCart={(item, qty, notes) => {
-            setCart((prev) => {
-              const existing = prev.find((c) => c.menuItem.id === item.id);
-              if (existing) return prev.map((c) => (c.menuItem.id === item.id ? { ...c, quantity: c.quantity + qty, notes: notes || c.notes } : c));
-              return [...prev, { menuItem: item, quantity: qty, notes }];
-            });
-          }}
+          hotelId={hotel.id}
+          tableNumber={initialTableNumber || 'Takeaway'}
         />
 
         {/* Sticky Quick Action Pills: Call Waiter & Order Water */}
