@@ -3,7 +3,7 @@
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
 import Dine3DLogo from '@/components/Dine3DLogo';
-import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customTheme';
+import { cloneCustomThemeConfig, fontCssFamily, type CustomThemeConfig } from '@/lib/customTheme';
 import type { MenuTemplateProps } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
@@ -41,27 +41,30 @@ export default function CustomTemplate(props: CustomTemplateProps) {
   const cardBorder = config.borderStyle === 'none' ? '1px solid transparent' : config.borderStyle === 'accent' ? `1px solid ${alpha(p,0.55)}` : config.borderStyle === 'defined' ? `1px solid ${alpha(p,0.28)}` : `1px solid ${alpha(p,0.16)}`;
   const pad = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 22 : 16;
   const gap = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 22 : 16;
+  const headingFamily = fontCssFamily(config.headingFont);
+  const bodyFamily = fontCssFamily(config.bodyFont);
+  const priceFamily = fontCssFamily(config.priceFont);
   const btnPad = config.buttonSize === 'sm' ? '0.45rem 0.7rem' : config.buttonSize === 'lg' ? '0.85rem 1.2rem' : '0.65rem 0.95rem';
   const btnFont = config.buttonSize === 'sm' ? 12 : config.buttonSize === 'lg' ? 15 : 13;
 
   const buttonStyle = (primary = true): React.CSSProperties => {
     const radius = config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius;
-    const base: React.CSSProperties = { borderRadius: radius, padding: btnPad, fontSize: btnFont, fontWeight: config.typography.buttonTextWeight as any, fontFamily: config.priceFont, cursor: 'pointer', transition: 'all 180ms ease' };
-    if (!primary) return { ...base, border: `1px solid ${alpha(p,0.35)}`, background: 'transparent', color: p };
+    const base: React.CSSProperties = { borderRadius: radius, padding: btnPad, fontSize: btnFont, fontWeight: config.typography.buttonTextWeight as any, fontFamily: priceFamily, cursor: 'pointer', transition: 'all 180ms ease' };
+    if (!primary) return { ...base, border: `1px solid ${alpha(p,0.35)}`, background: 'transparent', color: config.navTextColor || p };
     if (config.buttonStyle === 'outline') return { ...base, border: `1px solid ${p}`, background: 'transparent', color: p };
-    if (config.buttonStyle === 'soft') return { ...base, border: `1px solid ${alpha(p,0.22)}`, background: alpha(p,0.14), color: p };
-    return { ...base, border: `1px solid ${p}`, background: p, color: contrast(p) };
+    if (config.buttonStyle === 'soft') return { ...base, border: `1px solid ${alpha(p,0.28)}`, background: alpha(p,0.16), color: config.buttonTextColor || p };
+    return { ...base, border: `1px solid ${p}`, background: p, color: config.buttonTextColor || contrast(p) };
   };
 
   const cardBase = (): React.CSSProperties => ({
     backgroundColor: config.cardStyle === 'glassmorphic' ? alpha(config.cardBg, 0.72) : config.cardBg,
-    color: config.textColor,
+    color: config.bodyTextColor || config.textColor,
     borderRadius: config.borderRadius,
     border: config.cardStyle === 'bordered' ? `1px solid ${alpha(p,0.45)}` : config.cardStyle === 'glassmorphic' ? `1px solid ${alpha('#fff',0.14)}` : cardBorder,
     boxShadow: config.cardStyle === 'elevated' || config.shadowStrength !== 'none' ? cardShadow : 'none',
     backdropFilter: config.cardStyle === 'glassmorphic' ? 'blur(16px)' : undefined,
     WebkitBackdropFilter: config.cardStyle === 'glassmorphic' ? 'blur(16px)' : undefined,
-    fontFamily: config.bodyFont,
+    fontFamily: bodyFamily,
   });
 
   const badgeStyle = (filled = false): React.CSSProperties => {
@@ -76,8 +79,8 @@ export default function CustomTemplate(props: CustomTemplateProps) {
       className={embeddedViewport ? 'w-full transition-colors duration-200' : 'min-h-screen transition-colors duration-200'}
       style={{
         backgroundColor: config.pageBg,
-        color: config.textColor,
-        fontFamily: config.bodyFont,
+        color: config.bodyTextColor || config.textColor,
+        fontFamily: bodyFamily,
         fontSize: config.typography.bodySize,
         fontWeight: config.typography.bodyWeight as any,
         boxSizing: 'border-box',
@@ -104,21 +107,20 @@ export default function CustomTemplate(props: CustomTemplateProps) {
               />
             ) : null}
             <div className="min-w-0 flex-1" style={{ boxSizing: 'border-box', overflow: 'hidden' }}>
-              <span style={{ color: p, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tableNumber ? `Table ${tableNumber}` : 'MENU'}</span>
+              <span style={{ color: config.navTextColor || config.secondaryTextColor || p, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tableNumber ? `Table ${tableNumber}` : 'MENU'}</span>
               <h1
                 title={hotel.name}
                 style={{
-                  fontFamily: config.headingFont,
+                  fontFamily: headingFamily,
                   fontSize: Math.max(13, config.typography.headingSize - (embeddedViewport ? 5 : 4)),
+                  color: config.headingColor || config.textColor,
                   fontWeight: config.typography.headingWeight as any,
-                  color: config.textColor,
                   margin: 0,
                   lineHeight: 1.15,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  display: 'block',
-                  minWidth: 0,
+                  maxWidth: '100%',
                 }}
               >
                 {hotel.name}
@@ -144,7 +146,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search dishes..."
             className="w-full border outline-none"
-            style={{ backgroundColor: config.cardBg, color: config.textColor, borderColor: alpha(p, 0.22), borderRadius: config.buttonRadius, fontFamily: config.bodyFont, fontSize: embeddedViewport ? Math.max(12, config.typography.bodySize - 1) : config.typography.bodySize, boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, display: 'block', padding: embeddedViewport ? '8px 10px 8px 34px' : '8px 12px 8px 36px' }}
+            style={{ backgroundColor: config.cardBg, color: config.bodyTextColor || config.textColor, borderColor: alpha(p, 0.22), borderRadius: config.buttonRadius, fontFamily: bodyFamily, fontSize: embeddedViewport ? Math.max(12, config.typography.bodySize - 1) : config.typography.bodySize, boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, display: 'block', padding: embeddedViewport ? '8px 10px 8px 34px' : '8px 12px 8px 36px' }}
           />
           <svg className="pointer-events-none absolute top-1/2 -translate-y-1/2" style={{ left: embeddedViewport ? 10 : 12, width: 14, height: 14 }} viewBox="0 0 14 14" fill="none" stroke={p} strokeWidth="1.5"><circle cx="6" cy="6" r="4.5" /><path d="M9.5 9.5L12.5 12.5" strokeLinecap="round" /></svg>
         </div>
@@ -175,12 +177,12 @@ export default function CustomTemplate(props: CustomTemplateProps) {
         style={{ display: 'flex', flexDirection: 'column', gap: embeddedViewport ? (config.spacing === 'compact' ? 14 : config.spacing === 'spacious' ? 26 : 18) : (config.spacing === 'compact' ? 20 : config.spacing === 'spacious' ? 40 : 28), paddingBottom: embeddedViewport ? 32 : 24, boxSizing: 'border-box', minWidth: 0 }}
       >
         {filteredItems.length === 0 ? (
-          <div className="py-20 text-center" style={{ color: config.mutedTextColor }}><p>No dishes match your search.</p></div>
+          <div className="py-20 text-center" style={{ color: config.secondaryTextColor || config.mutedTextColor }}><p>No dishes match your search.</p></div>
         ) : (
           <>
-            {featuredItems.length > 0 && <Section title="Chef's Featured" p={p} config={config} layout={config.menuLayout} gap={gap} embeddedViewport={embeddedViewport}>{featuredItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} embeddedViewport={embeddedViewport} />)}</Section>}
-            {popularItems.length > 0 && <Section title="Most Popular" p={p} config={config} layout={config.menuLayout} gap={gap} embeddedViewport={embeddedViewport}>{popularItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} embeddedViewport={embeddedViewport} />)}</Section>}
-            {regularItems.length > 0 && <Section title={featuredItems.length || popularItems.length ? 'All Dishes' : 'Menu'} p={p} config={config} layout={config.menuLayout} gap={gap} embeddedViewport={embeddedViewport}>{regularItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} embeddedViewport={embeddedViewport} />)}</Section>}
+            {featuredItems.length > 0 && <Section title="Chef's Featured" p={p} config={config} layout={config.menuLayout} gap={gap} embeddedViewport={embeddedViewport} headingFamily={headingFamily}>{featuredItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} embeddedViewport={embeddedViewport} headingFamily={headingFamily} priceFamily={priceFamily} />)}</Section>}
+            {popularItems.length > 0 && <Section title="Most Popular" p={p} config={config} layout={config.menuLayout} gap={gap} embeddedViewport={embeddedViewport} headingFamily={headingFamily}>{popularItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} embeddedViewport={embeddedViewport} headingFamily={headingFamily} priceFamily={priceFamily} />)}</Section>}
+            {regularItems.length > 0 && <Section title={featuredItems.length || popularItems.length ? 'All Dishes' : 'Menu'} p={p} config={config} layout={config.menuLayout} gap={gap} embeddedViewport={embeddedViewport} headingFamily={headingFamily}>{regularItems.map((item) => <CustomDishCard key={item.id} item={item} currency={currency} cart={cart} config={config} cardStyles={cardBase()} buttonStyles={buttonStyle()} badge={badgeStyle()} onAdd={onAdd} onRemove={onRemove} onItemClick={onItemClick} onView3D={onView3D} embeddedViewport={embeddedViewport} headingFamily={headingFamily} priceFamily={priceFamily} />)}</Section>}
           </>
         )}
       </main>
@@ -188,7 +190,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
   );
 }
 
-function Section({ title, p, config, layout, gap, children, embeddedViewport }: { title: string; p: string; config: CustomThemeConfig; layout: CustomThemeConfig['menuLayout']; gap: number; children: React.ReactNode; embeddedViewport?: boolean }) {
+function Section({ title, p, config, layout, gap, children, embeddedViewport, headingFamily }: { title: string; p: string; config: CustomThemeConfig; layout: CustomThemeConfig['menuLayout']; gap: number; children: React.ReactNode; embeddedViewport?: boolean; headingFamily: string }) {
   const useTwoCol = !embeddedViewport && layout !== 'compact-list' && layout !== 'editorial' && layout !== 'cards';
   const cls = layout === 'compact-list' || layout === 'editorial' ? undefined : layout === 'cards' || !useTwoCol ? 'grid grid-cols-1' : 'grid grid-cols-1 sm:grid-cols-2';
   const style: React.CSSProperties = { gap, ...(layout === 'compact-list' || layout === 'editorial' ? { display: 'flex', flexDirection: 'column' } : {}), boxSizing: 'border-box', minWidth: 0, width: '100%' };
@@ -196,7 +198,7 @@ function Section({ title, p, config, layout, gap, children, embeddedViewport }: 
     <section style={{ boxSizing: 'border-box', minWidth: 0, width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: embeddedViewport ? 10 : 14, minWidth: 0 }}>
         <span style={{ width: 8, height: 8, borderRadius: 999, background: p, flexShrink: 0 }} />
-        <h2 style={{ fontFamily: config.headingFont, fontSize: Math.max(15, config.typography.headingSize - (embeddedViewport ? 2 : 1)), fontWeight: config.typography.headingWeight as any, color: config.textColor, margin: 0, lineHeight: 1.2, overflowWrap: 'break-word', minWidth: 0 }}>{title}</h2>
+        <h2 style={{ fontFamily: headingFamily, fontSize: Math.max(15, config.typography.headingSize - (embeddedViewport ? 2 : 1)), fontWeight: config.typography.headingWeight as any, color: config.bodyTextColor || config.textColor, margin: 0, lineHeight: 1.2, overflowWrap: 'break-word', minWidth: 0 }}>{title}</h2>
       </div>
       <div className={cls} style={style}>{children}</div>
     </section>
@@ -204,11 +206,11 @@ function Section({ title, p, config, layout, gap, children, embeddedViewport }: 
 }
 
 function CustomDishCard({
-  item, currency, cart, config, cardStyles, buttonStyles, badge, onAdd, onRemove, onItemClick, onView3D, embeddedViewport,
+  item, currency, cart, config, cardStyles, buttonStyles, badge, onAdd, onRemove, onItemClick, onView3D, embeddedViewport, headingFamily, priceFamily,
 }: {
   item: PublicMenuItem; currency: string | null; cart: { menuItem: PublicMenuItem; quantity: number }[]; config: CustomThemeConfig;
   cardStyles: React.CSSProperties; buttonStyles: React.CSSProperties; badge: React.CSSProperties;
-  onAdd: (item: PublicMenuItem) => void; onRemove: (id: string) => void; onItemClick: (item: PublicMenuItem) => void; onView3D: (item: PublicMenuItem) => void; embeddedViewport?: boolean;
+  onAdd: (item: PublicMenuItem) => void; onRemove: (id: string) => void; onItemClick: (item: PublicMenuItem) => void; onView3D: (item: PublicMenuItem) => void; embeddedViewport?: boolean; headingFamily: string; priceFamily: string;
 }) {
   const inCart = cart.find((c) => c.menuItem.id === item.id);
   const has3D = Boolean(item.model_url_glb?.trim());
@@ -221,15 +223,15 @@ function CustomDishCard({
     return (
       <div onClick={() => onItemClick(item)} style={{ ...cardStyles, padding: pad, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
         <div style={{ width: 84, height: 84, flexShrink: 0, overflow: 'hidden', borderRadius: imgRadius, background: alpha(p,0.08), position: 'relative' }}>
-          {image ? <img src={image} alt={item.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: config.mutedTextColor, fontSize: 11 }}>Dish</div>}
+          {image ? <img src={image} alt={item.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: config.secondaryTextColor || config.mutedTextColor, fontSize: 11 }}>Dish</div>}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: item.is_veg ? '#22c55e' : '#ef4444', flexShrink: 0 }} />
-            <h3 style={{ margin: 0, fontFamily: config.headingFont, fontSize: Math.max(14, config.typography.headingSize - 2), fontWeight: config.typography.headingWeight as any, color: config.textColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</h3>
+            <h3 style={{ margin: 0, fontFamily: headingFamily, fontSize: Math.max(14, config.typography.headingSize - 2), fontWeight: config.typography.headingWeight as any, color: config.bodyTextColor || config.textColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</h3>
           </div>
-          {item.description ? <p style={{ margin: '0 0 6px', fontSize: Math.max(12, config.typography.bodySize - 1), color: config.mutedTextColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</p> : null}
-          <span style={{ fontFamily: config.priceFont, fontSize: config.typography.priceSize, fontWeight: 700, color: p }}>{formatPrice(Number(item.price) || 0, currency)}</span>
+          {item.description ? <p style={{ margin: '0 0 6px', fontSize: Math.max(12, config.typography.bodySize - 1), color: config.secondaryTextColor || config.mutedTextColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</p> : null}
+          <span style={{ fontFamily: priceFamily, fontSize: config.typography.priceSize, fontWeight: 700, color: p }}>{formatPrice(Number(item.price) || 0, currency)}</span>
         </div>
         <div onClick={(e) => e.stopPropagation()}>
           {inCart ? <Qty p={p} config={config} qty={inCart.quantity} onMinus={() => onRemove(item.id)} onPlus={() => onAdd(item)} /> : <button onClick={() => onAdd(item)} style={buttonStyles}>Add</button>}
@@ -246,7 +248,7 @@ function CustomDishCard({
   return (
     <div onClick={() => onItemClick(item)} style={{ ...cardStyles, overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer', boxSizing: 'border-box', width: '100%', minWidth: 0, maxWidth: '100%' }}>
       <div style={{ position: 'relative', width: '100%', height: imageHeight, background: alpha(p,0.06), boxSizing: 'border-box', overflow: 'hidden' }}>
-        {image ? <img src={image} alt={item.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: `${imgRadius} ${imgRadius} 0 0` }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: config.mutedTextColor }}>No photo</div>}
+        {image ? <img src={image} alt={item.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: `${imgRadius} ${imgRadius} 0 0` }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: config.secondaryTextColor || config.mutedTextColor }}>No photo</div>}
         <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 6, flexWrap: 'wrap', maxWidth: 'calc(100% - 16px)', boxSizing: 'border-box' }}>
           <span style={{ ...badge, fontSize: embeddedViewport ? 10 : 11, padding: embeddedViewport ? '0.16rem 0.45rem' : badge.padding }}><span style={{ width: 6, height: 6, borderRadius: 2, background: item.is_veg ? '#22c55e' : '#ef4444' }} />{item.is_veg ? 'Veg' : 'Non-veg'}</span>
           {item.is_featured ? <span style={{ ...badge, fontSize: embeddedViewport ? 10 : 11, padding: embeddedViewport ? '0.16rem 0.45rem' : badge.padding, background: p, color: contrast(p), borderColor: p }}>Featured</span> : null}
@@ -255,11 +257,11 @@ function CustomDishCard({
       </div>
       <div style={{ padding: pad, display: 'flex', flexDirection: 'column', flex: 1, boxSizing: 'border-box', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6, minWidth: 0 }}>
-          <h3 style={{ margin: 0, minWidth: 0, fontFamily: config.headingFont, fontSize: Math.max(14, config.typography.headingSize - (embeddedViewport ? 2 : 0)), fontWeight: config.typography.headingWeight as any, color: config.textColor, lineHeight: 1.2, overflowWrap: 'break-word' }}>{item.name}</h3>
-          <span style={{ fontFamily: config.priceFont, fontSize: Math.max(13, config.typography.priceSize - (embeddedViewport ? 1 : 0)), fontWeight: 700, color: p, whiteSpace: 'nowrap', flexShrink: 0 }}>{formatPrice(Number(item.price) || 0, currency)}</span>
+          <h3 style={{ margin: 0, minWidth: 0, fontFamily: headingFamily, fontSize: Math.max(14, config.typography.headingSize - (embeddedViewport ? 2 : 0)), fontWeight: config.typography.headingWeight as any, color: config.bodyTextColor || config.textColor, lineHeight: 1.2, overflowWrap: 'break-word' }}>{item.name}</h3>
+          <span style={{ fontFamily: priceFamily, fontSize: Math.max(13, config.typography.priceSize - (embeddedViewport ? 1 : 0)), fontWeight: 700, color: p, whiteSpace: 'nowrap', flexShrink: 0 }}>{formatPrice(Number(item.price) || 0, currency)}</span>
         </div>
-        {item.description ? <p style={{ margin: embeddedViewport ? '0 0 10px' : '0 0 12px', color: config.mutedTextColor, fontSize: Math.max(11, config.typography.bodySize - (embeddedViewport ? 2 : 1)), lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>{item.description}</p> : null}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: embeddedViewport ? 8 : 10, fontSize: 11, color: config.mutedTextColor, marginBottom: embeddedViewport ? 10 : 14 }}>
+        {item.description ? <p style={{ margin: embeddedViewport ? '0 0 10px' : '0 0 12px', color: config.secondaryTextColor || config.mutedTextColor, fontSize: Math.max(11, config.typography.bodySize - (embeddedViewport ? 2 : 1)), lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>{item.description}</p> : null}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: embeddedViewport ? 8 : 10, fontSize: 11, color: config.secondaryTextColor || config.mutedTextColor, marginBottom: embeddedViewport ? 10 : 14 }}>
           {item.calories ? <span>{item.calories} kcal</span> : null}
           {item.preparation_time_mins ? <span>{item.preparation_time_mins} min</span> : null}
           {Number(item.rating) > 0 ? <span>★ {Number(item.rating).toFixed(1)}</span> : null}

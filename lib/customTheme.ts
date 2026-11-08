@@ -1,4 +1,4 @@
-﻿export type CustomButtonStyle = 'solid' | 'outline' | 'pill' | 'soft';
+export type CustomButtonStyle = 'solid' | 'outline' | 'pill' | 'soft';
 export type CustomCardStyle = 'flat' | 'elevated' | 'bordered' | 'glassmorphic';
 export type CustomHeaderStyle = 'brand-first' | 'minimal-bar' | 'banner' | 'utility';
 export type CustomMenuLayout = 'grid' | 'compact-list' | 'editorial' | 'cards';
@@ -25,6 +25,11 @@ export interface CustomThemeConfig {
   cardBg: string;
   textColor: string;
   mutedTextColor: string;
+  headingColor: string;
+  bodyTextColor: string;
+  secondaryTextColor: string;
+  buttonTextColor: string;
+  navTextColor: string;
   headingFont: string;
   bodyFont: string;
   priceFont: string;
@@ -59,6 +64,11 @@ export const DEFAULT_CUSTOM_THEME: CustomThemeConfig = {
   cardBg: '#12121a',
   textColor: '#f0e8d8',
   mutedTextColor: '#9a9080',
+  headingColor: '#f0e8d8',
+  bodyTextColor: '#f0e8d8',
+  secondaryTextColor: '#9a9080',
+  buttonTextColor: '#07070a',
+  navTextColor: '#f0e8d8',
   headingFont: 'Playfair Display',
   bodyFont: 'DM Sans',
   priceFont: 'DM Sans',
@@ -73,64 +83,84 @@ export const DEFAULT_CUSTOM_THEME: CustomThemeConfig = {
   buttonSize: 'md',
   badgeStyle: 'soft',
   spacing: 'comfortable',
-  menuLayout: 'grid',
+  menuLayout: 'compact-list',
   headerStyle: 'minimal-bar',
-  typography: DEFAULT_CUSTOM_THEME_TYPOGRAPHY,
+  typography: { ...DEFAULT_CUSTOM_THEME_TYPOGRAPHY },
 };
 
-export type FontCategory = 'Sans Serif' | 'Serif' | 'Display' | 'Elegant' | 'Modern' | 'Monospace';
+export type FontCategory = 'Modern & Premium' | 'Luxury & Elegant' | 'Professional & Minimal' | 'Bold & Display' | 'Monospace';
 
 export interface FontOptionMeta {
   value: string;
   label: string;
   category: FontCategory;
-  google?: string;
+  /** Google Fonts family name to load (omit/null if not on Google Fonts; a sensible CSS fallback is still applied). */
+  google?: string | null;
+  /** CSS font-family fallback stack used for previews/rendering. */
+  fallback?: string;
+  /** Google Fonts weight axis; defaults handled by googleFontHref. */
+  weights?: string;
   sample?: string;
 }
 
+export interface TypographyCombination {
+  id: string;
+  name: string;
+  description: string;
+  headingFont: string;
+  bodyFont: string;
+  priceFont?: string;
+}
+
+const FONT_SAMPLE = 'The Perfect Dining Experience';
+
 export const FONT_CATALOG: FontOptionMeta[] = [
-  { value: 'DM Sans', label: 'DM Sans', category: 'Sans Serif', sample: 'Clean modern menu' },
-  { value: 'Inter', label: 'Inter', category: 'Sans Serif', sample: 'Clear and balanced' },
-  { value: 'Manrope', label: 'Manrope', category: 'Sans Serif', sample: 'Friendly professional' },
-  { value: 'Plus Jakarta Sans', label: 'Plus Jakarta Sans', category: 'Sans Serif', sample: 'Contemporary dining' },
-  { value: 'Outfit', label: 'Outfit', category: 'Sans Serif', sample: 'Modern hospitality' },
-  { value: 'Poppins', label: 'Poppins', category: 'Sans Serif', sample: 'Rounded and approachable' },
-  { value: 'Montserrat', label: 'Montserrat', category: 'Sans Serif', sample: 'Bold urban menu' },
-  { value: 'Nunito Sans', label: 'Nunito Sans', category: 'Sans Serif', sample: 'Soft and readable' },
-  { value: 'Work Sans', label: 'Work Sans', category: 'Sans Serif', sample: 'Neutral and crisp' },
-  { value: 'Source Sans 3', label: 'Source Sans 3', category: 'Sans Serif', sample: 'Practical clarity' },
-  { value: 'Lato', label: 'Lato', category: 'Sans Serif', sample: 'Warm readability' },
-  { value: 'Open Sans', label: 'Open Sans', category: 'Sans Serif', sample: 'Familiar and clear' },
-  { value: 'Raleway', label: 'Raleway', category: 'Sans Serif', sample: 'Light premium feel' },
-  { value: 'Rubik', label: 'Rubik', category: 'Sans Serif', sample: 'Soft geometric' },
-  { value: 'Figtree', label: 'Figtree', category: 'Sans Serif', sample: 'Fresh and modern' },
-  { value: 'Sora', label: 'Sora', category: 'Modern', sample: 'Tech-forward dining' },
-  { value: 'Space Grotesk', label: 'Space Grotesk', category: 'Modern', sample: 'Distinctive modern' },
-  { value: 'Urbanist', label: 'Urbanist', category: 'Modern', sample: 'Sleek contemporary' },
-  { value: 'Playfair Display', label: 'Playfair Display', category: 'Serif', sample: 'Classic fine dining' },
-  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', category: 'Serif', sample: 'Elegant signature' },
-  { value: 'Lora', label: 'Lora', category: 'Serif', sample: 'Comfortable editorial' },
-  { value: 'Merriweather', label: 'Merriweather', category: 'Serif', sample: 'Rich and readable' },
-  { value: 'Libre Baskerville', label: 'Libre Baskerville', category: 'Serif', sample: 'Traditional premium' },
-  { value: 'Crimson Pro', label: 'Crimson Pro', category: 'Serif', sample: 'Refined bookish' },
-  { value: 'Source Serif 4', label: 'Source Serif 4', category: 'Serif', sample: 'Balanced serif' },
-  { value: 'EB Garamond', label: 'EB Garamond', category: 'Elegant', sample: 'Timeless luxury' },
-  { value: 'Fraunces', label: 'Fraunces', category: 'Elegant', sample: 'Characterful craft' },
-  { value: 'Spectral', label: 'Spectral', category: 'Elegant', sample: 'Graceful detail' },
-  { value: 'Bodoni Moda', label: 'Bodoni Moda', category: 'Elegant', sample: 'High-fashion dining' },
-  { value: 'Cinzel', label: 'Cinzel', category: 'Display', sample: 'Grand presentation' },
-  { value: 'Marcellus', label: 'Marcellus', category: 'Display', sample: 'Calm sophistication' },
-  { value: 'Prata', label: 'Prata', category: 'Display', sample: 'Editorial luxury' },
-  { value: 'Yeseva One', label: 'Yeseva One', category: 'Display', sample: 'Expressive headings' },
-  { value: 'Oswald', label: 'Oswald', category: 'Display', sample: 'Strong condensed' },
-  { value: 'Bebas Neue', label: 'Bebas Neue', category: 'Display', sample: 'Bold statement' },
-  { value: 'IBM Plex Mono', label: 'IBM Plex Mono', category: 'Monospace', sample: 'Precise price tags' },
-  { value: 'JetBrains Mono', label: 'JetBrains Mono', category: 'Monospace', sample: 'Technical clarity' },
+  // Modern & Premium (real Google Fonts)
+  { value: 'Inter', label: 'Inter', category: 'Modern & Premium', google: 'Inter', fallback: 'system-ui, -apple-system, Segoe UI, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Manrope', label: 'Manrope', category: 'Modern & Premium', google: 'Manrope', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Plus Jakarta Sans', label: 'Plus Jakarta Sans', category: 'Modern & Premium', google: 'Plus Jakarta Sans', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'DM Sans', label: 'DM Sans', category: 'Modern & Premium', google: 'DM Sans', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Outfit', label: 'Outfit', category: 'Modern & Premium', google: 'Outfit', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Urbanist', label: 'Urbanist', category: 'Modern & Premium', google: 'Urbanist', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Sora', label: 'Sora', category: 'Modern & Premium', google: 'Sora', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  // Luxury & Elegant (real Google Fonts)
+  { value: 'Playfair Display', label: 'Playfair Display', category: 'Luxury & Elegant', google: 'Playfair Display', fallback: 'Georgia, "Times New Roman", serif', sample: FONT_SAMPLE },
+  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', category: 'Luxury & Elegant', google: 'Cormorant Garamond', fallback: 'Georgia, serif', sample: FONT_SAMPLE },
+  { value: 'Libre Baskerville', label: 'Libre Baskerville', category: 'Luxury & Elegant', google: 'Libre Baskerville', fallback: 'Georgia, serif', sample: FONT_SAMPLE },
+  { value: 'DM Serif Display', label: 'DM Serif Display', category: 'Luxury & Elegant', google: 'DM Serif Display', fallback: 'Georgia, serif', weights: 'ital,wght@0,400;1,400', sample: FONT_SAMPLE },
+  { value: 'Lora', label: 'Lora', category: 'Luxury & Elegant', google: 'Lora', fallback: 'Georgia, serif', sample: FONT_SAMPLE },
+  { value: 'Prata', label: 'Prata', category: 'Luxury & Elegant', google: 'Prata', fallback: 'Georgia, serif', weights: 'wght@400', sample: FONT_SAMPLE },
+  { value: 'Cinzel', label: 'Cinzel', category: 'Luxury & Elegant', google: 'Cinzel', fallback: 'Georgia, serif', sample: FONT_SAMPLE },
+  // Professional & Minimal (real Google Fonts; Geist/General Sans not on Google Fonts — included with sensible fallbacks)
+  { value: 'Geist', label: 'Geist', category: 'Professional & Minimal', google: null, fallback: 'Inter, system-ui, -apple-system, Segoe UI, sans-serif', sample: FONT_SAMPLE },
+  { value: 'IBM Plex Sans', label: 'IBM Plex Sans', category: 'Professional & Minimal', google: 'IBM Plex Sans', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Work Sans', label: 'Work Sans', category: 'Professional & Minimal', google: 'Work Sans', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Montserrat', label: 'Montserrat', category: 'Professional & Minimal', google: 'Montserrat', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'General Sans', label: 'General Sans', category: 'Professional & Minimal', google: null, fallback: '"DM Sans", system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Source Sans 3', label: 'Source Sans 3', category: 'Professional & Minimal', google: 'Source Sans 3', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  // Bold & Display (real Google Fonts)
+  { value: 'Space Grotesk', label: 'Space Grotesk', category: 'Bold & Display', google: 'Space Grotesk', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Syne', label: 'Syne', category: 'Bold & Display', google: 'Syne', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Archivo', label: 'Archivo', category: 'Bold & Display', google: 'Archivo', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Oswald', label: 'Oswald', category: 'Bold & Display', google: 'Oswald', fallback: 'Arial Narrow, sans-serif', sample: FONT_SAMPLE },
+  { value: 'Bebas Neue', label: 'Bebas Neue', category: 'Bold & Display', google: 'Bebas Neue', fallback: 'Arial Narrow, sans-serif', weights: 'wght@400', sample: FONT_SAMPLE },
+  { value: 'League Spartan', label: 'League Spartan', category: 'Bold & Display', google: 'League Spartan', fallback: 'system-ui, sans-serif', sample: FONT_SAMPLE },
+  // Utility (kept for prices/technical accents)
+  { value: 'IBM Plex Mono', label: 'IBM Plex Mono', category: 'Monospace', google: 'IBM Plex Mono', fallback: 'ui-monospace, SFMono-Regular, Menlo, monospace', sample: FONT_SAMPLE },
 ];
 
 export const FONT_OPTIONS = FONT_CATALOG.map(({ value, label }) => ({ value, label }));
 
-export const FONT_CATEGORY_ORDER: FontCategory[] = ['Sans Serif', 'Serif', 'Elegant', 'Display', 'Modern', 'Monospace'];
+export const FONT_CATEGORY_ORDER: FontCategory[] = ['Modern & Premium', 'Luxury & Elegant', 'Professional & Minimal', 'Bold & Display', 'Monospace'];
+
+export const TYPOGRAPHY_COMBINATIONS: TypographyCombination[] = [
+  { id: 'luxury-restaurant', name: 'Luxury Restaurant', description: 'Opulent serif headings with refined readability', headingFont: 'Playfair Display', bodyFont: 'Lora', priceFont: 'DM Sans' },
+  { id: 'modern-fine-dining', name: 'Modern Fine Dining', description: 'Elegant display paired with contemporary sans', headingFont: 'DM Serif Display', bodyFont: 'Plus Jakarta Sans', priceFont: 'Manrope' },
+  { id: 'premium-hotel', name: 'Premium Hotel', description: 'Polished hospitality with crisp hierarchy', headingFont: 'Cormorant Garamond', bodyFont: 'Montserrat', priceFont: 'Montserrat' },
+  { id: 'minimal-cafe', name: 'Minimal Cafe', description: 'Clean, warm, and effortlessly readable', headingFont: 'Manrope', bodyFont: 'Inter', priceFont: 'Inter' },
+  { id: 'contemporary-restaurant', name: 'Contemporary Restaurant', description: 'Confident modern character with clarity', headingFont: 'Space Grotesk', bodyFont: 'DM Sans', priceFont: 'Space Grotesk' },
+  { id: 'elegant-hospitality', name: 'Elegant Hospitality', description: 'Classic sophistication for premium service', headingFont: 'Libre Baskerville', bodyFont: 'Outfit', priceFont: 'Outfit' },
+];
 
 export interface BorderRadiusOption {
   label: string;
@@ -359,18 +389,30 @@ export function deriveMutedTextColor(textColor: string, pageBg: string): string 
   return mixHex(textColor, pageBg, 0.45);
 }
 
+export function fontCssFamily(fontName: string): string {
+  const meta = resolveFontOption(fontName);
+  const fb = meta.fallback || 'system-ui, -apple-system, Segoe UI, sans-serif';
+  return `"${meta.value}", ${fb}`;
+}
+
 export function resolveFontOption(value: string | null | undefined): FontOptionMeta {
   const raw = (value || '').trim();
   if (!raw) return FONT_CATALOG[0];
   const found = FONT_CATALOG.find((f) => f.value.toLowerCase() === raw.toLowerCase() || f.label.toLowerCase() === raw.toLowerCase());
   if (found) return found;
-  return { value: raw, label: raw, category: 'Sans Serif' };
+  const looksSerif = /(serif|display|garamond|baskerville|playfair|bodoni|didot)/i.test(raw);
+  return { value: raw, label: raw, category: looksSerif ? 'Luxury & Elegant' : 'Modern & Premium', google: raw, fallback: looksSerif ? 'Georgia, "Times New Roman", serif' : 'system-ui, -apple-system, Segoe UI, sans-serif', sample: FONT_SAMPLE };
 }
 
 export function googleFontHref(fonts: string[]): string | null {
-  const families = Array.from(new Set(fonts.map((f) => resolveFontOption(f).value).filter(Boolean)));
+  const resolved = Array.from(new Set(fonts.map((f) => (f || '').trim()).filter(Boolean))).map(resolveFontOption);
+  const families = resolved.filter((m) => m.google !== null && (m.google || m.value));
   if (!families.length) return null;
-  const q = families.map((f) => `family=${encodeURIComponent(f).replace(/%20/g, '+')}:ital,wght@0,400;0,500;0,600;0,700`).join('&');
+  const q = families.map((m) => {
+    const fam = (m.google || m.value).trim();
+    const w = m.weights || 'ital,wght@0,400;0,500;0,600;0,700';
+    return `family=${encodeURIComponent(fam).replace(/%20/g, '+')}:${w}`;
+  }).join('&');
   return `https://fonts.googleapis.com/css2?${q}&display=swap`;
 }
 
@@ -395,6 +437,11 @@ export function normalizeCustomThemeConfig(raw: unknown): CustomThemeConfig {
   const cardBg = normalizeHex(src.cardBg as string, d.cardBg);
   const textColor = normalizeHex(src.textColor as string, d.textColor);
   const mutedTextColor = normalizeHex(src.mutedTextColor as string, deriveMutedTextColor(textColor, pageBg));
+  const bodyTextColor = normalizeHex((src.bodyTextColor as string) || textColor, textColor);
+  const headingColor = normalizeHex((src.headingColor as string) || textColor, textColor);
+  const secondaryTextColor = normalizeHex((src.secondaryTextColor as string) || mutedTextColor, mutedTextColor);
+  const buttonTextColor = normalizeHex(src.buttonTextColor as string, (() => { const v = (primaryColor||'#000').replace('#',''); const f=v.length===3?v.split('').map((c:string)=>c+c).join(''):v.padEnd(6,'0').slice(0,6); const r=parseInt(f.slice(0,2),16),g=parseInt(f.slice(2,4),16),b=parseInt(f.slice(4,6),16); return (r*299+g*587+b*114)/1000 > 155 ? '#07070a' : '#f0e8d8'; })());
+  const navTextColor = normalizeHex((src.navTextColor as string) || textColor, textColor);
   const tSrc = (src.typography && typeof src.typography === 'object' ? src.typography : {}) as Partial<CustomThemeTypography>;
   const typography: CustomThemeTypography = {
     headingSize: clamp(Number(tSrc.headingSize) || d.typography.headingSize, 14, 34),
@@ -403,13 +450,17 @@ export function normalizeCustomThemeConfig(raw: unknown): CustomThemeConfig {
     headingWeight: normalizeEnum(tSrc.headingWeight, ['400', '500', '600', '700'] as const, d.typography.headingWeight),
     bodyWeight: normalizeEnum(tSrc.bodyWeight, ['400', '500', '600', '700'] as const, d.typography.bodyWeight),
     buttonTextWeight: normalizeEnum(tSrc.buttonTextWeight, ['400', '500', '600', '700'] as const, d.typography.buttonTextWeight),
-  };
-  return {
+  };  return {
     primaryColor,
     pageBg,
     cardBg,
     textColor,
     mutedTextColor,
+    headingColor,
+    bodyTextColor,
+    secondaryTextColor,
+    buttonTextColor,
+    navTextColor,
     headingFont: resolveFontOption(src.headingFont as string).value || d.headingFont,
     bodyFont: resolveFontOption(src.bodyFont as string).value || d.bodyFont,
     priceFont: resolveFontOption((src.priceFont || src.bodyFont) as string).value || d.priceFont,

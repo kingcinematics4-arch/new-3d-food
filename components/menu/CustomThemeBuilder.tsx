@@ -3,10 +3,10 @@
 import React, { useMemo, useRef, useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import {
   BADGE_STYLE_OPTIONS, BORDER_RADIUS_OPTIONS, BORDER_STYLE_OPTIONS, BUTTON_SIZE_OPTIONS, BUTTON_STYLE_OPTIONS,
-  CARD_STYLE_OPTIONS, COLOR_PALETTES, DEFAULT_CUSTOM_THEME, FONT_CATALOG, FONT_CATEGORY_ORDER,
+  CARD_STYLE_OPTIONS, COLOR_PALETTES, DEFAULT_CUSTOM_THEME, FONT_CATALOG, FONT_CATEGORY_ORDER, TYPOGRAPHY_COMBINATIONS,
   MENU_LAYOUT_OPTIONS, SHADOW_OPTIONS, SPACING_OPTIONS,
-  cloneCustomThemeConfig, normalizeCustomThemeConfig, normalizeHex,
-  type CustomThemeConfig, type FontCategory,
+  cloneCustomThemeConfig, normalizeCustomThemeConfig, normalizeHex, fontCssFamily, resolveFontOption,
+  type CustomThemeConfig, type FontCategory, type FontOptionMeta, type TypographyCombination,
 } from '@/lib/customTheme';
 import { CustomThemeFontLoader } from './CustomThemeFontLoader';
 import CustomTemplate from './templates/CustomTemplate';
@@ -30,6 +30,16 @@ const COLOR_PROPERTIES: { key: ThemeColorKey; label: string }[] = [
   { key: 'textColor', label: 'Text color' },
   { key: 'mutedTextColor', label: 'Muted text' },
 ];
+// Font/text color targets (independent). Reuses the same shade grid/wheel/HEX picker; does not add a second color system.
+type FontColorKey = 'headingColor' | 'bodyTextColor' | 'secondaryTextColor' | 'buttonTextColor' | 'navTextColor';
+const FONT_COLOR_PROPERTIES: { key: FontColorKey; label: string; hint: string }[] = [
+  { key: 'headingColor', label: 'Heading Color', hint: 'Main headings and titles' },
+  { key: 'bodyTextColor', label: 'Body Text Color', hint: 'Paragraph and content text' },
+  { key: 'secondaryTextColor', label: 'Secondary Text Color', hint: 'Subtitles and descriptions' },
+  { key: 'buttonTextColor', label: 'Button Text Color', hint: 'Text inside buttons' },
+  { key: 'navTextColor', label: 'Navigation Text Color', hint: 'Navbar and navigation labels' },
+];
+const FONT_COLOR_PRESETS = ['#f0e8d8', '#ffffff', '#111827', '#374151', '#9a9080', '#c9a96e', '#d4af37', '#07070a'];
 // Static shade palettes: 25 families × 24 shades each (600 selectable HEX values, subtle→vibrant→deep→very dark). Each shade keeps its own HEX value (never derived from/mutated by selection).
 const COLOR_FAMILIES: { name: string; shades: string[] }[] = [
   { name: 'Red', shades: ['#fff5f5','#ffe3e3','#ffcccc','#ffb3b3','#ff9999','#ff8080','#ff6666','#ff4d4d','#ff3333','#f5222d','#e60023','#d90429','#cc0033','#b8002e','#a30029','#8c0023','#75001d','#5e0017','#470012','#33000d','#240009','#170006','#0d0003','#050001'] },
@@ -37,26 +47,26 @@ const COLOR_FAMILIES: { name: string; shades: string[] }[] = [
   { name: 'Yellow', shades: ['#fffde7','#fff9c4','#fff59d','#fff176','#ffee58','#ffeb3b','#ffe082','#ffd54f','#ffca28','#ffc107','#ffb300','#ffa000','#ff8f00','#ff6f00','#e65100','#cc4700','#b33d00','#993400','#802b00','#662200','#4d1900','#331100','#1f0a00','#0f0500'] },
   { name: 'Gold', shades: ['#fffef2','#fff8d6','#fff0b3','#ffe680','#ffdd57','#ffd633','#ffcc00','#f5c518','#e6b800','#d4a900','#c29600','#b08500','#9e7700','#8c6900','#7a5c00','#694f00','#574100','#453400','#332600','#241b00','#181200','#0f0b00','#080600','#030200'] },
   { name: 'Amber', shades: ['#fffbeb','#fef3c7','#fde68a','#fcd34d','#fbbf24','#f59e0b','#eab308','#d97706','#ca8a04','#b45309','#a16207','#92400e','#854d0e','#78350f','#6b2f0c','#5c280a','#4d2108','#3e1a06','#2f1405','#211003','#180b02','#100701','#080300','#030100'] },
-  { name: 'Green', shades: ['#f0fff4','#dcffe4','#c1ffd0','#95f9b4','#68ed8e','#40d96c','#22c55e','#16a34a','#15803d','#166534','#14532d','#14532d','#166534','#15803d','#16a34a','#22c55e','#16a34a','#15803d','#166534','#14532d','#14532d','#052e16','#022c22','#021a14'] },
-  { name: 'Lime', shades: ['#f7fee7','#ecfccb','#d9f99d','#bef264','#a3e635','#84cc16','#65a30d','#4d7c0f','#3f6212','#365314','#365314','#3f6212','#4d7c0f','#65a30d','#84cc16','#65a30d','#4d7c0f','#3f6212','#365314','#365314','#2d4a0f','#1a2e05','#111f03','#0a1202'] },
-  { name: 'Emerald', shades: ['#ecfdf5','#d1fae5','#a7f3d0','#6ee7b7','#34d399','#10b981','#059669','#047857','#065f46','#064e3b','#064e3b','#065f46','#047857','#059669','#10b981','#059669','#047857','#065f46','#064e3b','#064e3b','#053c2e','#022c22','#011f18','#01140f'] },
-  { name: 'Teal', shades: ['#f0fdfa','#ccfbf1','#99f6e4','#5eead4','#2dd4bf','#14b8a6','#0d9488','#0f766e','#115e59','#134e4a','#134e4a','#115e59','#0f766e','#0d9488','#14b8a6','#0d9488','#0f766e','#115e59','#134e4a','#134e4a','#0f3d39','#042f2e','#032120','#021514'] },
-  { name: 'Cyan', shades: ['#ecfeff','#cffafe','#a5f3fc','#67e8f9','#22d3ee','#06b6d4','#0891b2','#0e7490','#155e75','#164e63','#164e63','#155e75','#0e7490','#0891b2','#06b6d4','#0891b2','#0e7490','#155e75','#164e63','#164e63','#123d4f','#083344','#062633','#041a22'] },
-  { name: 'Sky Blue', shades: ['#f0f9ff','#e0f2fe','#bae6fd','#7dd3fc','#38bdf8','#0ea5e9','#0284c7','#0369a1','#075985','#0c4a6e','#0c4a6e','#075985','#0369a1','#0284c7','#0ea5e9','#0284c7','#0369a1','#075985','#0c4a6e','#0c4a6e','#093a57','#082f49','#052133','#031521'] },
-  { name: 'Blue', shades: ['#eff6ff','#dbeafe','#bfdbfe','#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af','#1e3a8a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#2563eb','#1d4ed8','#1e40af','#1e3a8a','#1e3a8a','#172554','#172554','#0f1838','#0a1024'] },
-  { name: 'Indigo', shades: ['#eef2ff','#e0e7ff','#c7d2fe','#a5b4fc','#818cf8','#6366f1','#4f46e5','#4338ca','#3730a3','#312e81','#312e81','#3730a3','#4338ca','#4f46e5','#6366f1','#4f46e5','#4338ca','#3730a3','#312e81','#312e81','#272566','#1e1b4b','#141233','#0d0c22'] },
-  { name: 'Violet', shades: ['#f5f3ff','#ede9fe','#ddd6fe','#c4b5fd','#a78bfa','#8b5cf6','#7c3aed','#6d28d9','#5b21b6','#4c1d95','#4c1d95','#5b21b6','#6d28d9','#7c3aed','#8b5cf6','#7c3aed','#6d28d9','#5b21b6','#4c1d95','#4c1d95','#3b1775','#2e1065','#1f0b45','#14072e'] },
-  { name: 'Purple', shades: ['#faf5ff','#f3e8ff','#e9d5ff','#d8b4fe','#c084fc','#a855f7','#9333ea','#7e22ce','#6b21a8','#581c87','#581c87','#6b21a8','#7e22ce','#9333ea','#a855f7','#9333ea','#7e22ce','#6b21a8','#581c87','#581c87','#46166b','#3b0764','#270545','#19032e'] },
-  { name: 'Magenta', shades: ['#fdf4ff','#fae8ff','#f5d0fe','#f0abfc','#e879f9','#d946ef','#c026d3','#a21caf','#86198f','#701a75','#701a75','#86198f','#a21caf','#c026d3','#d946ef','#c026d3','#a21caf','#86198f','#701a75','#701a75','#59155e','#4a044e','#310335','#210223'] },
-  { name: 'Pink', shades: ['#fdf2f8','#fce7f3','#fbcfe8','#f9a8d4','#f472b6','#ec4899','#db2777','#be185d','#9d174d','#831843','#831843','#9d174d','#be185d','#db2777','#ec4899','#db2777','#be185d','#9d174d','#831843','#831843','#681336','#500724','#360518','#230310'] },
-  { name: 'Rose', shades: ['#fff1f2','#ffe4e6','#fecdd3','#fda4af','#fb7185','#f43f5e','#e11d48','#be123c','#9f1239','#881337','#881337','#9f1239','#be123c','#e11d48','#f43f5e','#e11d48','#be123c','#9f1239','#881337','#881337','#6d0f2c','#4c0519','#330311','#22020b'] },
-  { name: 'Brown', shades: ['#fdf8f6','#f6ece7','#ead3c8','#dbb8a5','#c99b82','#b87f60','#a66942','#945a36','#82502f','#704628','#704628','#82502f','#945a36','#a66942','#b87f60','#a66942','#945a36','#82502f','#704628','#704628','#593820','#4a2c1a','#311d11','#1f120b'] },
-  { name: 'Beige', shades: ['#fdfcf9','#f8f4ec','#f0e8d8','#e6d9c1','#dac8a8','#ccb58d','#bda274','#ad8f5c','#9a7d4a','#866b3d','#866b3d','#9a7d4a','#ad8f5c','#bda274','#ccb58d','#bda274','#ad8f5c','#9a7d4a','#866b3d','#866b3d','#6b5531','#5a4628','#3b2e1a','#261e11'] },
-  { name: 'Grey', shades: ['#f9fafb','#f3f4f6','#e5e7eb','#d1d5db','#9ca3af','#6b7280','#4b5563','#374151','#1f2937','#111827','#111827','#1f2937','#374151','#4b5563','#6b7280','#4b5563','#374151','#1f2937','#111827','#111827','#0d1320','#090e17','#060a10','#030508'] },
-  { name: 'Slate', shades: ['#f8fafc','#f1f5f9','#e2e8f0','#cbd5e1','#b0becf','#94a3b8','#7b8da6','#64748b','#475569','#334155','#334155','#475569','#64748b','#7b8da6','#94a3b8','#64748b','#475569','#334155','#1e293b','#1e293b','#18202e','#0f172a','#0a0f1c','#05080f'] },
-  { name: 'Navy', shades: ['#f0f4ff','#dde7ff','#c2d4ff','#9dbaff','#759bff','#4d7cff','#2f62f5','#1f4fe0','#1840c4','#1233a3','#1233a3','#1840c4','#1f4fe0','#2f62f5','#4d7cff','#2f62f5','#1f4fe0','#1840c4','#1233a3','#1233a3','#0e2882','#0a1f66','#071547','#040b26'] },
-  { name: 'Olive', shades: ['#f9fbea','#f1f5c4','#e6ee96','#d8e466','#c7d83a','#b5c91f','#9eb015','#889814','#728013','#5d6810','#5d6810','#728013','#889814','#9eb015','#b5c91f','#9eb015','#889814','#728013','#5d6810','#5d6810','#4a530d','#3a420a','#252a06','#161903'] },
-  { name: 'Copper', shades: ['#fff6f0','#ffe8d9','#ffd1b8','#ffb78f','#ff9963','#f07d3a','#dd6520','#c55312','#aa4308','#8f3706','#8f3706','#aa4308','#c55312','#dd6520','#f07d3a','#dd6520','#c55312','#aa4308','#8f3706','#8f3706','#712c05','#5a2304','#3b1703','#251002'] },
+    { name: 'Green', shades: ['#f2fff6','#e1fce9','#c8f7d6','#a3efba','#7de69d','#57d981','#34c766','#22b354','#179443','#127a37','#0e632d','#0a5024','#08401d','#063217','#052617','#041c11','#03130b','#020a06','#014a2a','#003821','#002818','#001c11','#00110a','#000804'] },
+  { name: 'Lime', shades: ['#fbffe8','#f4ffc2','#eaff94','#ddff61','#ccf53d','#b8e620','#9fd10f','#86b808','#6e9906','#597d05','#486604','#395203','#2c4002','#213002','#182302','#111802','#0b1001','#050800','#3f5903','#2f4402','#223302','#182402','#101801','#080c00'] },
+  { name: 'Emerald', shades: ['#effff9','#d9fff0','#b8fde3','#8bf7d0','#5decbc','#36ddb0','#18c99f','#0fb08a','#099675','#077d62','#066652','#055342','#044233','#033527','#03281d','#021d15','#01130e','#000a07','#045a47','#034638','#033428','#02261d','#001a14','#000f0b'] },
+  { name: 'Teal', shades: ['#effffc','#d6fff7','#b0fcef','#85f5e4','#59ead6','#34dcc6','#1ccab3','#11b39d','#0c9885','#087f70','#06695d','#05564c','#04453d','#033630','#032920','#021e17','#01140f','#000a08','#045046','#033d36','#032f2a','#02231f','#001814','#000d0b'] },
+  { name: 'Cyan', shades: ['#effcff','#d7f9ff','#b3f1ff','#85e6ff','#57d8ff','#30c7f5','#14b4e0','#089ec7','#0787ad','#066f91','#065b78','#054a62','#043b4f','#032d3d','#03222e','#021922','#011119','#00090d','#04546d','#034258','#033245','#022536','#001b28','#00111a'] },
+  { name: 'Sky Blue', shades: ['#f2f9ff','#e0f1ff','#c2e3ff','#99d0ff','#70bcff','#47a6ff','#2a90f5','#1680e0','#0f6dc2','#0b5aa3','#094a87','#083d6e','#063158','#032645','#031c33','#021424','#010e18','#00070d','#07417a','#053460','#03284b','#031e39','#001529','#000d18'] },
+  { name: 'Blue', shades: ['#f3f6ff','#e3ebff','#cddaff','#adc2ff','#8aa7ff','#668cff','#4772ff','#2f5bf5','#1f48e0','#1839c2','#1430a3','#112887','#0e216e','#0b1b58','#091545','#070f33','#050a24','#030617','#0f267a','#0c1f61','#09184d','#07123b','#050c29','#030819'] },
+  { name: 'Indigo', shades: ['#f5f4ff','#e8e5ff','#d6d0ff','#beb3ff','#a394ff','#8875ff','#705cff','#5b47f0','#4936d9','#3b2bbd','#3124a1','#281d87','#20176e','#191258','#130d45','#0e0a33','#090724','#050417','#241a7a','#1d1561','#17114d','#110d3b','#0c0929','#070519'] },
+  { name: 'Violet', shades: ['#f8f4ff','#efe5ff','#e0d0ff','#ccb3ff','#b694ff','#9f75ff','#895cf5','#7647e0','#6436c7','#5329ad','#452294','#381c7a','#2d1663','#23114f','#1a0d3d','#13092e','#0d0621','#070315','#321870','#281361','#1f1050','#170c3d','#10082b','#09041b'] },
+  { name: 'Purple', shades: ['#fbf4ff','#f4e3ff','#ebcfff','#ddb3ff','#cc94ff','#b875ff','#a359f5','#8f42e0','#7a32c7','#6626ad','#551f94','#46197a','#381463','#2b104f','#210c3d','#18092e','#110621','#0a0315','#3f1770','#321261','#260e50','#1d0b3d','#14072b','#0c041b'] },
+  { name: 'Magenta', shades: ['#fff2fb','#ffe0f5','#ffc7ec','#ffa3df','#ff80d1','#f55cc2','#e03db0','#c7289a','#ad1a85','#941470','#7a1160','#63104f','#500d40','#400a33','#310827','#24061d','#180414','#0d020b','#6b0f55','#560c45','#430936','#330728','#24051d','#160311'] },
+  { name: 'Pink', shades: ['#fff2f7','#ffe0ec','#ffc7dc','#ffa3c7','#ff80b2','#f55c9c','#e03d87','#c72673','#ad1861','#941452','#7a1145','#631039','#500d2f','#400a26','#31081e','#240616','#18040f','#0d0208','#6b0f3d','#560c31','#430927','#33071e','#240516','#16030e'] },
+  { name: 'Rose', shades: ['#fff2f4','#ffe0e7','#ffc7d4','#ffa3ba','#ff809f','#f55c84','#e03d6a','#c72656','#ad1847','#94143d','#7a1133','#63102a','#500d22','#400a1c','#310816','#240611','#18040b','#0d0206','#6b0f2d','#560c24','#43091d','#330716','#240510','#16030a'] },
+  { name: 'Brown', shades: ['#faf6f3','#f2e8e1','#e6d4c5','#d6bba3','#c4a082','#b18766','#9c704f','#875c3f','#734b33','#613e2a','#513423','#422a1c','#352216','#291b12','#1f140d','#160f09','#0f0a06','#080503','#472d1e','#3a2418','#2f1d14','#25170f','#1b110b','#120b07'] },
+  { name: 'Beige', shades: ['#fdfcf8','#f7f3e8','#efe6d1','#e3d5b5','#d4c294','#c3ad75','#b09659','#998146','#826d39','#6e5b30','#5c4c28','#4b3e21','#3c321a','#2f2714','#231d0f','#18140a','#100d07','#080603','#524324','#43371d','#352c17','#282112','#1d180d','#130f08'] },
+  { name: 'Grey', shades: ['#fcfcfd','#f5f6f7','#e9ebee','#d8dce2','#c2c8d1','#aab2bd','#919ba8','#788494','#616d7d','#4f5968','#404855','#343b46','#292f38','#20252c','#181c22','#111419','#0b0d11','#060709','#383f4a','#2e343d','#252a31','#1c2026','#14171c','#0d0f13'] },
+  { name: 'Slate', shades: ['#f8fafc','#eef2f7','#dde6f0','#c8d5e3','#b0c1d4','#96abc2','#7c94ad','#647d99','#506885','#40556f','#34475d','#2a394d','#212d3d','#192330','#121b25','#0c131b','#070c12','#040609','#2c3d52','#233244','#1b2838','#141e2b','#0e151f','#080d14'] },
+  { name: 'Navy', shades: ['#f3f6ff','#e4ebff','#ced9ff','#b0c2ff','#91a8ff','#738eff','#5675ff','#3f5ef0','#2d49d6','#2038b8','#182c99','#13247d','#0f1d63','#0c174f','#09123d','#070d2e','#050921','#030512','#112670','#0e1f5c','#0b194a','#08133a','#060e2b','#04091d'] },
+  { name: 'Olive', shades: ['#fbfdea','#f4f9c8','#eaf29e','#dde875','#cddb52','#bac938','#a3b524','#8a9c18','#728212','#5d6b0f','#4b570c','#3c460a','#2f3708','#242a06','#1b2004','#131603','#0c0e02','#060701','#424c0b','#343d09','#283007','#1e2405','#151a03','#0e1102'] },
+  { name: 'Copper', shades: ['#fff7f2','#ffeadb','#ffd7bf','#ffbf99','#ffa173','#ff844d','#f06a33','#d95622','#bd4717','#a13a12','#87300f','#6f280c','#59200a','#451907','#341305','#250e03','#180902','#0d0501','#61230b','#4f1c09','#3e1607','#2e1105','#1f0b03','#130702'] },
 ];
 
 function CustomColorWheel({ value, onChange }: { value: string; onChange: (hex: string) => void }) {
@@ -140,7 +150,7 @@ function ShadeFamilyCard({ name, shades, activeValue, onPick }: { name: string; 
         </div>
         <div ref={gridRef} style={{ width: '100%', minWidth: 0, display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridAutoRows: '1fr', gap: 5, alignContent: 'start', justifyItems: 'stretch', boxSizing: 'border-box' }}>
           {pages[safePage].map((shade) => {
-            const selected = activeValue.toLowerCase() === shade.toLowerCase();
+            const selected = normalizeHex(activeValue, '').toLowerCase() === normalizeHex(shade, '').toLowerCase();
             return (
               <button key={`${name}-${shade}`} type="button" title={shade} onClick={() => onPick(shade)}
                 style={{
@@ -179,6 +189,7 @@ function ShadeFamilyCard({ name, shades, activeValue, onPick }: { name: string; 
   );
 }
 
+
 function ThemeColorEditor({ config, onSet }: { config: CustomThemeConfig; onSet: (key: ThemeColorKey, hex: string) => void }) {
   const [activeProp, setActiveProp] = useState<ThemeColorKey>('primaryColor');
   const [showWheel, setShowWheel] = useState(false);
@@ -186,7 +197,6 @@ function ThemeColorEditor({ config, onSet }: { config: CustomThemeConfig; onSet:
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const activeValue = normalizeHex(config[activeProp], '#c9a96e');
-  // Only the selected property is updated; each shade button carries its own fixed HEX (COLOR_FAMILIES is static).
   const pickShade = (hex: string) => onSet(activeProp, normalizeHex(hex, activeValue));
 
   const updateFamilyScroll = () => {
@@ -224,34 +234,14 @@ function ThemeColorEditor({ config, onSet }: { config: CustomThemeConfig; onSet:
   const FamilyNav = ({ dir }: { dir: -1 | 1 }) => {
     const canScroll = dir === -1 ? canScrollLeft : canScrollRight;
     return (
-      <button
-        type="button"
-        aria-label={dir === -1 ? 'Previous color families' : 'Next color families'}
+      <button type="button" aria-label={dir === -1 ? 'Previous color families' : 'Next color families'} disabled={!canScroll}
         onClick={() => { if (canScroll) nudgeFamilies(dir); }}
-        disabled={!canScroll}
-        style={{
-          flex: '0 0 32px',
-          width: 32,
-          height: 32,
-          borderRadius: 10,
-          border: '1px solid var(--border-warm)',
-          background: canScroll ? 'var(--bg-surface-2)' : 'rgba(255,255,255,0.02)',
-          color: canScroll ? 'var(--text-primary)' : 'var(--text-dimmed, rgba(255,255,255,0.3))',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: canScroll ? 'pointer' : 'not-allowed',
-          padding: 0,
-          boxShadow: canScroll ? '0 2px 10px rgba(0,0,0,0.18)' : 'none',
-          opacity: canScroll ? 1 : 0.4,
-          transition: 'opacity 150ms ease, background 150ms ease, box-shadow 150ms ease',
-          flexShrink: 0,
-        }}
-      >
+        style={{ flex: '0 0 32px', width: 32, height: 32, borderRadius: 10, border: '1px solid #2a2a38', background: canScroll ? '#13131c' : 'rgba(255,255,255,0.02)', color: canScroll ? '#f0e8d8' : 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: canScroll ? 'pointer' : 'not-allowed', padding: 0, opacity: canScroll ? 1 : 0.45, flexShrink: 0 }}>
         <svg width="13" height="13" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={dir === -1 ? 'M6.5 1.5L3 5l3.5 3.5' : 'M3.5 1.5L7 5 3.5 8.5'} /></svg>
       </button>
     );
   };
+
   return (
     <div style={{ display: 'grid', gap: 12, minWidth: 0, maxWidth: '100%', width: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
       <div style={{ minWidth: 0, maxWidth: '100%' }}>
@@ -261,9 +251,9 @@ function ThemeColorEditor({ config, onSet }: { config: CustomThemeConfig; onSet:
             const val = normalizeHex(config[p.key], '#888');
             const active = activeProp === p.key;
             return (
-              <button key={p.key} type="button" onClick={() => setActiveProp(p.key)} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${active ? 'var(--gold)' : 'var(--border-warm)'}`, background: active ? 'rgba(184,164,122,0.10)' : 'var(--bg-surface-2)', padding: '0.3rem 0.6rem 0.3rem 0.35rem', cursor: 'pointer' }}>
-                <span style={{ width: 16, height: 16, borderRadius: 999, background: val, border: '1px solid rgba(255,255,255,0.12)', flexShrink: 0 }} />
-                <span style={{ fontSize: 11, fontWeight: 600, color: active ? 'var(--text-primary)' : 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{p.label}</span>
+              <button key={p.key} type="button" onClick={() => setActiveProp(p.key)} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${active ? '#c9a96e' : '#2a2a38'}`, background: active ? 'rgba(201,169,110,0.10)' : '#111118', padding: '4px 8px 4px 4px', cursor: 'pointer' }}>
+                <span style={{ width: 14, height: 14, borderRadius: 999, background: val, border: '1px solid rgba(255,255,255,0.12)' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: active ? '#f0e8d8' : '#a8a39a', whiteSpace: 'nowrap' }}>{p.label}</span>
               </button>
             );
           })}
@@ -271,47 +261,21 @@ function ThemeColorEditor({ config, onSet }: { config: CustomThemeConfig; onSet:
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span style={{ width: 28, height: 28, borderRadius: 8, background: activeValue, border: '1px solid var(--border-warm)', flexShrink: 0 }} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.1 }}>Editing: {COLOR_PROPERTIES.find(p => p.key === activeProp)?.label}</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{activeValue}</div>
-          </div>
+          <span style={{ width: 22, height: 22, borderRadius: 6, background: activeValue, border: '1px solid #2a2a38', flexShrink: 0 }} />
+          <div style={{ minWidth: 0 }}><div style={{ fontSize: 11, color: '#9a9080' }}>Editing: {COLOR_PROPERTIES.find(p => p.key === activeProp)?.label}</div><div style={{ fontSize: 12, fontWeight: 700, color: '#f0e8d8', fontFamily: 'monospace' }}>{activeValue.toUpperCase()}</div></div>
         </div>
-        <button type="button" onClick={() => setShowWheel(w => !w)} className="d3-btn-subtle" style={{ padding: '0.35rem 0.65rem', fontSize: 11, flexShrink: 0 }}>{showWheel ? 'Hide Color Wheel' : 'Custom Color Wheel'}</button>
+        <button type="button" onClick={() => setShowWheel(w => !w)} style={{ borderRadius: 8, border: '1px solid #2a2a38', background: showWheel ? 'rgba(201,169,110,0.12)' : '#13131c', color: showWheel ? '#f0e8d8' : '#cfc6b8', padding: '5px 10px', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}>{showWheel ? 'Hide wheel' : 'Custom wheel'}</button>
       </div>
       {showWheel ? <CustomColorWheel value={activeValue} onChange={pickShade} /> : null}
       <div style={{ minWidth: 0, maxWidth: '100%', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, minWidth: 0 }}>
           <label style={{ ...LABEL, marginBottom: 0 }}>Color families ({COLOR_FAMILIES.length})</label>
-          <span style={{ fontSize: 10, color: 'var(--text-dimmed, rgba(255,255,255,0.45))', flexShrink: 0 }}>Use arrows or scroll</span>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', flexShrink: 0 }}>Use arrows or scroll</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden', contain: 'inline-size' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
           <FamilyNav dir={-1} />
-          <div
-            ref={familyRailRef}
-            className="no-scrollbar"
-            style={{
-              display: 'flex',
-              gap: 0,
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              padding: 0,
-              WebkitOverflowScrolling: 'touch',
-              scrollSnapType: 'x mandatory',
-              minWidth: 0,
-              flex: '1 1 0%',
-              width: 0,
-              maxWidth: '100%',
-              alignItems: 'stretch',
-              scrollBehavior: 'smooth',
-              boxSizing: 'border-box',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-            } as React.CSSProperties}
-          >
-            {COLOR_FAMILIES.map((family) => (
-              <ShadeFamilyCard key={family.name} name={family.name} shades={family.shades} activeValue={activeValue} onPick={pickShade} />
-            ))}
+          <div ref={familyRailRef} className="no-scrollbar" style={{ display: 'flex', gap: 0, overflowX: 'auto', overflowY: 'hidden', padding: 0, WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', minWidth: 0, flex: '1 1 0%', width: 0, maxWidth: '100%', alignItems: 'stretch', scrollBehavior: 'smooth', boxSizing: 'border-box' } as React.CSSProperties}>
+            {COLOR_FAMILIES.map((family) => <ShadeFamilyCard key={family.name} name={family.name} shades={family.shades} activeValue={activeValue} onPick={pickShade} />)}
           </div>
           <FamilyNav dir={1} />
         </div>
@@ -319,11 +283,158 @@ function ThemeColorEditor({ config, onSet }: { config: CustomThemeConfig; onSet:
     </div>
   );
 }
-function FontPicker({ label,value,onChange }: { label:string; value:string; onChange:(v:string)=>void }) {
-  const [query,setQuery]=useState(''); const [category,setCategory]=useState<FontCategory|'All'>('All');
-  const results=useMemo(()=>{const q=query.trim().toLowerCase();return FONT_CATALOG.filter((f)=>(category==='All'||f.category===category)&&(!q||f.label.toLowerCase().includes(q)||f.category.toLowerCase().includes(q)));},[query,category]);
-  const previewFonts=useMemo(()=>[value,...results.slice(0,10).map((f)=>f.value)],[value,results]);
-  return <div style={{minWidth:0}}><label style={LABEL}>{label}</label><div style={{display:'grid',gap:8,border:'1px solid var(--border-warm)',borderRadius:12,background:'var(--bg-surface-2)',padding:10}}><CustomThemeFontLoader fonts={previewFonts} /><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search fonts..." style={{...INPUT,padding:'0.5rem 0.65rem'}} /><div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:2}}>{(['All',...FONT_CATEGORY_ORDER] as const).map((c)=><button key={c} type="button" onClick={()=>setCategory(c)} style={{borderRadius:999,border:`1px solid ${category===c?'var(--gold)':'var(--border-warm)'}`,background:category===c?'rgba(184,164,122,0.10)':'transparent',color:'var(--text-secondary)',padding:'0.25rem 0.55rem',fontSize:11,whiteSpace:'nowrap',cursor:'pointer'}}>{c}</button>)}</div><select value={value} onChange={(e)=>onChange(e.target.value)} style={INPUT}>{FONT_CATALOG.map((f)=><option key={f.value} value={f.value}>{f.label} — {f.category}</option>)}</select><div style={{maxHeight:180,overflowY:'auto',display:'grid',gap:6,paddingRight:2}}>{results.slice(0,24).map((f)=><button key={f.value} type="button" onClick={()=>onChange(f.value)} style={{textAlign:'left',borderRadius:10,border:`1px solid ${value===f.value?'var(--gold)':'var(--border-warm)'}`,background:value===f.value?'rgba(184,164,122,0.08)' : 'rgba(255,255,255,0.01)',padding:'0.55rem 0.65rem',cursor:'pointer'}}><div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline'}}><span style={{fontFamily:`"${f.value}", sans-serif`,fontSize:15,color:'var(--text-primary)'}}>{f.label}</span><span style={{fontSize:10,color:'var(--text-dimmed)',whiteSpace:'nowrap'}}>{f.category}</span></div><div style={{fontFamily:`"${f.value}", sans-serif`,fontSize:12,color:'var(--text-muted)',marginTop:2}}>{f.sample||'Signature truffle pasta — ₹420'}</div></button>)}{!results.length?<div style={{fontSize:12,color:'var(--text-muted)',padding:'0.25rem 0.1rem'}}>No fonts match.</div>:null}</div></div></div>;
+function FontColorsEditor({ config, onSet }: { config: CustomThemeConfig; onSet: (key: FontColorKey, hex: string) => void }) {
+  const [active, setActive] = useState<FontColorKey>('headingColor');
+  const [showWheel, setShowWheel] = useState(false);
+  const activeValue = normalizeHex((config as any)[active] || config.textColor, '#f0e8d8');
+  const pick = (hex: string) => onSet(active, normalizeHex(hex, activeValue));
+  const activeMeta = FONT_COLOR_PROPERTIES.find((p) => p.key === active)!;
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ fontSize: 12, color: '#9a9080', lineHeight: 1.45 }}>Independent text colours. Each target updates only its own elements in the live preview; icons, backgrounds and borders are unchanged.</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {FONT_COLOR_PROPERTIES.map((p) => {
+          const on = active === p.key;
+          const v = normalizeHex((config as any)[p.key] || config.textColor, '#f0e8d8');
+          return (
+            <button key={p.key} type="button" onClick={() => setActive(p.key)} title={p.hint}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${on ? '#c9a96e' : '#2a2a38'}`, background: on ? 'rgba(201,169,110,0.12)' : '#0f0f16', color: on ? '#f0e8d8' : '#a8a39a', padding: '5px 9px', fontSize: 11, fontWeight: on ? 700 : 600, cursor: 'pointer', minHeight: 32 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 4, background: v, border: '1px solid rgba(255,255,255,0.18)', flexShrink: 0, boxShadow: on ? '0 0 0 2px rgba(201,169,110,0.35)' : 'none' }} />
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#cfc6b8' }}><span style={{ width: 16, height: 16, borderRadius: 5, background: activeValue, border: '1px solid #2a2a38', boxShadow: '0 0 0 2px rgba(201,169,110,0.28)' }} />{activeMeta.label}</span>
+        <code style={{ fontSize: 11, color: '#9a9080', background: '#0f0f16', border: '1px solid #242433', borderRadius: 6, padding: '2px 6px' }}>{activeValue.toUpperCase()}</code>
+        <button type="button" onClick={() => setShowWheel((v) => !v)} style={{ marginLeft: 'auto', borderRadius: 8, border: '1px solid #2a2a38', background: showWheel ? 'rgba(201,169,110,0.12)' : '#13131c', color: showWheel ? '#f0e8d8' : '#cfc6b8', padding: '5px 10px', fontSize: 11, cursor: 'pointer' }}>{showWheel ? 'Hide wheel' : 'Custom wheel'}</button>
+      </div>
+      {showWheel && <div style={{ maxWidth: 260 }}><CustomColorWheel value={activeValue} onChange={pick} /></div>}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {FONT_COLOR_PRESETS.map((c) => { const on = normalizeHex(c, c).toLowerCase() === activeValue.toLowerCase(); return <button key={c} type="button" title={c} onClick={() => pick(c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: on ? '2px solid #f0e8d8' : '1px solid rgba(255,255,255,0.14)', boxShadow: on ? '0 0 0 2px rgba(201,169,110,0.45)' : 'none', cursor: 'pointer', padding: 0 }} />; })}
+      </div>
+      <div style={{ display: 'grid', gap: 4 }}>
+        <label style={{ fontSize: 11, fontWeight: 700, color: '#9a9080' }}>HEX</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <span style={{ width: 28, height: 28, borderRadius: 8, background: activeValue, border: '1px solid #2a2a38', flexShrink: 0 }} />
+          <input type="text" value={activeValue} onChange={(e) => { const v = e.target.value.trim(); if (/^#?[0-9a-fA-F]{6}$/.test(v)) pick(v.startsWith('#') ? v : `#${v}`); }} style={{ ...INPUT, fontFamily: 'monospace', textTransform: 'uppercase' }} />
+        </div>
+      </div>
+      <div style={{ borderRadius: 10, border: '1px solid #242433', background: config.pageBg, padding: 10, display: 'grid', gap: 4 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: config.headingColor || config.textColor, fontFamily: fontCssFamily(config.headingFont) }}>Live heading preview</div>
+        <div style={{ fontSize: 12, color: config.bodyTextColor || config.textColor, fontFamily: fontCssFamily(config.bodyFont) }}>Body text updates immediately for its own elements.</div>
+        <div style={{ fontSize: 11, color: config.secondaryTextColor || config.mutedTextColor, fontFamily: fontCssFamily(config.bodyFont) }}>Secondary descriptions and subtitles.</div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2 }}>
+          <span style={{ fontSize: 11, color: config.navTextColor || config.textColor, fontWeight: 600 }}>Nav Label</span>
+          <span style={{ fontSize: 11, borderRadius: 8, padding: '4px 10px', background: config.primaryColor, color: config.buttonTextColor || '#07070a', fontWeight: 700 }}>Button</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+const FAV_FONTS_KEY = 'dinepixel_font_favs_v1';
+const FONT_SAMPLE_TEXT = 'The Perfect Dining Experience';
+function useFavoriteFonts() {
+  const [favs, setFavs] = useState<string[]>([]);
+  useEffect(() => {
+    try { const raw = localStorage.getItem(FAV_FONTS_KEY); if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) setFavs(arr.filter((x) => typeof x === 'string')); } } catch {}
+  }, []);
+  const toggle = (v: string) => setFavs((prev) => {
+    const next = prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v];
+    try { localStorage.setItem(FAV_FONTS_KEY, JSON.stringify(next)); } catch {}
+    return next;
+  });
+  return { favs, toggle };
+}
+
+function TypographyPairings({ onApply }: { onApply: (c: TypographyCombination) => void }) {
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      <label style={LABEL}>Curated typography pairings</label>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {TYPOGRAPHY_COMBINATIONS.map((c) => (
+          <button key={c.id} type="button" onClick={() => onApply(c)} style={{ textAlign: 'left', borderRadius: 12, border: '1px solid var(--border-warm)', background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))', padding: '10px 12px', cursor: 'pointer', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>{c.name}</span>
+              <span style={{ fontSize: 10, color: 'var(--gold)', whiteSpace: 'nowrap' }}>Apply</span>
+            </div>
+            <div style={{ marginTop: 6, fontFamily: fontCssFamily(c.headingFont), fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{FONT_SAMPLE_TEXT}</div>
+            <div style={{ marginTop: 2, fontFamily: fontCssFamily(c.bodyFont), fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.3 }}>{c.description}</div>
+            <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text-dimmed, rgba(255,255,255,0.45))' }}>{c.headingFont} + {c.bodyFont}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FontPicker({ label, value, onChange, previewSize = 16 }: { label: string; value: string; onChange: (v: string) => void; previewSize?: number }) {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<FontCategory | 'All' | 'Favourites'>('All');
+  const { favs, toggle } = useFavoriteFonts();
+  const selected = resolveFontOption(value);
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return FONT_CATALOG.filter((f) => {
+      if (category === 'Favourites' && !favs.includes(f.value)) return false;
+      if (category !== 'All' && category !== 'Favourites' && f.category !== category) return false;
+      if (!q) return true;
+      return f.label.toLowerCase().includes(q) || f.value.toLowerCase().includes(q) || f.category.toLowerCase().includes(q);
+    });
+  }, [query, category, favs]);
+  const previewFonts = useMemo(() => {
+    const base = [value, selected.value, ...results.slice(0, 14).map((f) => f.value)];
+    if (category === 'All') {
+      for (const c of TYPOGRAPHY_COMBINATIONS.slice(0, 3)) base.push(c.headingFont, c.bodyFont);
+    }
+    return base;
+  }, [value, selected.value, results, category]);
+  return (
+    <div style={{ minWidth: 0 }}>
+      <label style={LABEL}>{label}</label>
+      <div style={{ display: 'grid', gap: 8, border: '1px solid var(--border-warm)', borderRadius: 12, background: 'var(--bg-surface-2)', padding: 10, minWidth: 0 }}>
+        <CustomThemeFontLoader fonts={previewFonts} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 10, border: '1px solid var(--border-warm)', background: 'rgba(255,255,255,0.02)', padding: '8px 10px' }}>
+          <span style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--gold)', flexShrink: 0, opacity: 0.9 }} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 10, color: 'var(--text-dimmed, rgba(255,255,255,0.45))', lineHeight: 1 }}>Selected</div>
+            <div style={{ fontFamily: fontCssFamily(value), fontSize: Math.max(14, previewSize), fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.label}</div>
+          </div>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)', border: '1px solid var(--border-warm)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', flexShrink: 0 }}>{selected.category}</span>
+        </div>
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search premium fonts..." style={{ ...INPUT, padding: '0.5rem 0.65rem' }} />
+        <div className="no-scrollbar" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2, WebkitOverflowScrolling: 'touch' }}>
+          {(['All', 'Favourites', ...FONT_CATEGORY_ORDER] as const).map((c) => (
+            <button key={c} type="button" onClick={() => setCategory(c)} style={{ borderRadius: 999, border: `1px solid ${category === c ? 'var(--gold)' : 'var(--border-warm)'}`, background: category === c ? 'rgba(184,164,122,0.10)' : 'transparent', color: category === c ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '0.25rem 0.6rem', fontSize: 11, whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0 }}>{c}{c === 'Favourites' && favs.length ? ` (${favs.length})` : ''}</button>
+          ))}
+        </div>
+        <div style={{ maxHeight: 260, overflowY: 'auto', display: 'grid', gap: 6, paddingRight: 2, minWidth: 0 }}>
+          {results.map((f) => {
+            const active = selected.value.toLowerCase() === f.value.toLowerCase();
+            const fav = favs.includes(f.value);
+            return (
+              <div key={f.value} style={{ display: 'flex', gap: 6, alignItems: 'stretch', minWidth: 0 }}>
+                <button type="button" onClick={() => onChange(f.value)} style={{ flex: 1, minWidth: 0, textAlign: 'left', borderRadius: 11, border: `1px solid ${active ? 'var(--gold)' : 'var(--border-warm)'}`, background: active ? 'rgba(184,164,122,0.09)' : 'rgba(255,255,255,0.01)', padding: '9px 10px', cursor: 'pointer', boxShadow: active ? '0 0 0 1px rgba(184,164,122,0.12) inset' : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                    <span style={{ fontFamily: fontCssFamily(f.value), fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{f.label}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-dimmed, rgba(255,255,255,0.5))', border: '1px solid var(--border-warm)', borderRadius: 999, padding: '1px 7px', whiteSpace: 'nowrap' }}>{f.category}</span>
+                      {active ? <span style={{ width: 16, height: 16, borderRadius: 999, background: 'var(--gold)', color: '#111', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>✓</span> : null}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: fontCssFamily(f.value), fontSize: 13, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.sample || FONT_SAMPLE_TEXT}</div>
+                  {f.google === null ? <div style={{ fontSize: 10, color: 'var(--text-dimmed, rgba(255,255,255,0.42))', marginTop: 3 }}>Uses premium fallback styling when font file is unavailable</div> : null}
+                </button>
+                <button type="button" title={fav ? 'Remove favourite' : 'Add to favourites'} aria-label={fav ? `Remove ${f.label} from favourites` : `Add ${f.label} to favourites`} onClick={() => toggle(f.value)} style={{ width: 34, flexShrink: 0, borderRadius: 11, border: `1px solid ${fav ? 'rgba(184,164,122,0.55)' : 'var(--border-warm)'}`, background: fav ? 'rgba(184,164,122,0.10)' : 'rgba(255,255,255,0.01)', color: fav ? 'var(--gold)' : 'var(--text-dimmed, rgba(255,255,255,0.45))', cursor: 'pointer', fontSize: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{fav ? '★' : '☆'}</button>
+              </div>
+            );
+          })}
+          {!results.length ? <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '0.25rem 0.1rem' }}>{category === 'Favourites' ? 'No favourite fonts yet. Tap ☆ on a font.' : 'No fonts match.'}</div> : null}
+        </div>
+      </div>
+    </div>
+  );
 }
 const SAMPLE_PREVIEW_ITEMS: PublicMenuItem[] = [
   { id:'s1',category_id:'c1',name:'Truffle Mushroom Risotto',description:'Wild morels, aged parmesan, and black truffle.',price:34,image_url:'https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?auto=format&fit=crop&w=800&q=80',model_url_glb:'sample',model_url_usdz:null,is_veg:true,calories:520,preparation_time_mins:22,ingredients:[],allergens:[],dietary_tags:[],rating:4.9,order_count:142,is_featured:true,is_popular:false },
@@ -357,7 +468,25 @@ export default function CustomThemeBuilder({ hotel, initialConfig, onSaved, onCa
         <section className="flex min-h-0 min-w-0 flex-col border-b border-white/10 xl:border-b-0 xl:border-r xl:overflow-hidden" style={{ maxWidth: '100%', boxSizing: 'border-box' }}><div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4 sm:px-5" style={{ boxSizing: 'border-box' }}><div className="mx-auto flex w-full min-w-0 max-w-[620px] flex-col gap-6" style={{ boxSizing: 'border-box' }}>
           <div><label style={LABEL}>Professional palette</label><div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8}}>{COLOR_PALETTES.map((pal)=><button key={pal.id} type="button" onClick={()=>applyPalette(pal.id)} style={{textAlign:'left',borderRadius:10,border:'1px solid var(--border-warm)',background:'var(--bg-surface-2)',padding:'0.55rem 0.65rem',cursor:'pointer'}}><div style={{display:'flex',gap:4,marginBottom:6}}>{Object.values(pal.colors).slice(0,4).map((c)=><span key={c} style={{width:14,height:14,borderRadius:4,background:c,border:'1px solid rgba(255,255,255,0.08)'}} />)}</div><span style={{fontSize:12,fontWeight:600,color:'var(--text-primary)'}}>{pal.name}</span></button>)}</div></div>
           <Section number="01" title="Colors & Palette"><ThemeColorEditor config={config} onSet={(key, hex) => set(key, normalizeHex(hex, config[key]))} /></Section>
-          <Section number="02" title="Typography & Fonts"><div className="grid grid-cols-1 gap-4"><FontPicker label="Heading font" value={config.headingFont} onChange={(v)=>set('headingFont',v)} /><FontPicker label="Body font" value={config.bodyFont} onChange={(v)=>set('bodyFont',v)} /><FontPicker label="Price font" value={config.priceFont} onChange={(v)=>set('priceFont',v)} /></div><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div><label style={LABEL}>Heading size ({config.typography.headingSize}px)</label><input type="range" min={14} max={34} value={config.typography.headingSize} onChange={(e)=>setTypo('headingSize',Number(e.target.value))} style={{width:'100%'}} /></div><div><label style={LABEL}>Body size ({config.typography.bodySize}px)</label><input type="range" min={12} max={20} value={config.typography.bodySize} onChange={(e)=>setTypo('bodySize',Number(e.target.value))} style={{width:'100%'}} /></div><div><label style={LABEL}>Price size ({config.typography.priceSize}px)</label><input type="range" min={12} max={28} value={config.typography.priceSize} onChange={(e)=>setTypo('priceSize',Number(e.target.value))} style={{width:'100%'}} /></div><div><label style={LABEL}>Heading weight</label><select value={config.typography.headingWeight} onChange={(e)=>setTypo('headingWeight',e.target.value as any)} style={INPUT}>{['400','500','600','700'].map(w=><option key={w} value={w}>{w}</option>)}</select></div></div></Section>
+          <Section number="02" title="Typography & Fonts">
+            <TypographyPairings onApply={(c) => setConfig((p) => {
+              const n = cloneCustomThemeConfig(p);
+              n.headingFont = c.headingFont;
+              n.bodyFont = c.bodyFont;
+              n.priceFont = c.priceFont || c.bodyFont;
+              return n;
+            })} />
+            <div className="grid grid-cols-1 gap-4">
+              <FontPicker label="Heading font" value={config.headingFont} onChange={(v)=>set('headingFont',v)} previewSize={18} />
+              <FontPicker label="Body font" value={config.bodyFont} onChange={(v)=>set('bodyFont',v)} previewSize={15} />
+              <FontPicker label="Price font" value={config.priceFont} onChange={(v)=>set('priceFont',v)} previewSize={15} />
+            </div>
+            <div style={{ borderRadius: 14, border: '1px solid #242433', background: '#0c0c12', padding: 12, marginTop: 2 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#c9a96e', marginBottom: 8 }}>Font Colors</div>
+              <FontColorsEditor config={config} onSet={(key, hex) => set(key, hex as CustomThemeConfig[typeof key])} />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div><label style={LABEL}>Heading size ({config.typography.headingSize}px)</label><input type="range" min={14} max={34} value={config.typography.headingSize} onChange={(e)=>setTypo('headingSize',Number(e.target.value))} style={{width:'100%'}} /></div><div><label style={LABEL}>Body size ({config.typography.bodySize}px)</label><input type="range" min={12} max={20} value={config.typography.bodySize} onChange={(e)=>setTypo('bodySize',Number(e.target.value))} style={{width:'100%'}} /></div><div><label style={LABEL}>Price size ({config.typography.priceSize}px)</label><input type="range" min={12} max={28} value={config.typography.priceSize} onChange={(e)=>setTypo('priceSize',Number(e.target.value))} style={{width:'100%'}} /></div><div><label style={LABEL}>Heading weight</label><select value={config.typography.headingWeight} onChange={(e)=>setTypo('headingWeight',e.target.value as any)} style={INPUT}>{['400','500','600','700'].map((w)=><option key={w} value={w}>{w}</option>)}</select></div><div><label style={LABEL}>Body weight</label><select value={config.typography.bodyWeight} onChange={(e)=>setTypo('bodyWeight',e.target.value as any)} style={INPUT}>{['400','500','600','700'].map((w)=><option key={w} value={w}>{w}</option>)}</select></div><div><label style={LABEL}>Button text weight</label><select value={config.typography.buttonTextWeight} onChange={(e)=>setTypo('buttonTextWeight',e.target.value as any)} style={INPUT}>{['400','500','600','700'].map((w)=><option key={w} value={w}>{w}</option>)}</select></div></div>
+          </Section>
           <Section number="03" title="Cards & Components"><div><label style={LABEL}>Card style</label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{CARD_STYLE_OPTIONS.map((o)=><Tile key={o.value} active={config.cardStyle===o.value} onClick={()=>set('cardStyle',o.value)} title={o.label} description={o.description} />)}</div></div><div><label style={LABEL}>Shadow</label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{SHADOW_OPTIONS.map((o)=><Tile key={o.value} active={config.shadowStrength===o.value} onClick={()=>set('shadowStrength',o.value)} title={o.label} description={o.description} />)}</div></div><div><label style={LABEL}>Border style</label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{BORDER_STYLE_OPTIONS.map((o)=><Tile key={o.value} active={config.borderStyle===o.value} onClick={()=>set('borderStyle',o.value)} title={o.label} description={o.description} />)}</div></div></Section>
           <Section number="04" title="Buttons & Badges"><div><label style={LABEL}>Button style</label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{BUTTON_STYLE_OPTIONS.map((o)=><Tile key={o.value} active={config.buttonStyle===o.value} onClick={()=>set('buttonStyle',o.value)} title={o.label} description={o.description} />)}</div></div><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div><label style={LABEL}>Button size</label><select value={config.buttonSize} onChange={(e)=>set('buttonSize',e.target.value as any)} style={INPUT}>{BUTTON_SIZE_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></div><div><label style={LABEL}>Badge style</label><select value={config.badgeStyle} onChange={(e)=>set('badgeStyle',e.target.value as any)} style={INPUT}>{BADGE_STYLE_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></div></div></Section>
           <Section number="05" title="Layout & Spacing"><div><label style={LABEL}>Menu layout</label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{MENU_LAYOUT_OPTIONS.map((o)=><Tile key={o.value} active={config.menuLayout===o.value} onClick={()=>set('menuLayout',o.value)} title={o.label} description={o.description} />)}</div></div><div><label style={LABEL}>Spacing</label><div className="grid grid-cols-1 gap-2 sm:grid-cols-3">{SPACING_OPTIONS.map((o)=><Tile key={o.value} active={config.spacing===o.value} onClick={()=>set('spacing',o.value)} title={o.label} description={o.description} />)}</div></div><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div><label style={LABEL}>Card radius</label><select value={config.borderRadius} onChange={(e)=>set('borderRadius',e.target.value)} style={INPUT}>{BORDER_RADIUS_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label} ({o.value})</option>)}</select></div><div><label style={LABEL}>Image corners</label><select value={config.imageRadius} onChange={(e)=>set('imageRadius',e.target.value)} style={INPUT}>{BORDER_RADIUS_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label} ({o.value})</option>)}</select></div><div><label style={LABEL}>Button radius</label><select value={config.buttonRadius} onChange={(e)=>set('buttonRadius',e.target.value)} style={INPUT}>{BORDER_RADIUS_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label} ({o.value})</option>)}<option value="999px">Pill (999px)</option></select></div><div><label style={LABEL}>Badge radius</label><select value={config.badgeRadius} onChange={(e)=>set('badgeRadius',e.target.value)} style={INPUT}>{BORDER_RADIUS_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label} ({o.value})</option>)}<option value="999px">Pill (999px)</option></select></div></div></Section>
