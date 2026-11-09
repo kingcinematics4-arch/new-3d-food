@@ -10,6 +10,12 @@ import { DEFAULT_MENU_THEME } from '@/lib/menuThemes';
 import { normalizeCurrency } from '@/lib/menu';
 import { orderReference } from '@/lib/orderReference';
 import { getHotelGoogleReviewUrl, getStoredCustomTheme } from '@/lib/customThemeStore.server';
+import {
+  resolveItemProperties,
+  parseWaterFromNotes,
+  cleanWaterNotes,
+  isWaterOrder,
+} from '@/lib/waterOrderHelper';
 
 function isStoredReferenceNumber(value: string): boolean {
   return /^DINE-\d+$/i.test(value);
@@ -97,22 +103,48 @@ export async function GET(
       });
     }
 
-    const items = ((order as any).order_items || []).map((item: any) => {
-      const priceAtTime = item.price_at_time ?? 0;
+    let items = ((order as any).order_items || []).map((item: any) => {
+      const resolved = resolveItemProperties(item, order.notes);
+      const priceAtTime = resolved.price_at_time;
+      const quantity = resolved.quantity;
       return {
         id: item.id,
-        name: item.item_name || item.menu_items?.name || null,
-        quantity: Number(item.quantity) || 0,
+        name: resolved.name,
+        quantity,
         price_at_time: priceAtTime,
-        line_total: Number(priceAtTime) * (Number(item.quantity) || 0),
-        notes: item.notes ?? null,
-        item_kind: item.item_kind ?? null,
+        line_total: priceAtTime * quantity,
+        notes: resolved.notes,
+        item_kind: resolved.item_kind,
         ...(itemSchema.status ? { status: item.status ?? 'active' } : {}),
         ...(itemSchema.cancelledAt ? { cancelled_at: item.cancelled_at ?? null } : {}),
         ...(itemSchema.cancellationReason ? { cancellation_reason: item.cancellation_reason ?? null } : {}),
         ...(itemSchema.cancelledBy ? { cancelled_by: item.cancelled_by ?? null } : {}),
       };
     });
+
+    // Synthetic integration for historical water orders missing order_items rows
+    if (items.length === 0) {
+      const waterFromNotes = parseWaterFromNotes(order.notes);
+      if (waterFromNotes) {
+        const unitPrice = Number(order.total_amount) || 0;
+        const qty = waterFromNotes.quantity || 1;
+        items = [
+          {
+            id: `syn-${order.id}`,
+            name: waterFromNotes.name,
+            quantity: qty,
+            price_at_time: unitPrice,
+            line_total: unitPrice * qty,
+            notes: null,
+            item_kind: 'water',
+            status: 'active',
+          },
+        ];
+      }
+    }
+
+    const isWater = isWaterOrder({ notes: order.notes, order_items: items });
+    const cleanOrderNotes = isWater ? cleanWaterNotes(order.notes) : (order.notes || null);
 
     const reference = orderReference(order as { id: string; order_number?: string | null });
 
@@ -167,7 +199,7 @@ export async function GET(
         table_number: order.table_number,
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
-        notes: order.notes,
+        notes: cleanOrderNotes,
         total_amount: order.total_amount,
         amount_paid: totalPaid,
         remaining_balance: remainingBalance,
@@ -190,7 +222,7 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    return new NextResponse(JSON.stringify({ success: false, error: error.message || 'Failed to load this order' }), {
+    return new NextResponse(JSON.stringify({ success: false, error: error.message || 'Failed to fetch order' }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',

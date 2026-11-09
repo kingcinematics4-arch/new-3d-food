@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHotel, useOrders, Order } from '@/lib/useHotel';
 import { formatPrice } from '@/lib/menu';
+import { isWaterOrder, isWaterItem, cleanWaterNotes } from '@/lib/waterOrderHelper';
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
 
@@ -126,22 +127,7 @@ function WaterDropletIcon({ size = 14 }: { size?: number }) {
   );
 }
 
-function isWaterItem(it: any): boolean {
-  if (!it) return false;
-  const kind = it?.item_kind ?? null;
-  if (kind === 'water') return true;
-  if (kind) return false;
-  // Legacy fallback (migration 028/item_kind absent): water rows have no real menu FK and carry item_name.
-  const menuId = it?.menu_item_id ?? it?.menu_item?.id ?? null;
-  const hasName = !!(it?.item_name || it?.name);
-  return !menuId && hasName;
-}
-
-function isWaterOrder(order: { order_items?: any[] } | null | undefined): boolean {
-  const items = order?.order_items || [];
-  if (!items.length) return false;
-  return items.every((it: any) => isWaterItem(it));
-}
+// Water detection provided centrally by @/lib/waterOrderHelper
 
 interface ModalState {
   order: Order;
@@ -321,11 +307,15 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
             <span>Qty: <strong style={{ color: 'var(--text-primary)' }}>{item.quantity}</strong></span>
             <span>Unit: <strong style={{ color: 'var(--text-primary)' }}>{formatPrice(item.price, currency)}</strong></span>
           </div>
-          {item.notes && !(water && isWaterItem(item) && /^water order:|^normal water request:/i.test((item.notes || '').trim())) && (
-            <div style={{ marginTop: 6, fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-              Note: {item.notes}
-            </div>
-          )}
+          {(() => {
+            const n = cleanWaterNotes(item.notes);
+            if (!n || (water && isWaterItem(item))) return null;
+            return (
+              <div style={{ marginTop: 6, fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                Note: {n}
+              </div>
+            );
+          })()}
         </div>
 
         <hr style={{ border: 'none', borderTop: '1px solid var(--border-warm, rgba(255,255,255,0.08))', margin: 0 }} />
@@ -804,10 +794,9 @@ export default function LiveOrdersPage() {
 
                   {/* Chef note (compact, fixed) — water product info lives in ORDER ITEMS, not notes */}
                   {(() => {
-                    const note = (order.notes || '').trim();
+                    const note = cleanWaterNotes(order.notes);
                     const water = isWaterOrder(order);
-                    const isLegacyWaterNote = water && /^water order:|^normal water request:/i.test(note);
-                    if (!note || isLegacyWaterNote) return null;
+                    if (!note || water) return null;
                     return (
                       <div style={{
                         flexShrink: 0, marginTop: 8,
@@ -816,7 +805,7 @@ export default function LiveOrdersPage() {
                         fontSize: '0.6875rem', lineHeight: 1.5, color: 'var(--text-secondary)',
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>
-                        <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Note:</strong> {order.notes}
+                        <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Note:</strong> {note}
                       </div>
                     );
                   })()}

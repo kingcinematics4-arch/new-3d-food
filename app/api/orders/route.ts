@@ -1,7 +1,13 @@
-﻿// app/api/orders/route.ts
+// app/api/orders/route.ts
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getOrdersSchema, getOrderItemsSchema } from '@/lib/ordersSchema';
+import {
+  resolveItemProperties,
+  parseWaterFromNotes,
+  cleanWaterNotes,
+  isWaterOrder,
+} from '@/lib/waterOrderHelper';
 
 const TZ = 'Asia/Kolkata';
 
@@ -85,22 +91,59 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    // Transform order_items to have menu_item (singular) with name for frontend compatibility
-    const transformedOrders = (orders || []).map((order: any) => ({
-      ...order,
-      order_items: (order.order_items || []).map((item: any) => {
-        const priceAtTime = item.price_at_time ?? item.menu_items?.price ?? 0;
-        const itemName = item.item_name || item.menu_items?.name || null;
+    // Transform order_items to normalize water items, prices, and clean notes
+    const transformedOrders = (orders || []).map((order: any) => {
+      let items = (order.order_items || []).map((item: any) => {
+        const resolved = resolveItemProperties(item, order.notes);
         return {
           ...item,
-          price_at_time: priceAtTime,
-          price: priceAtTime,
-          name: itemName,
-          item_kind: item.item_kind ?? null,
-          menu_item: item.menu_items ? { name: item.menu_items.name, price: item.menu_items.price } : null,
+          price_at_time: resolved.price_at_time,
+          price: resolved.price,
+          name: resolved.name,
+          quantity: resolved.quantity,
+          item_kind: resolved.item_kind,
+          notes: resolved.notes,
+          menu_item: item.menu_items
+            ? { name: item.menu_items.name, price: item.menu_items.price }
+            : resolved.name
+            ? { name: resolved.name, price: resolved.price }
+            : null,
         };
-      }),
-    }));
+      });
+
+      // Synthetic integration for historical water orders missing order_items rows
+      if (items.length === 0) {
+        const waterFromNotes = parseWaterFromNotes(order.notes);
+        if (waterFromNotes) {
+          const unitPrice = Number(order.total_amount) || 0;
+          const qty = waterFromNotes.quantity || 1;
+          items = [
+            {
+              id: `syn-${order.id}`,
+              order_id: order.id,
+              menu_item_id: null,
+              quantity: qty,
+              price_at_time: unitPrice,
+              price: unitPrice,
+              name: waterFromNotes.name,
+              item_kind: 'water',
+              notes: null,
+              status: 'active',
+              menu_item: { name: waterFromNotes.name, price: unitPrice },
+            },
+          ];
+        }
+      }
+
+      const isWater = isWaterOrder({ notes: order.notes, order_items: items });
+      const cleanOrderNotes = isWater ? cleanWaterNotes(order.notes) : (order.notes || null);
+
+      return {
+        ...order,
+        notes: cleanOrderNotes,
+        order_items: items,
+      };
+    });
 
     return new NextResponse(JSON.stringify({ success: true, orders: transformedOrders }), {
       status: 200,

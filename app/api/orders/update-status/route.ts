@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 import { requireOwnedHotelId } from '@/lib/hotelAccess';
+import { isWaterOrder } from '@/lib/waterOrderHelper';
 
 const VALID_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'delivered', 'completed', 'cancelled'] as const;
 
@@ -37,13 +38,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // Fetch current order to validate transition. Only columns
-    // that have existed since migration 001 are selected:
-    // orders.order_number is absent until migration 008 is
-    // applied, and listing it here would fail the whole query.
+    // Fetch current order to validate transition.
     const { data: currentOrder, error: fetchError } = await supabaseAdmin
       .from('orders')
-      .select('id, hotel_id, status')
+      .select('id, hotel_id, status, notes')
       .eq('id', validated.order_id)
       .single();
 
@@ -62,20 +60,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // Validate status transition (case-normalized). Same-status requests are
-    // treated as an idempotent no-op to prevent duplicate/realtime/retry
-    // clicks from failing with "Invalid status transition" and to avoid
-    // unnecessary DB writes/history churn. Does NOT bypass validation for
-    // real transitions.
     const currentStatus = String(currentOrder.status || '').trim().toLowerCase();
     const requestedStatus = String(validated.status || '').trim().toLowerCase();
 
     if (currentStatus === requestedStatus) {
-      // No DB write, no history record, no error. Server-side guard so
-      // duplicate clicks, retries, stale UI, or any client path is safe.
-      console.log('[orders/update-status][noop]', JSON.stringify({
-        orderId: currentOrder.id, hotelId: currentOrder.hotel_id, status: currentStatus,
-      }));
       const { data: existingOrder } = await supabaseAdmin
         .from('orders')
         .select('*, order_items(*)')
@@ -96,30 +84,25 @@ export async function POST(request: Request) {
       });
     }
 
-    // Water orders: simplified workflow — allow direct delivery from any
-    // non-terminal state (no Accept/Preparing/Ready). Identify via item_kind
-    // (stable type, migration 028), not by name text. Existing status
-    // precedence/pending workflow remains authoritative for all other orders.
-    if (requestedStatus === 'delivered' && !['ready', 'delivered'].includes(currentStatus)) {
-      try {
-        const { data: its } = await supabaseAdmin
-          .from('orders')
-          .select('order_items(item_kind, item_name, menu_item_id)')
-          .eq('id', validated.order_id)
-          .single();
-        const items = (its as any)?.order_items || [];
-        const isWaterOrder = items.length > 0 && items.every((it: any) => {
-          if (it?.item_kind === 'water') return true;
-          if (it?.item_kind) return false;
-          return !it?.menu_item_id && !!it?.item_name; // legacy structural fallback
-        });
-        if (isWaterOrder) {
-          (VALID_TRANSITIONS as any)[currentStatus] = Array.from(new Set([...(VALID_TRANSITIONS[currentStatus] || []), 'delivered']));
-        }
-      } catch { /* item_kind may not exist on older deployments; fall back to standard transitions */ }
+    // Check whether this order is a water order (query order_items safely)
+    let isWater = false;
+    try {
+      const { data: itemRows } = await supabaseAdmin
+        .from('order_items')
+        .select('id, notes, menu_item_id, quantity, price_at_time')
+        .eq('order_id', validated.order_id);
+      isWater = isWaterOrder({ notes: currentOrder.notes, order_items: itemRows || [] });
+    } catch {
+      isWater = isWaterOrder({ notes: currentOrder.notes });
     }
 
-    const allowedTransitions = VALID_TRANSITIONS[currentStatus] || [];
+    // Water orders follow: [ORDER PLACED] -> [DELIVERED] directly (no accept/preparing/ready stages).
+    // Food orders strictly follow VALID_TRANSITIONS.
+    const baseTransitions = VALID_TRANSITIONS[currentStatus] || [];
+    const allowedTransitions = isWater && !['delivered', 'completed', 'cancelled'].includes(currentStatus)
+      ? Array.from(new Set([...baseTransitions, 'delivered']))
+      : baseTransitions;
+
     if (!allowedTransitions.includes(requestedStatus)) {
       return new NextResponse(JSON.stringify({
         success: false,
@@ -172,7 +155,7 @@ export async function POST(request: Request) {
     await supabaseAdmin.from('order_status_history').insert({
       order_id: validated.order_id,
       status: requestedStatus,
-      note: validated.note || `Status changed to ${requestedStatus}`,
+      note: validated.note || (isWater && requestedStatus === 'delivered' ? 'Water order delivered to table' : `Status changed to ${requestedStatus}`),
     });
 
     return new NextResponse(JSON.stringify({ success: true, order: updatedOrder }), {

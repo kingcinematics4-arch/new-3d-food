@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customThem
 import { CustomThemeFontLoader } from '@/components/menu/CustomThemeFontLoader';
 import SplitBillModal from '@/components/order/SplitBillModal';
 import ServiceRequestModal from '@/components/menu/ServiceRequestModal';
+import { isWaterOrder, isWaterItem, cleanWaterNotes } from '@/lib/waterOrderHelper';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -106,14 +107,7 @@ function WaterDropletIcon({ size = 13 }: { size?: number }) {
 }
 
 function isWaterOrderLive(order: LiveOrder | null | undefined): boolean {
-  const items = order?.items || [];
-  if (!items.length) return false;
-  return items.every((it: any) => {
-    const kind = it?.item_kind ?? null;
-    if (kind === 'water') return true;
-    if (kind) return false;
-    return !!(it?.name); // legacy fallback when item_kind absent but name resolved
-  });
+  return isWaterOrder(order as any);
 }
 
 function stagesForOrder(order: LiveOrder | null | undefined) {
@@ -860,7 +854,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '0.5rem', alignItems: 'start' }}>
                           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', display: 'inline-flex', alignItems: 'center' }}>
-                              {item.item_kind === 'water' && <WaterDropletIcon size={13} />}
+                              {isWaterItem(item) && <WaterDropletIcon size={13} />}
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name || 'Item'}</span>
                             </span>
                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
@@ -984,11 +978,15 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       <span style={{ color: 'var(--text-secondary)' }}>{order.customer_name}</span>
                     </div>
                   )}
-                  {order.notes && !(water && /^water order:|^normal water request:/i.test((order.notes || '').trim())) && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: 2 }}>
-                      <span style={{ color: 'var(--text-dimmed)' }}>Note: </span>{order.notes}
-                    </div>
-                  )}
+                  {(() => {
+                    const note = cleanWaterNotes(order.notes);
+                    if (!note || water) return null;
+                    return (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: 2 }}>
+                        <span style={{ color: 'var(--text-dimmed)' }}>Note: </span>{note}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: '0.5rem' }}>
                   <button

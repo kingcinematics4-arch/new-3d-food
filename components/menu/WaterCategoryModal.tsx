@@ -275,7 +275,7 @@ export default function WaterCategoryModal({
                     </h3>
                   </div>
                   <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-muted, #9E988D)' }}>
-                    Filtered drinking water served complimentary. Sent as a service request.
+                    Filtered drinking water served complimentary.
                   </p>
                 </div>
                 <span

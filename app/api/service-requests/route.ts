@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { requireOwnedHotelId } from '@/lib/hotelAccess';
+import { getOrderItemsSchema } from '@/lib/ordersSchema';
 import { z } from 'zod';
 
 const REQUEST_TYPES = [
@@ -102,6 +103,55 @@ export async function POST(request: Request) {
       .single();
 
     if (error) throw error;
+
+    // Integration Layer: when a drinking water service request is submitted,
+    // seamlessly create a corresponding water order item in `orders` & `order_items`
+    // so it immediately appears on the Admin Order Dashboard under ORDER ITEMS
+    if (validated.request_type === 'drinking_water') {
+      try {
+        const itemSchema = await getOrderItemsSchema().catch(() => ({ itemName: false, itemKind: false } as any));
+        const qtyMatch = (validated.message || '').match(/(\d+)/);
+        const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+        const validQty = !isNaN(qty) && qty > 0 ? qty : 1;
+        const tag = `[water_item:{"name":"Free Water","kind":"water"}]`;
+
+        const { data: newOrder } = await supabaseAdmin
+          .from('orders')
+          .insert({
+            hotel_id: validated.hotel_id,
+            table_number: tableTrimmed,
+            customer_name: 'Guest',
+            order_type: 'dine_in',
+            payment_method: 'pay_at_table',
+            status: 'pending',
+            payment_status: 'unpaid',
+            total_amount: 0,
+            notes: null,
+          })
+          .select()
+          .single();
+
+        if (newOrder) {
+          const itemRow: Record<string, any> = {
+            order_id: newOrder.id,
+            menu_item_id: null,
+            quantity: validQty,
+            price_at_time: 0,
+            notes: tag,
+          };
+          if (itemSchema.itemName) itemRow.item_name = 'Free Water';
+          if (itemSchema.itemKind) itemRow.item_kind = 'water';
+          await supabaseAdmin.from('order_items').insert([itemRow]);
+          await supabaseAdmin.from('order_status_history').insert({
+            order_id: newOrder.id,
+            status: 'pending',
+            note: 'Free water requested via service request',
+          });
+        }
+      } catch (e: any) {
+        console.error('[service-requests] failed to create companion water order:', e?.message);
+      }
+    }
 
     return NextResponse.json({
       success: true,
