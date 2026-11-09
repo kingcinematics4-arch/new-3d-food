@@ -162,6 +162,47 @@ function StatusBadge({ status, order }: { status: string; order?: any }) {
   );
 }
 
+/* ─── Water Order Corner Tag ─────────────────────────────────────────────
+   Premium decorative corner tag shown ONLY on water order cards.
+   Inspired by a decorative upper-corner label; deep/electric blue, non-rectangular
+   via clip-path, fully inside card bounds, never shown on food cards.
+*/
+function WaterOrderTag(): JSX.Element {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        zIndex: 5,
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          width: 72,
+          height: 20,
+          background:
+            'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0ea5e9 100%)',
+          clipPath:
+            'polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 100%)',
+          color: '#ffffff',
+          fontSize: '0.6rem',
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          textAlign: 'center',
+          lineHeight: '20px',
+          boxShadow: '0 4px 12px rgba(30, 58, 138, 0.4)',
+          border: '1px solid rgba(255,255,255,0.18)',
+        }}
+      >
+        WATER ORDER
+      </div>
+    </div>
+  );
+}
+
 /* ─── Item-Action Modal ──────────────────────────────────────────────── */
 
 interface ItemModalProps {
@@ -684,12 +725,14 @@ export default function LiveOrdersPage() {
               const minsAgo    = getMinutesAgo(order.created_at);
               const isNew      = normalise(order.status) === 'pending';
               const orderItems = getOrderItems(order);
+              const water      = isWaterOrder(order);
 
               return (
                 <article
                   key={order.id}
                   className="d3-panel p-4"
                   style={{
+                    position: 'relative',
                     height: 340,
                     display: 'flex',
                     flexDirection: 'column',
@@ -697,6 +740,7 @@ export default function LiveOrdersPage() {
                     ...(isNew ? { borderColor: 'rgba(184,164,122,0.28)', background: 'var(--bg-surface-2)' } : {}),
                   }}
                 >
+                  {isWaterOrder(order) && <WaterOrderTag />}
                   {/* Card header */}
                   <div style={{ flexShrink: 0, marginBottom: 10 }}>
                     <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -712,18 +756,20 @@ export default function LiveOrdersPage() {
                       <span className={`d3-badge ${STATUS_CLASS[normalise(order.status)] || STATUS_CLASS.cancelled}`} style={{ fontSize: '0.625rem' }}>
                         {STATUS_LABEL[normalise(order.status)] || order.status}
                       </span>
-                      <span
-                        className="d3-badge d3-badge-payment"
-                        style={{
-                          fontSize: '0.625rem',
-                          marginLeft: 6,
-                          background: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.12)' : 'rgba(196,102,88,0.12)',
-                          borderColor: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.35)' : 'rgba(196,102,88,0.35)',
-                          color: normalise(order.payment_status) === 'paid' ? '#10b981' : '#C46658',
-                        }}
-                      >
-                        {normalise(order.payment_status) === 'paid' ? 'PAID' : 'UNPAID'}
-                      </span>
+                      {!water && (
+                        <span
+                          className="d3-badge d3-badge-payment"
+                          style={{
+                            fontSize: '0.625rem',
+                            marginLeft: 6,
+                            background: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.12)' : 'rgba(196,102,88,0.12)',
+                            borderColor: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.35)' : 'rgba(196,102,88,0.35)',
+                            color: normalise(order.payment_status) === 'paid' ? '#10b981' : '#C46658',
+                          }}
+                        >
+                          {normalise(order.payment_status) === 'paid' ? 'PAID' : 'UNPAID'}
+                        </span>
+                      )}
                     </div>
                     <p style={{ margin: '0.25rem 0 0', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{order.customer_name || 'Guest'}</span>
