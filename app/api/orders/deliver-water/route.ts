@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     const { data: order, error: orderErr } = await supabaseAdmin
       .from('orders')
-      .select(orderSelect.join(', ') + '\n        order_items (' + itemCols + ')')
+      .select(orderSelect.join(', ') + ', order_items (' + itemCols + ')')
       .eq('id', validated.order_id)
       .maybeSingle();
 
