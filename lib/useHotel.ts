@@ -84,6 +84,12 @@ export interface Order {
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
   cancellation_source?: 'hotel' | 'customer' | string | null;
+  /** Total of paid water charges included in the bill (linked water orders). */
+  water_charges?: number;
+  /** Whether this order is entirely a water order. */
+  is_water_order?: boolean;
+  /** Water items for the separate Water Order card. */
+  water_items?: OrderItem[];
   /** The hotel's Google Review URL, attached by the payment API after a
    *  successful `paid` transition so the guest can be redirected. */
   google_review_url?: string | null;
@@ -244,6 +250,7 @@ export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'al
       refetch: async () => {},
       updateOrderStatus: async () => {},
       updatePaymentStatus: async () => {},
+      updateWaterDelivery: async () => {},
       updatingOrderIds: new Set<string>(),
     };
   }
@@ -333,6 +340,35 @@ export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'al
     },
   });
 
+  const updateWaterDeliveryMutation = useMutation({
+    mutationFn: async ({ orderId }: { orderId: string }) => {
+      const json = await fetchJson('/api/orders/deliver-water', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId }),
+      });
+      if (!json.success) throw new Error(json.error || 'Failed to deliver water order');
+      return json.order as Order;
+    },
+    onMutate: async ({ orderId }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.orders(hotelId) });
+      const previous = queryClient.getQueryData<Order[]>(queryKeys.orders(hotelId));
+      queryClient.setQueryData<Order[]>(queryKeys.orders(hotelId), (old: Order[] | undefined) =>
+        old ? old.map((o) => (o.id === orderId ? { ...o, water_delivered: true } : o)) : old
+      );
+      return { previous };
+    },
+    onError: (err, { orderId }, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.orders(hotelId), context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders(hotelId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats(hotelId) });
+    },
+  });
+
   const updatingOrderIds = useRef<Set<string>>(new Set());
 
   const handleUpdateStatus = useCallback(
@@ -371,6 +407,19 @@ export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'al
     [updatePaymentStatusMutation, queryClient, hotelId]
   );
 
+  const handleUpdateWaterDelivery = useCallback(
+    async (id: string) => {
+      if (updatingOrderIds.current.has(id)) return;
+      updatingOrderIds.current.add(id);
+      try {
+        await updateWaterDeliveryMutation.mutateAsync({ orderId: id });
+      } finally {
+        updatingOrderIds.current.delete(id);
+      }
+    },
+    [updateWaterDeliveryMutation, updatingOrderIds]
+  );
+
   return {
     orders,
     loading,
@@ -378,6 +427,7 @@ export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'al
     refetch,
     updateOrderStatus: handleUpdateStatus,
     updatePaymentStatus: handleUpdatePaymentStatus,
+    updateWaterDelivery: handleUpdateWaterDelivery,
     // Ref-backed guard (mutated in place) so consumers always see current
     // in-flight state and rapid clicks/re-renders can't bypass it.
     updatingOrderIds: updatingOrderIds.current,

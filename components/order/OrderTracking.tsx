@@ -51,6 +51,12 @@ interface LiveOrder {
   currency?: string | null;
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
+  linked_order_id?: string | null;
+  linked_orders?: any[];
+  combined_items?: LiveOrderItem[];
+  combined_bill_total?: number;
+  /** Total of paid water charges included in the bill (linked water orders). */
+  water_charges?: number;
   /** The hotel's Google Review URL, present once payment is marked PAID. */
   google_review_url?: string | null;
 }
@@ -508,11 +514,13 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const stages = stagesForOrder(order);
   const stageIndex = statusToStageIndex(status, water);
   const isCancelled = status === 'cancelled';
-  const activeTotal = order
-    ? order.items
-        .filter((i) => (i.status || 'active').toLowerCase() !== 'cancelled')
-        .reduce((s, i) => s + Number(i.price_at_time) * i.quantity, 0)
-    : 0;
+
+  // Combined bill total across this order and any linked orders (e.g. water)
+  const combinedBillTotal = order?.combined_bill_total ?? order?.total_amount ?? 0;
+  const waterCharges = order?.water_charges ?? 0;
+
+  // Food items only — water products are displayed in the separate Water Order card
+  const foodItems = order?.items || [];
 
   function statusBadgeKey(status: string): string {
     switch ((status || '').trim().toLowerCase()) {
@@ -839,22 +847,21 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 <p style={SECTION_TITLE}>Items</p>
               </div>
               <div style={{ padding: '0 0.875rem 0.5rem', display: 'flex', flexDirection: 'column', gap: 0 }}>
-                {order.items.length === 0 ? (
+                {foodItems.length === 0 ? (
                   <p style={{ margin: 0, padding: '0.875rem 0', fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>No items recorded</p>
                 ) : (
-                  order.items.map((item, i) => {
+                  foodItems.map((item, i) => {
                     const cancelled = (item.status || '').toLowerCase() === 'cancelled';
-                    const canCancel = !water && !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
-                    const canEditQty = !water && !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
+                    const canCancel = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
+                    const canEditQty = !cancelled && !isTerminal(status) && (status === 'pending' || status === 'accepted');
                     const unitPrice = Number(item.price_at_time);
                     const lineTotal = unitPrice * item.quantity;
-                    const last = i === order.items.length - 1;
+                    const last = i === foodItems.length - 1;
                     return (
                       <div key={item.id} style={{ padding: '0.625rem 0', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '0.5rem', alignItems: 'start' }}>
                           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', display: 'inline-flex', alignItems: 'center' }}>
-                              {isWaterItem(item) && <WaterDropletIcon size={13} />}
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name || 'Item'}</span>
                             </span>
                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
@@ -930,9 +937,15 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
                   <span style={{ fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dimmed)', fontWeight: 500 }}>Order Total</span>
                   <span className="d3-price" style={{ fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', fontSize: '1.375rem', color: 'var(--gold)', fontWeight: 600 }}>
-                    {formatPrice(activeTotal, order?.currency)}
+                    {formatPrice(combinedBillTotal, order?.currency)}
                   </span>
                 </div>
+                {waterCharges > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
+                    <span style={{ color: 'var(--text-dimmed)' }}>Water Charges Included</span>
+                    <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{formatPrice(waterCharges, order?.currency)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                   {order.payment_method && order.payment_method !== 'pay_at_table' && (
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
@@ -962,7 +975,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem' }}>
                       <span style={{ color: 'var(--text-dimmed)' }}>Remaining Balance</span>
                       <span style={{ color: 'var(--gold)', fontWeight: 600 }}>
-                        {formatPrice(order.remaining_balance ?? Math.max(0, activeTotal - (order.amount_paid || 0)), order?.currency)}
+                        {formatPrice(order.remaining_balance ?? Math.max(0, combinedBillTotal - (order.amount_paid || 0)), order?.currency)}
                       </span>
                     </div>
                   )}
@@ -1145,9 +1158,9 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
               <SplitBillModal
                 orderId={order.id}
                 orderNumber={order.order_number}
-                totalAmount={activeTotal}
+                totalAmount={combinedBillTotal}
                 currency={order?.currency}
-                items={order.items || []}
+                items={foodItems}
                 isOpen={showSplitBill}
                 onClose={() => setShowSplitBill(false)}
                 onPaymentSuccess={async () => {

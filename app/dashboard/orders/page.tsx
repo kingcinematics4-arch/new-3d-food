@@ -203,6 +203,142 @@ function WaterOrderTag(): JSX.Element {
   );
 }
 
+/* ─── Call Waiter Card ───────────────────────────────────────────────────
+   Distinctive dark charcoal card for service requests (Call Waiter).
+   Reuses existing order-card dimensions and layout; styled with a subtle
+   muted gold border to distinguish it from food/water order cards.
+   Shown ONLY for service requests — never for food or water orders.
+*/
+function ServiceRequestCard({ request, onAcknowledge, onComplete }: {
+  request: any;
+  onAcknowledge: (id: string) => void;
+  onComplete: (id: string) => void;
+}) {
+  const status = (request.status || 'new').toLowerCase();
+  const created = request.created_at ? new Date(request.created_at) : null;
+  const timeStr = created ? formatOrderTimeIST(request.created_at) : '';
+  const minsAgo = created ? getMinutesAgo(request.created_at) : 0;
+  const isPending = status === 'new';
+  const isAccepted = status === 'accepted' || status === 'in_progress';
+  const isCompleted = status === 'completed';
+
+  const buttonLabel = isCompleted ? 'Completed' : isAccepted ? 'Mark Completed' : 'Acknowledge';
+  const buttonDisabled = isCompleted;
+
+  return (
+    <article
+      className="d3-panel p-4"
+      style={{
+        height: 340,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 0,
+        background: 'var(--bg-surface-2)',
+        border: '1px solid rgba(201,169,110,0.28)',
+        borderRadius: 8,
+      }}
+    >
+      {/* Card header */}
+      <div style={{ flexShrink: 0, marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: '1rem', lineHeight: 1 }}>🔔</span>
+          <span style={{
+            fontSize: '1rem',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+          }}>CALL WAITER</span>
+        </div>
+        <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.625rem', color: 'var(--text-dimmed)', marginTop: 2 }}>
+          {request.id.slice(0, 8).toUpperCase()}
+        </div>
+        {formatOrderDateIST(request.created_at) && (
+          <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>{formatOrderDateIST(request.created_at)}</div>
+        )}
+        <div style={{ marginTop: 4 }}>
+          <span style={{
+            fontSize: '0.625rem',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: '#C9A96E',
+            padding: '2px 8px',
+            borderRadius: 100,
+            border: '1px solid rgba(201,169,110,0.4)',
+          }}>
+            TABLE {request.table_number || '—'}
+          </span>
+        </div>
+      </div>
+
+      {/* Request time */}
+      {timeStr && (
+        <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>
+          {timeStr}{minsAgo > 0 ? ` · ${minsAgo} min ago` : ''}
+        </div>
+      )}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Message */}
+        <div style={{
+          fontSize: '0.8125rem',
+          color: 'var(--text-secondary)',
+          lineHeight: 1.5,
+          marginTop: 8,
+          flexShrink: 0,
+        }}>
+          {request.message || 'Customer needs assistance at the table.'}
+        </div>
+
+        {/* Status badge */}
+        <div style={{ marginTop: 'auto', marginBottom: 8 }}>
+          <span style={{
+            fontSize: '0.6875rem',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            padding: '3px 10px',
+            borderRadius: 100,
+            border: '1px solid currentColor',
+            color: isCompleted ? '#34D399' : isAccepted ? '#60A5FA' : '#F59E0B',
+            background: isCompleted ? 'rgba(16,185,129,0.1)' : isAccepted ? 'rgba(96,165,250,0.1)' : 'rgba(245,158,11,0.1)',
+          }}>
+            {isCompleted ? 'ACKNOWLEDGED' : isAccepted ? 'IN PROGRESS' : 'PENDING'}
+          </span>
+        </div>
+
+        {/* Acknowledge / Complete button */}
+        {!isCompleted && (
+          <button
+            type="button"
+            disabled={buttonDisabled}
+            onClick={() => {
+              if (isPending || isAccepted) onComplete(request.id);
+              else onAcknowledge(request.id);
+            }}
+            style={{
+              flexShrink: 0,
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              padding: '0.375rem 0.5rem',
+              whiteSpace: 'nowrap',
+              borderRadius: 5,
+              border: '1px solid var(--border-warm)',
+              background: 'transparent',
+              color: 'var(--text-primary)',
+              cursor: buttonDisabled ? 'not-allowed' : 'pointer',
+              opacity: buttonDisabled ? 0.5 : 1,
+            }}
+          >
+            {buttonDisabled ? 'Completed' : buttonLabel}
+          </button>
+        )}
+      </div>
+    </article>
+  );
+}
+
 /* ─── Item-Action Modal ──────────────────────────────────────────────── */
 
 interface ItemModalProps {
@@ -503,7 +639,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
 
 export default function LiveOrdersPage() {
   const { hotel, loading: hotelLoading } = useHotel();
-  const { orders, updateOrderStatus, updatePaymentStatus, updatingOrderIds } = useOrders(hotel?.id || null);
+  const { orders, updateOrderStatus, updateWaterDelivery, updatePaymentStatus, updatingOrderIds } = useOrders(hotel?.id || null);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -526,6 +662,88 @@ export default function LiveOrdersPage() {
     if (successTimer.current) clearTimeout(successTimer.current);
     setUpdateSuccess(msg);
     successTimer.current = setTimeout(() => setUpdateSuccess(null), 3000);
+  }, []);
+
+  /* ─── Service Requests (Call Waiter) ─────────────────────────────────── */
+  const [serviceRequests, setServiceRequests] = useState<any[]>([]);
+  const [serviceUpdatingIds, setServiceUpdatingIds] = useState<Set<string>>(new Set());
+  const [serviceError, setServiceError] = useState<string | null>(null);
+  const [serviceSuccess, setServiceSuccess] = useState<string | null>(null);
+  const serviceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchServiceRequests = useCallback(async () => {
+    if (!hotel?.id) return;
+    try {
+      const res = await fetch(`/api/service-requests?hotel_id=${encodeURIComponent(hotel.id)}`);
+      const data = await res.json();
+      if (data.success) {
+        // Show only non-cancelled requests, newest first
+        const reqs = (data.requests || []).filter((r: any) => (r.status || '').toLowerCase() !== 'cancelled');
+        setServiceRequests(reqs);
+      }
+    } catch (err: any) {
+      setServiceError(err.message || 'Failed to fetch service requests');
+    }
+  }, [hotel?.id]);
+
+  // Poll every 3 seconds for real-time service request updates
+  useEffect(() => {
+    fetchServiceRequests();
+    const t = setInterval(fetchServiceRequests, 3000);
+    return () => clearInterval(t);
+  }, [fetchServiceRequests]);
+
+  const showServiceSuccess = useCallback((msg: string) => {
+    if (serviceTimer.current) clearTimeout(serviceTimer.current);
+    setServiceSuccess(msg);
+    serviceTimer.current = setTimeout(() => setServiceSuccess(null), 3000);
+  }, []);
+
+  const handleAcknowledgeServiceRequest = useCallback(async (id: string) => {
+    if (serviceUpdatingIds.has(id)) return;
+    setServiceUpdatingIds((prev) => new Set([...prev, id]));
+    setServiceError(null);
+    try {
+      const resp = await fetch('/api/service-requests/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: id, status: 'accepted' }),
+      });
+      const json = await resp.json();
+      if (!json.success) throw new Error(json.error || 'Failed to acknowledge request');
+      showServiceSuccess('Request acknowledged.');
+      await fetchServiceRequests();
+    } catch (err: any) {
+      setServiceError(err.message || 'Failed to acknowledge request');
+    } finally {
+      setServiceUpdatingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    }
+  }, [serviceUpdatingIds, fetchServiceRequests, showServiceSuccess]);
+
+  const handleCompleteServiceRequest = useCallback(async (id: string) => {
+    if (serviceUpdatingIds.has(id)) return;
+    setServiceUpdatingIds((prev) => new Set([...prev, id]));
+    setServiceError(null);
+    try {
+      const resp = await fetch('/api/service-requests/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: id, status: 'completed' }),
+      });
+      const json = await resp.json();
+      if (!json.success) throw new Error(json.error || 'Failed to complete request');
+      showServiceSuccess('Request marked completed.');
+      await fetchServiceRequests();
+    } catch (err: any) {
+      setServiceError(err.message || 'Failed to complete request');
+    } finally {
+      setServiceUpdatingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    }
+  }, [serviceUpdatingIds, fetchServiceRequests, showServiceSuccess]);
+
+  const clearServiceMessages = useCallback(() => {
+    setServiceError(null);
+    setServiceSuccess(null);
   }, []);
 
   const handleUpdateStatus = useCallback(
@@ -682,6 +900,20 @@ export default function LiveOrdersPage() {
           </div>
         )}
 
+        {/* Service error / success banners */}
+        {serviceError && (
+          <div style={{ padding: '0.875rem 1.25rem', background: 'rgba(196,102,88,0.06)', border: '1px solid rgba(196,102,88,0.25)', borderRadius: 10, color: '#C46658', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>{serviceError}</span>
+            <button type="button" onClick={clearServiceMessages} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C46658', cursor: 'pointer', padding: 0 }}>&#x2715;</button>
+          </div>
+        )}
+        {serviceSuccess && (
+          <div style={{ padding: '0.875rem 1.25rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, color: '#10b981', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>{serviceSuccess}</span>
+            <button type="button" onClick={clearServiceMessages} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: 0 }}>&#x2715;</button>
+          </div>
+        )}
+
         {/* Tab filter */}
         <div className="d3-segment" role="group" aria-label="Filter orders by status">
           {TABS.map((tab) => {
@@ -707,7 +939,7 @@ export default function LiveOrdersPage() {
         </div>
 
         {/* Orders grid */}
-        {filtered.length === 0 ? (
+        {filtered.length === 0 && serviceRequests.length === 0 ? (
           <div className="d3-empty">
             <svg width="38" height="38" viewBox="0 0 40 40" fill="none" style={{ opacity: 0.45 }} aria-hidden="true">
               <rect x="6" y="9" width="28" height="22" rx="3" stroke="currentColor" strokeWidth="1.1" />
@@ -721,11 +953,220 @@ export default function LiveOrdersPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {filtered.map((order: Order) => {
+            {(() => {
+              // Build a flat list of unified card descriptors.
+              // Pure water orders  → one water card only.
+              // Mixed orders       → one food card + one water card.
+              // Food-only orders   → one food card only.
+              // Service requests   → one service card.
+              type CardDescriptor =
+                | { type: 'food'; order: Order }
+                | { type: 'water'; order: Order; waterItems: NormalisedItem[]; waterCharges: number }
+                | { type: 'service'; request: any };
+
+              const cards: CardDescriptor[] = [];
+
+              for (const order of filtered) {
+                const isWater = (order as any).is_water_order === true;
+                // water_items are attached by the API for mixed orders
+                const rawWaterItems: any[] = (order as any).water_items || [];
+                const waterItems: NormalisedItem[] = rawWaterItems.map((item: any) => {
+                  const price =
+                    item.price_at_time != null ? item.price_at_time
+                    : item.price != null ? item.price
+                    : item.menu_item?.price ?? 0;
+                  return {
+                    id: item.id,
+                    name: item.name || item.item_name || item.menu_item?.name || 'Free Water',
+                    quantity: item.quantity || 1,
+                    price,
+                    notes: item.notes,
+                    status: item.status || (item.is_cancelled ? 'cancelled' : 'active'),
+                    item_kind: item.item_kind ?? 'water',
+                  } as NormalisedItem;
+                });
+                const waterCharges: number = (order as any).water_charges ?? 0;
+
+                if (isWater) {
+                  // Pure water order → water card only (no food card)
+                  cards.push({ type: 'water', order, waterItems: getOrderItems(order), waterCharges });
+                } else {
+                  // Food card (may include water charge summary at bottom)
+                  cards.push({ type: 'food', order });
+                  // If this food order also has water items → separate water card
+                  if (waterItems.length > 0) {
+                    cards.push({ type: 'water', order, waterItems, waterCharges });
+                  }
+                }
+              }
+
+              for (const request of serviceRequests) {
+                cards.push({ type: 'service', request });
+              }
+
+              return cards.map((card) => {
+              if (card.type === 'service') {
+                const request = (card as any).request;
+                return (
+                  <ServiceRequestCard
+                    key={request.id}
+                    request={request}
+                    onAcknowledge={(id) => handleAcknowledgeServiceRequest(id)}
+                    onComplete={(id) => handleCompleteServiceRequest(id)}
+                  />
+                );
+              }
+
+              /* ── Separate Water Order Card ───────────────────────────────── */
+              if (card.type === 'water') {
+                const { order, waterItems: wItems, waterCharges: wCharges } = card as { type: 'water'; order: Order; waterItems: NormalisedItem[]; waterCharges: number };
+                const isUpdating = updatingOrderIds.has(order.id);
+                const wStatus = normalise(order.status);
+                const delivered = wStatus === 'delivered' || wStatus === 'completed' || (order as any).water_delivered === true;
+                const isCancelled = wStatus === 'cancelled';
+                return (
+                  <article
+                    key={`water-${order.id}`}
+                    className="d3-panel p-4"
+                    style={{
+                      position: 'relative',
+                      height: 340,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0,
+                      border: '1px solid rgba(103,212,240,0.22)',
+                      background: 'var(--bg-surface-2)',
+                    }}
+                  >
+                    <WaterOrderTag />
+
+                    {/* Water card header */}
+                    <div style={{ flexShrink: 0, marginBottom: 10 }}>
+                      <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', paddingRight: 80 }}>
+                        Table {order.table_number || '\u2014'}
+                      </div>
+                      <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.625rem', color: 'var(--text-dimmed)', marginTop: 2 }}>
+                        {order.id.slice(0, 8).toUpperCase()}
+                      </div>
+                      {formatOrderDateIST(order.created_at) && (
+                        <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>{formatOrderDateIST(order.created_at)}</div>
+                      )}
+                      <p style={{ margin: '0.25rem 0 0', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{order.customer_name || 'Guest'}</span>
+                        {formatOrderTimeIST(order.created_at, now) && (
+                          <>
+                            <span style={{ color: 'var(--text-dimmed)', opacity: 0.6 }} aria-hidden="true">·</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-dimmed)' }}>{formatOrderTimeIST(order.created_at, now)}</span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Water items label */}
+                    <div style={{ flexShrink: 0, fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#67D4F0', marginBottom: 5, opacity: 0.85 }}>
+                      WATER ITEMS
+                    </div>
+
+                    {/* Scrollable water items list */}
+                    <div
+                      style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 3,
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(103,212,240,0.2) transparent',
+                        paddingRight: 2,
+                        marginRight: -2,
+                        minHeight: 0,
+                      }}
+                    >
+                      {wItems.length === 0 ? (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-dimmed)', fontStyle: 'italic' }}>No water items</span>
+                      ) : wItems.map((item) => {
+                        const itemCancelled = normalise((item as any).status || '') === 'cancelled';
+                        return (
+                          <div
+                            key={item.id}
+                            style={{
+                              display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+                              gap: 8, width: '100%',
+                              borderRadius: 5, padding: '0.3125rem 0.375rem',
+                            }}
+                          >
+                            <span style={{ fontSize: '0.8125rem', color: itemCancelled ? '#C46658' : 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
+                              <WaterDropletIcon size={13} />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {item.quantity} × {item.name}{itemCancelled ? ' [C]' : ''}
+                              </span>
+                            </span>
+                            <span style={{ fontSize: '0.8125rem', color: '#67D4F0', fontWeight: 500, flexShrink: 0 }}>
+                              {formatPrice((item.price * item.quantity) || 0, hotel?.currency)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Water status + deliver action */}
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
+                      {isCancelled ? (
+                        <span className="d3-badge" style={{ flex: 1, textAlign: 'center', fontSize: '0.72rem', padding: '0.375rem 0.5rem', color: '#C46658', borderColor: 'rgba(196,102,88,0.35)', background: 'rgba(196,102,88,0.08)' }}>
+                          CANCELLED
+                        </span>
+                      ) : delivered ? (
+                        <span className="d3-badge" style={{ flex: 1, textAlign: 'center', fontSize: '0.72rem', padding: '0.375rem 0.5rem', color: '#34D399', borderColor: 'rgba(52,211,153,0.35)', background: 'rgba(16,185,129,0.08)' }}>
+                          DELIVERED
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isUpdating}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (isUpdating) return;
+                            try {
+                              await updateWaterDelivery(order.id);
+                              showSuccess('Water order marked as delivered.');
+                            } catch (err: any) {
+                              setUpdateError(err?.message || 'Failed to update order');
+                            }
+                          }}
+                          className="d3-btn-primary"
+                          style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: isUpdating ? 0.6 : 1, background: 'rgba(14,165,233,0.85)', borderColor: 'rgba(103,212,240,0.4)' }}
+                        >
+                          {isUpdating ? 'Updating...' : 'MARK AS DELIVERED'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Water total */}
+                    <div style={{
+                      flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      borderTop: '1px solid rgba(103,212,240,0.15)', paddingTop: '0.75rem', marginTop: 8,
+                    }}>
+                      <span style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                        {wCharges > 0 ? 'WATER TOTAL' : 'FREE WATER'}
+                      </span>
+                      <span className="d3-figure" style={{ fontSize: '1.25rem', color: '#67D4F0' }}>
+                        {formatPrice(wCharges, hotel?.currency)}
+                      </span>
+                    </div>
+                  </article>
+                );
+              }
+
+              /* ── Main Food / Takeaway Order Card ─────────────────────────── */
+              const { order } = card as { type: 'food'; order: Order };
               const minsAgo    = getMinutesAgo(order.created_at);
               const isNew      = normalise(order.status) === 'pending';
               const orderItems = getOrderItems(order);
-              const water      = isWaterOrder(order);
+              // Water charge info for the billing summary
+              const orderWaterCharges: number = (order as any).water_charges ?? 0;
+              const orderHasWaterItems: boolean = ((order as any).water_items?.length ?? 0) > 0;
 
               return (
                 <article
@@ -740,7 +1181,6 @@ export default function LiveOrdersPage() {
                     ...(isNew ? { borderColor: 'rgba(184,164,122,0.28)', background: 'var(--bg-surface-2)' } : {}),
                   }}
                 >
-                  {isWaterOrder(order) && <WaterOrderTag />}
                   {/* Card header */}
                   <div style={{ flexShrink: 0, marginBottom: 10 }}>
                     <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -756,20 +1196,18 @@ export default function LiveOrdersPage() {
                       <span className={`d3-badge ${STATUS_CLASS[normalise(order.status)] || STATUS_CLASS.cancelled}`} style={{ fontSize: '0.625rem' }}>
                         {STATUS_LABEL[normalise(order.status)] || order.status}
                       </span>
-                      {!water && (
-                        <span
-                          className="d3-badge d3-badge-payment"
-                          style={{
-                            fontSize: '0.625rem',
-                            marginLeft: 6,
-                            background: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.12)' : 'rgba(196,102,88,0.12)',
-                            borderColor: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.35)' : 'rgba(196,102,88,0.35)',
-                            color: normalise(order.payment_status) === 'paid' ? '#10b981' : '#C46658',
-                          }}
-                        >
-                          {normalise(order.payment_status) === 'paid' ? 'PAID' : 'UNPAID'}
-                        </span>
-                      )}
+                      <span
+                        className="d3-badge d3-badge-payment"
+                        style={{
+                          fontSize: '0.625rem',
+                          marginLeft: 6,
+                          background: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.12)' : 'rgba(196,102,88,0.12)',
+                          borderColor: normalise(order.payment_status) === 'paid' ? 'rgba(16,185,129,0.35)' : 'rgba(196,102,88,0.35)',
+                          color: normalise(order.payment_status) === 'paid' ? '#10b981' : '#C46658',
+                        }}
+                      >
+                        {normalise(order.payment_status) === 'paid' ? 'PAID' : 'UNPAID'}
+                      </span>
                     </div>
                     <p style={{ margin: '0.25rem 0 0', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{order.customer_name || 'Guest'}</span>
@@ -838,11 +1276,10 @@ export default function LiveOrdersPage() {
                     )})}
                   </div>
 
-                  {/* Chef note (compact, fixed) — water product info lives in ORDER ITEMS, not notes */}
+                  {/* Chef note — water tags already stripped from order.notes by API */}
                   {(() => {
                     const note = cleanWaterNotes(order.notes);
-                    const water = isWaterOrder(order);
-                    if (!note || water) return null;
+                    if (!note) return null;
                     return (
                       <div style={{
                         flexShrink: 0, marginTop: 8,
@@ -856,50 +1293,10 @@ export default function LiveOrdersPage() {
                     );
                   })()}
 
-                  {/* Total — pinned */}
-                  {/* Process & Payment actions */}
+                  {/* Process & Payment actions (food orders only — water handled by separate Water Card) */}
                   {(() => {
                     const status = normalise(order.status);
-                    const water = isWaterOrder(order);
                     const isUpdating = updatingOrderIds.has(order.id);
-
-                    // Water order: only Mark as Delivered / Delivered indicator. No Accept/Preparing/Ready.
-                    if (water) {
-                      const delivered = status === 'delivered' || status === 'completed';
-                      return (
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
-                          {delivered ? (
-                            <span
-                              className="d3-badge"
-                              style={{ flex: 1, textAlign: 'center', fontSize: '0.72rem', padding: '0.375rem 0.5rem', color: '#34D399', borderColor: 'rgba(52,211,153,0.35)', background: 'rgba(16,185,129,0.08)' }}
-                            >
-                              DELIVERED
-                            </span>
-                          ) : status === 'cancelled' ? null : (
-                            <button
-                              type="button"
-                              disabled={isUpdating}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (isUpdating) return;
-                                try {
-                                  await updateOrderStatus(order.id, 'delivered');
-                                  showSuccess('Water order marked as delivered.');
-                                } catch (err: any) {
-                                  setUpdateError(err?.message || 'Failed to update order');
-                                }
-                              }}
-                              className="d3-btn-primary"
-                              style={{ flex: 1, fontSize: '0.72rem', padding: '0.375rem 0.5rem', whiteSpace: 'nowrap', opacity: isUpdating ? 0.6 : 1 }}
-                            >
-                              {isUpdating ? 'Updating...' : 'MARK AS DELIVERED'}
-                            </button>
-                          )}
-                        </div>
-                      );
-                    }
-
-                    // Regular food orders: keep existing workflow exactly.
                     if (status === 'completed') {
                       return (
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8, flexShrink: 0 }}>
@@ -983,6 +1380,7 @@ export default function LiveOrdersPage() {
                     );
                   })()}
 
+                  {/* Bill total — includes water charges in the grand total */}
                   <div style={{
                     flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -991,15 +1389,32 @@ export default function LiveOrdersPage() {
                     <span style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>ACTIVE ORDER TOTAL</span>
                     <span className="d3-figure" style={{ fontSize: '1.25rem', color: 'var(--gold)' }}>
                       {(() => {
-                        const activeTotal = orderItems.reduce((sum, item) => {
+                        const foodTotal = orderItems.reduce((sum, item) => {
                           const itemIsCancelled = normalise((item as any).status || '') === 'cancelled';
                           if (itemIsCancelled) return sum;
                           return sum + ((item.price || 0) * (item.quantity || 0));
                         }, 0);
-                        return formatPrice(activeTotal, hotel?.currency);
+                        // Include water charges (even Rs.0 for free water) in the grand total
+                        return formatPrice(foodTotal + orderWaterCharges, hotel?.currency);
                       })()}
                     </span>
                   </div>
+
+                  {/* Water charge billing summary — always shown if order has water items (even \u20b90.00 free water) */}
+                  {orderHasWaterItems && (
+                    <div style={{
+                      flexShrink: 0,
+                      display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+                      marginTop: 4,
+                    }}>
+                      <span style={{ fontSize: '0.6875rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#67D4F0', opacity: 0.85 }}>
+                        💧 Water Charges Included
+                      </span>
+                      <span style={{ fontSize: '0.875rem', color: '#67D4F0', fontWeight: 600 }}>
+                        {formatPrice(orderWaterCharges, hotel?.currency)}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Cancellation reason inline (cancelled orders) */}
                   {normalise(order.status) === 'cancelled' && order.cancellation_reason && (
@@ -1016,7 +1431,8 @@ export default function LiveOrdersPage() {
                   )}
                 </article>
               );
-            })}
+              }); // end cards.map
+            })()}
           </div>
         )}
       </div>

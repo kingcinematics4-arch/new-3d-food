@@ -15,6 +15,7 @@ import {
   parseWaterFromNotes,
   cleanWaterNotes,
   isWaterOrder,
+  isWaterItem,
 } from '@/lib/waterOrderHelper';
 
 function isStoredReferenceNumber(value: string): boolean {
@@ -170,13 +171,37 @@ export async function GET(
         : null) ||
       null;
 
-    // Fetch payments for this order to provide real-time split billing status
+    // Resolve billing group: this order + linked orders (water ↔ food) for combined customer bill
+    const linkedOrderIds = new Set<string>();
+    if (order.linked_order_id) linkedOrderIds.add(order.linked_order_id);
+
+    const { data: linkedOrdersRaw } = await supabaseAdmin
+      .from('orders')
+      .select('id, total_amount, payment_status, status, table_number, created_at')
+      .eq('linked_order_id', order.id);
+
+    (linkedOrdersRaw || []).forEach((o: any) => linkedOrderIds.add(o.id));
+
+    const allOrderIds = [order.id, ...Array.from(linkedOrderIds)];
+
+    // Fetch payments across the billing group
     let totalPaid = 0;
+    let combinedBillTotal = Number(order.total_amount || 0);
     try {
+      const { data: allOrders } = await supabaseAdmin
+        .from('orders')
+        .select('id, total_amount')
+        .in('id', allOrderIds);
+
+      combinedBillTotal = (allOrders || []).reduce(
+        (sum, o) => sum + Number(o.total_amount || 0),
+        0
+      );
+
       const { data: payments } = await supabaseAdmin
         .from('order_payments')
         .select('amount, status')
-        .eq('order_id', order.id)
+        .in('order_id', allOrderIds)
         .eq('status', 'successful');
 
       if (payments && payments.length > 0) {
@@ -184,8 +209,60 @@ export async function GET(
       }
     } catch {}
 
-    const billTotal = Number(order.total_amount || 0);
-    const remainingBalance = Math.max(0, Math.round((billTotal - totalPaid) * 100) / 100);
+    const remainingBalance = Math.max(0, Math.round((combinedBillTotal - totalPaid) * 100) / 100);
+
+    // Fetch items from linked orders (e.g. water order items) for combined customer bill view
+    let linkedOrdersWithItems: any[] = [];
+    let combinedItems = [...items];
+    if (linkedOrderIds.size > 1) {
+      try {
+        const { data: linkedOrdersWithItemsRaw } = await supabaseAdmin
+          .from('orders')
+          .select(`id, total_amount, status, payment_status, table_number, created_at, order_items (${itemSelectColumns.join(', ')})`)
+          .in('id', Array.from(linkedOrderIds).filter((id) => id !== order.id));
+
+        linkedOrdersWithItems = (linkedOrdersWithItemsRaw || []).map((lo: any) => {
+          const loItems = ((lo as any).order_items || []).map((item: any) => {
+            const resolved = resolveItemProperties(item, (lo as any).notes);
+            return {
+              id: item.id,
+              order_id: lo.id,
+              name: resolved.name,
+              quantity: resolved.quantity,
+              price_at_time: resolved.price_at_time,
+              line_total: resolved.price_at_time * resolved.quantity,
+              notes: resolved.notes,
+              item_kind: resolved.item_kind,
+              ...(itemSchema.status ? { status: item.status ?? 'active' } : {}),
+            };
+          });
+          combinedItems = [...combinedItems, ...loItems];
+          return {
+            id: lo.id,
+            table_number: lo.table_number,
+            total_amount: lo.total_amount,
+            payment_status: lo.payment_status,
+            status: lo.status,
+            created_at: lo.created_at,
+            items: loItems,
+          };
+        });
+      } catch {}
+    }
+
+    // Water charges: water items on this order + water items on linked water orders
+    const waterItemsOnOrder = items.filter((item: any) => isWaterItem(item));
+    let waterCharges = waterItemsOnOrder.reduce((sum: number, item: any) => sum + Number(item.line_total || 0), 0);
+    (linkedOrdersWithItems || []).forEach((lo: any) => {
+      (lo.items || []).forEach((item: any) => {
+        if (isWaterItem(item)) {
+          waterCharges += Number(item.line_total || 0);
+        }
+      });
+    });
+
+    // Main `items` array: food items only — water products are excluded from display
+    const foodItems = items.filter((item: any) => !isWaterItem(item));
 
     return new NextResponse(JSON.stringify({
       success: true,
@@ -200,12 +277,17 @@ export async function GET(
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
         notes: cleanOrderNotes,
-        total_amount: order.total_amount,
+        total_amount: combinedBillTotal,
         amount_paid: totalPaid,
         remaining_balance: remainingBalance,
+        water_charges: waterCharges,
+        linked_order_id: order.linked_order_id || null,
+        linked_orders: linkedOrdersWithItems,
+        combined_items: combinedItems,
+        combined_bill_total: combinedBillTotal,
         created_at: order.created_at,
         ...(schema.updatedAt ? { updated_at: (order as any).updated_at } : {}),
-        items,
+        items: foodItems,
         hotel_theme: hotelTheme,
         hotel_custom_theme_config: hotelCustomThemeConfig,
         hotel_slug: (order as any).hotels?.slug || null,

@@ -23,6 +23,8 @@ export interface OrdersSchema {
   orderNumber: boolean;
   /** public.orders.updated_at exists (migration 007 applied). */
   updatedAt: boolean;
+  /** public.orders.linked_order_id exists (migration 030 applied). */
+  linkedOrderId: boolean;
 }
 
 /**
@@ -104,6 +106,7 @@ export async function getOrdersSchema(): Promise<OrdersSchema> {
   return {
     orderNumber: await orderColumnExists('order_number'),
     updatedAt: await orderColumnExists('updated_at'),
+    linkedOrderId: await orderColumnExists('linked_order_id'),
   };
 }
 

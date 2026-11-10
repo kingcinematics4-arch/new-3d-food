@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { orderReference } from '@/lib/orderReference';
-import { getOrderItemsSchema } from '@/lib/ordersSchema';
+import { getOrderItemsSchema, getOrdersSchema } from '@/lib/ordersSchema';
 import { isWaterItem, isWaterOrder, cleanWaterNotes, WATER_NAME_PATTERN } from '@/lib/waterOrderHelper';
 import { z } from 'zod';
 
@@ -34,9 +34,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validated = createOrderSchema.parse(body);
     const itemSchema = await getOrderItemsSchema().catch(() => ({ itemName: false, itemKind: false, status: false } as any));
+    const ordersSchema = await getOrdersSchema().catch(() => ({ orderNumber: false, updatedAt: false, linkedOrderId: false } as any));
+
+    // Determine whether every item is a water item (free or paid bottled water)
+    const allItemsWater = validated.items.every(
+      (it) => isWaterItem(it) || (it.item_name && WATER_NAME_PATTERN.test(it.item_name))
+    );
 
     // Calculate total amount
-    const totalAmount = validated.items.reduce(
+    // Water orders: charges are deferred until delivery (MARK AS DELIVERED).
+    // The water order starts with total_amount = 0; the RPC deliver_water_order
+    // adds the water total to the parent food order's combined bill on delivery.
+    const totalAmount = allItemsWater ? 0 : validated.items.reduce(
       (sum, item) => sum + item.price_at_time * item.quantity,
       0
     );
@@ -48,21 +57,18 @@ export async function POST(request: Request) {
     const cleanNotes = validated.notes ? cleanWaterNotes(validated.notes) : null;
     const finalOrderNotes = hasOnlyWater ? (cleanNotes || null) : (validated.notes || null);
 
-    // Determine whether every item is a water item (free or paid bottled water)
-    const allItemsWater = validated.items.every(
-      (it) => isWaterItem(it) || (it.item_name && WATER_NAME_PATTERN.test(it.item_name))
-    );
-
     // ── Water billing integration ──
-    // Paid water must be added to the customer's existing restaurant bill for the
-    // same table (one grand total: food + paid water). Free water (₹0) never
-    // changes the bill total. When no open order exists for the table, create a
-    // new order as before.
+    // Water orders are separate order records (separate cards in Live Orders).
+    // When paid water is ordered for a table that has an existing open food order,
+    // link the water order to that food order via linked_order_id so billing can
+    // combine food + water into one customer bill. Free water (₹0) is always
+    // a standalone record and never changes any bill total.
+    let linkedOrderId: string | null = null;
+
     if (allItemsWater && validated.table_number) {
-      // Look for an existing open (non-terminal) order for this hotel + table.
       const { data: existingOrders } = await supabaseAdmin
         .from('orders')
-        .select('id, hotel_id, table_number, status, payment_status, total_amount')
+        .select('id, hotel_id, table_number, status, total_amount')
         .eq('hotel_id', validated.hotel_id)
         .eq('table_number', validated.table_number)
         .in('status', ['pending', 'accepted', 'preparing', 'ready'])
@@ -70,98 +76,34 @@ export async function POST(request: Request) {
         .limit(1);
 
       const existingOrder = (existingOrders || [])[0];
-
       if (existingOrder) {
-        // Add water items to the existing order.
-        const orderItemsToInsert = validated.items.map((item) => {
-          const rawId = typeof item.menu_item_id === 'string' ? item.menu_item_id.trim() : '';
-          const menuItemId = rawId && isUuid(rawId) ? rawId : null;
-          const isWater = item.item_kind === 'water' || (!menuItemId && !!item.item_name && WATER_NAME_PATTERN.test(item.item_name));
-          const kind = isWater ? 'water' : (item.item_kind || null);
-          const name = item.item_name || (isWater ? 'Free Water' : null);
-
-          let finalNotes = item.notes ? cleanWaterNotes(item.notes) : null;
-          if (isWater && name) {
-            const tag = `[water_item:{"name":${JSON.stringify(name)},"kind":"water"}]`;
-            finalNotes = finalNotes ? `${tag} ${finalNotes}` : tag;
-          }
-
-          const row: Record<string, any> = {
-            order_id: existingOrder.id,
-            menu_item_id: menuItemId,
-            quantity: item.quantity,
-            price_at_time: item.price_at_time,
-            notes: finalNotes,
-          };
-          if (itemSchema.itemName) row.item_name = name;
-          if (itemSchema.itemKind && kind) row.item_kind = kind;
-          return row;
-        });
-
-        const { error: itemsError } = await supabaseAdmin
-          .from('order_items')
-          .insert(orderItemsToInsert);
-
-        if (itemsError) throw new Error(`Order items insertion failed: ${itemsError.message}`);
-
-        // Recalculate order total: existing total + newly added water items.
-        const addedWaterTotal = validated.items.reduce(
-          (sum, item) => sum + item.price_at_time * item.quantity,
-          0
-        );
-        const newTotalAmount = Math.round((Number(existingOrder.total_amount || 0) + addedWaterTotal) * 100) / 100;
-
-        const now = new Date().toISOString();
-        const { data: updatedOrder, error: updateError } = await supabaseAdmin
-          .from('orders')
-          .update({
-            total_amount: newTotalAmount,
-            updated_at: now,
-          })
-          .eq('id', existingOrder.id)
-          .select()
-          .single();
-
-        if (updateError) throw new Error(`Order update failed: ${updateError.message}`);
-
-        const storedOrderNumber = (updatedOrder as any).order_number || null;
-        const reference = orderReference({ id: updatedOrder.id, order_number: storedOrderNumber });
-
-        // Log water addition to history
-        await supabaseAdmin.from('order_status_history').insert({
-          order_id: updatedOrder.id,
-          status: existingOrder.status,
-          note: 'Paid water added to table bill',
-        });
-
-        return NextResponse.json(
-          {
-            success: true,
-            orderId: updatedOrder.id,
-            orderNumber: reference,
-            orderCode: reference,
-            addedToExistingOrder: true,
-            order: { ...updatedOrder, order_number: storedOrderNumber || reference },
-          },
-          { status: 200 }
-        );
+        linkedOrderId = existingOrder.id;
       }
     }
 
-    // 1. Insert Order (no existing open order, or not all-water, or no table number)
+    // 1. Insert Order
+    const insertPayload: Record<string, any> = {
+      hotel_id: validated.hotel_id,
+      table_number: validated.table_number || 'Takeaway',
+      customer_name: validated.customer_name || 'Guest',
+      customer_phone: validated.customer_phone,
+      total_amount: totalAmount,
+      status: 'pending',
+      payment_status: 'unpaid',
+      payment_method: validated.payment_method,
+      notes: finalOrderNotes,
+    };
+    // Only include linked_order_id if the column exists in the deployed schema
+    // (migration 030). Water orders link to their parent food order for combined
+    // billing. If the column doesn't exist yet, the water order is still created
+    // as a standalone record - linking will work once migration 030 is applied.
+    if (ordersSchema.linkedOrderId && linkedOrderId) {
+      insertPayload.linked_order_id = linkedOrderId;
+    }
+
     const { data: newOrderData, error: orderError } = await supabaseAdmin
       .from('orders')
-      .insert({
-        hotel_id: validated.hotel_id,
-        table_number: validated.table_number || 'Takeaway',
-        customer_name: validated.customer_name || 'Guest',
-        customer_phone: validated.customer_phone,
-        total_amount: totalAmount,
-        status: 'pending',
-        payment_status: 'unpaid',
-        payment_method: validated.payment_method,
-        notes: finalOrderNotes,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 

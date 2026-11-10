@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { z } from 'zod';
 import { requireOwnedHotelId } from '@/lib/hotelAccess';
-import { isWaterOrder } from '@/lib/waterOrderHelper';
 
 const VALID_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'delivered', 'completed', 'cancelled'] as const;
 
@@ -84,36 +83,8 @@ export async function POST(request: Request) {
       });
     }
 
-    // Check whether this order is a water order (query order_items safely)
-    let isWater = false;
-    try {
-      const { data: itemRows } = await supabaseAdmin
-        .from('order_items')
-        .select('id, notes, menu_item_id, quantity, price_at_time')
-        .eq('order_id', validated.order_id);
-      isWater = isWaterOrder({ notes: currentOrder.notes, order_items: itemRows || [] });
-    } catch {
-      isWater = isWaterOrder({ notes: currentOrder.notes });
-    }
-
-    // Water orders follow: [ORDER PLACED] -> [DELIVERED] directly (no accept/preparing/ready stages).
     // Food orders strictly follow VALID_TRANSITIONS.
     const baseTransitions = VALID_TRANSITIONS[currentStatus] || [];
-    const allowedTransitions = isWater && !['delivered', 'completed', 'cancelled'].includes(currentStatus)
-      ? Array.from(new Set([...baseTransitions, 'delivered']))
-      : baseTransitions;
-
-    if (!allowedTransitions.includes(requestedStatus)) {
-      return new NextResponse(JSON.stringify({
-        success: false,
-        error: `Invalid status transition: ${currentStatus} → ${requestedStatus}. Allowed: ${allowedTransitions.join(', ') || 'none'}`,
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      });
-    }
-
-    // 1. Update order status (updated_at will be set by trigger)
     const updatePayload: Record<string, any> = { status: requestedStatus };
 
     // If cancelling, record who initiated the cancellation (hotel/restaurant)
@@ -155,7 +126,7 @@ export async function POST(request: Request) {
     await supabaseAdmin.from('order_status_history').insert({
       order_id: validated.order_id,
       status: requestedStatus,
-      note: validated.note || (isWater && requestedStatus === 'delivered' ? 'Water order delivered to table' : `Status changed to ${requestedStatus}`),
+      note: validated.note || `Status changed to ${requestedStatus}`,
     });
 
     return new NextResponse(JSON.stringify({ success: true, order: updatedOrder }), {

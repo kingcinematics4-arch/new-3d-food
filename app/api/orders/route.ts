@@ -7,6 +7,7 @@ import {
   parseWaterFromNotes,
   cleanWaterNotes,
   isWaterOrder,
+  isWaterItem,
 } from '@/lib/waterOrderHelper';
 
 const TZ = 'Asia/Kolkata';
@@ -138,10 +139,20 @@ export async function GET(request: Request) {
       const isWater = isWaterOrder({ notes: order.notes, order_items: items });
       const cleanOrderNotes = isWater ? cleanWaterNotes(order.notes) : (order.notes || null);
 
+      // Separate water items from food items — water items are NOT displayed
+      // as food order items in the dashboard food card; they appear in the
+      // separate Water Order card. Water charges are still included in the bill.
+      const waterItems = items.filter((item: any) => isWaterItem(item));
+      const foodItems = items.filter((item: any) => !isWaterItem(item));
+      const waterCharges = waterItems.reduce((sum: number, item: any) => sum + Number(item.price_at_time || 0) * Number(item.quantity || 0), 0);
+
       return {
         ...order,
         notes: cleanOrderNotes,
-        order_items: items,
+        order_items: isWater ? items : foodItems, // water orders keep all items; food orders exclude water
+        water_items: waterItems, // water items for the separate Water Order card
+        water_charges: waterCharges, // paid water charges included in the bill total
+        is_water_order: isWater,
       };
     });
 

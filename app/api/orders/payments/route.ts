@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     // Fetch order first to get total and status
     const { data: order, error: orderErr } = await supabaseAdmin
       .from('orders')
-      .select('id, hotel_id, total_amount, payment_status, status, table_number, order_number')
+      .select('id, hotel_id, total_amount, payment_status, status, table_number, order_number, linked_order_id')
       .eq('id', orderId)
       .single();
 
@@ -44,17 +44,40 @@ export async function GET(request: Request) {
       );
     }
 
+    // Resolve the billing group: this order + any linked orders (water ↔ food).
+    // linked_order_id on this order points to its parent; other orders may link back to this one.
+    const linkedOrderIds = new Set<string>();
+    if (order.linked_order_id) linkedOrderIds.add(order.linked_order_id);
+
+    const { data: linkedOrders } = await supabaseAdmin
+      .from('orders')
+      .select('id')
+      .eq('linked_order_id', orderId);
+
+    (linkedOrders || []).forEach((o: any) => linkedOrderIds.add(o.id));
+
+    const allOrderIds = [orderId, ...Array.from(linkedOrderIds)];
+
+    const { data: allOrders } = await supabaseAdmin
+      .from('orders')
+      .select('id, total_amount, payment_status, status')
+      .in('id', allOrderIds);
+
+    const billTotal = (allOrders || []).reduce(
+      (sum, o) => sum + Number(o.total_amount || 0),
+      0
+    );
+
     const { data: payments, error: paymentsErr } = await supabaseAdmin
       .from('order_payments')
       .select('*')
-      .eq('order_id', orderId)
+      .in('order_id', allOrderIds)
       .order('created_at', { ascending: true });
 
     if (paymentsErr) throw paymentsErr;
 
     const successfulPayments = (payments || []).filter((p) => p.status === 'successful');
     const totalPaid = successfulPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    const billTotal = Number(order.total_amount || 0);
     const remainingBalance = Math.max(0, Math.round((billTotal - totalPaid) * 100) / 100);
 
     return NextResponse.json({
@@ -82,7 +105,7 @@ export async function POST(request: Request) {
     // 1. Fetch current order
     const { data: order, error: orderErr } = await supabaseAdmin
       .from('orders')
-      .select('id, hotel_id, total_amount, payment_status, status')
+      .select('id, hotel_id, total_amount, payment_status, status, linked_order_id')
       .eq('id', validated.order_id)
       .single();
 
@@ -100,7 +123,30 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Idempotency / duplicate check for transaction_id
+    // 2. Resolve billing group: this order + linked orders (water ↔ food).
+    const linkedOrderIds = new Set<string>();
+    if (order.linked_order_id) linkedOrderIds.add(order.linked_order_id);
+
+    const { data: linkedOrders } = await supabaseAdmin
+      .from('orders')
+      .select('id, total_amount, payment_status, status')
+      .eq('linked_order_id', validated.order_id);
+
+    (linkedOrders || []).forEach((o: any) => linkedOrderIds.add(o.id));
+
+    const allOrderIds = [validated.order_id, ...Array.from(linkedOrderIds)];
+
+    const { data: allOrders } = await supabaseAdmin
+      .from('orders')
+      .select('id, total_amount, payment_status, status')
+      .in('id', allOrderIds);
+
+    const combinedBillTotal = (allOrders || []).reduce(
+      (sum, o) => sum + Number(o.total_amount || 0),
+      0
+    );
+
+    // 3. Idempotency / duplicate check for transaction_id
     if (validated.transaction_id && validated.transaction_id.trim()) {
       const { data: existingTx } = await supabaseAdmin
         .from('order_payments')
@@ -121,19 +167,18 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Fetch existing successful payments to calculate balance
+    // 4. Fetch existing successful payments across the billing group
     const { data: existingPayments } = await supabaseAdmin
       .from('order_payments')
-      .select('amount, status')
-      .eq('order_id', order.id)
+      .select('amount, status, order_id')
+      .in('order_id', allOrderIds)
       .eq('status', 'successful');
 
     const totalPaidBefore = (existingPayments || []).reduce(
       (sum, p) => sum + Number(p.amount || 0),
       0
     );
-    const billTotal = Number(order.total_amount || 0);
-    const currentRemaining = Math.max(0, Math.round((billTotal - totalPaidBefore) * 100) / 100);
+    const currentRemaining = Math.max(0, Math.round((combinedBillTotal - totalPaidBefore) * 100) / 100);
 
     // If payment is successful, ensure it does not exceed the remaining balance (allow minor rounding up to ₹0.50)
     if (validated.status === 'successful') {
@@ -160,11 +205,11 @@ export async function POST(request: Request) {
       validated.transaction_id?.trim() ||
       `TXN-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
-    // 4. Insert into order_payments
+    // 5. Insert into order_payments (recorded against the primary order being paid)
     const { data: insertedPayment, error: insertErr } = await supabaseAdmin
       .from('order_payments')
       .insert({
-        order_id: order.id,
+        order_id: validated.order_id,
         hotel_id: order.hotel_id,
         amount: validated.amount,
         payment_method: validated.payment_method,
@@ -180,16 +225,15 @@ export async function POST(request: Request) {
 
     if (insertErr) throw insertErr;
 
-    // 5. If successful, update the parent order's payment_status and amount_paid
+    // 6. If successful, update payment_status on all orders in the billing group
     let updatedPaymentStatus = order.payment_status;
     let newTotalPaid = totalPaidBefore;
     let newRemaining = currentRemaining;
 
     if (validated.status === 'successful') {
       newTotalPaid = Math.round((totalPaidBefore + validated.amount) * 100) / 100;
-      newRemaining = Math.max(0, Math.round((billTotal - newTotalPaid) * 100) / 100);
+      newRemaining = Math.max(0, Math.round((combinedBillTotal - newTotalPaid) * 100) / 100);
 
-      // Settle status
       if (newRemaining <= 0.01) {
         updatedPaymentStatus = 'paid';
       } else {
@@ -208,10 +252,11 @@ export async function POST(request: Request) {
       // Also attempt updating amount_paid column if schema has it
       orderUpdate.amount_paid = newTotalPaid;
 
+      // Update all orders in the billing group
       const { error: updateOrderErr } = await supabaseAdmin
         .from('orders')
         .update(orderUpdate)
-        .eq('id', order.id);
+        .in('id', allOrderIds);
 
       // If amount_paid column doesn't exist yet, retry without it
       if (updateOrderErr) {
@@ -219,7 +264,7 @@ export async function POST(request: Request) {
         await supabaseAdmin
           .from('orders')
           .update(orderUpdate)
-          .eq('id', order.id);
+          .in('id', allOrderIds);
       }
     }
 
@@ -229,7 +274,7 @@ export async function POST(request: Request) {
       success: true,
       payment: insertedPayment,
       payment_status: updatedPaymentStatus,
-      billTotal,
+      billTotal: combinedBillTotal,
       totalPaid: newTotalPaid,
       remainingBalance: newRemaining,
       isFullyPaid: updatedPaymentStatus === 'paid',

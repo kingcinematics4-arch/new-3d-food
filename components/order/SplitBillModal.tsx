@@ -61,7 +61,7 @@ export default function SplitBillModal({
       if (data.success) {
         setPayments(data.payments || []);
         setTotalPaid(data.totalPaid || 0);
-        setRemainingBalance(data.remainingBalance ?? Math.max(0, totalAmount - (data.totalPaid || 0)));
+        setRemainingBalance(data.remainingBalance ?? Math.max(0, (data.billTotal || totalAmount) - (data.totalPaid || 0)));
       }
     } catch {} finally {
       setLoadingPayments(false);
