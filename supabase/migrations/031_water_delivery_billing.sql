@@ -80,14 +80,26 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Parent order not found');
   END IF;
 
-  -- Atomic update: mark water_delivered=true, set idempotency flag, record water total
+  -- Atomic update: mark water_delivered=true, set idempotency flag
   -- Do NOT change status — water orders keep their food-order status unchanged
+  -- For dine-in water orders (linked_order_id set), keep total_amount at 0
+  -- to avoid double counting in combined bill — charges are added to parent.
+  -- For standalone water orders, set total_amount = water_total.
   UPDATE public.orders
   SET water_delivered = true,
       water_charges_added = true,
-      total_amount = water_total,
+      total_amount = CASE
+        WHEN linked_order_id IS NULL THEN water_total
+        ELSE total_amount
+      END,
       updated_at = now()
   WHERE id = water_order_id;
+
+  -- Add water charges to parent food order's bill (idempotent via water_charges_added flag)
+  UPDATE public.orders
+  SET total_amount = total_amount + water_total,
+      updated_at = now()
+  WHERE id = water_order.linked_order_id;
 
   -- Add history record
   INSERT INTO public.order_status_history (order_id, status, note)
@@ -97,7 +109,7 @@ BEGIN
     'success', true,
     'water_total', water_total,
     'parent_order_id', water_order.linked_order_id,
-    'parent_order_total', parent_order.total_amount,
+    'parent_order_total', parent_order.total_amount + water_total,
     'message', 'Water order delivered; charges added to parent bill'
   );
 END;

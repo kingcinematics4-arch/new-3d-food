@@ -122,11 +122,24 @@ export async function POST(request: Request) {
 
       if (!isMissingFn) throw rpcErr;
 
-      // Manual fallback: update water_delivered + total_amount
+      // Manual fallback: update water_delivered flag + total_amount
+      // Water orders start with total_amount = 0 (charges deferred until delivery).
+      // For dine-in water orders linked to a parent, charges are added to parent's bill.
+      // For standalone water orders (no parent), charges stay on this order.
       const updateParts: Record<string, any> = {
-        total_amount: waterTotal,
         updated_at: new Date().toISOString(),
       };
+      const parentOrderId = (order as any).linked_order_id;
+
+      if (parentOrderId) {
+        // Dine-in: add water charges to parent food order's bill,
+        // keep this water order's total_amount at 0 to avoid double counting
+        updateParts.water_total_deferred = waterTotal;
+      } else {
+        // Standalone: charges stay on this water order
+        updateParts.total_amount = waterTotal;
+      }
+
       if (schema.waterDelivered) {
         updateParts.water_delivered = true;
       }
@@ -141,10 +154,27 @@ export async function POST(request: Request) {
 
       if (updateErr) throw updateErr;
 
+      // Add water charges to parent food order's bill (idempotent: once per water order)
+      if (parentOrderId) {
+        const { data: parentOrder } = await supabaseAdmin
+          .from('orders')
+          .select('total_amount')
+          .eq('id', parentOrderId)
+          .maybeSingle();
+
+        if (parentOrder) {
+          const newParentTotal = Number(parentOrder.total_amount || 0) + waterTotal;
+          await supabaseAdmin
+            .from('orders')
+            .update({ total_amount: newParentTotal, updated_at: new Date().toISOString() })
+            .eq('id', parentOrderId);
+        }
+      }
+
       rpcResult = {
         success: true,
         water_total: waterTotal,
-        parent_order_id: (order as any).linked_order_id || null,
+        parent_order_id: parentOrderId || null,
         message: 'Water order delivered; charges added to parent bill',
       };
     }
