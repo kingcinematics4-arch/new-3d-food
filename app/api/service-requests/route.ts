@@ -147,6 +147,35 @@ export async function POST(request: Request) {
             status: 'pending',
             note: 'Free water requested via service request',
           });
+
+          // Link this water order to an existing open food order for the same
+          // table so that delivered water charges are added to that customer's
+          // main bill. Dine-in water orders always need a parent food order
+          // for combined billing; takeaway water orders may stand alone.
+          try {
+            const { data: existingFoodOrders } = await supabaseAdmin
+              .from('orders')
+              .select('id')
+              .eq('hotel_id', validated.hotel_id)
+              .eq('table_number', tableTrimmed)
+              .is('linked_order_id', null)
+              .in('status', ['pending', 'accepted', 'preparing', 'ready'])
+              .order('created_at', { ascending: false })
+              .limit(1);
+
+            if (existingFoodOrders && existingFoodOrders.length > 0) {
+              const parentId = existingFoodOrders[0].id;
+              await supabaseAdmin
+                .from('orders')
+                .update({ linked_order_id: parentId })
+                .eq('id', newOrder.id);
+            }
+          } catch (linkErr: any) {
+            // linked_order_id column may not exist yet (migration 030 not applied)
+            // Water order still functions as a standalone record; billing link
+            // will work once migration 030 is applied.
+            console.error('[service-requests] failed to link water order to parent:', linkErr?.message);
+          }
         }
       } catch (e: any) {
         console.error('[service-requests] failed to create companion water order:', e?.message);

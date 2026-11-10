@@ -19,7 +19,7 @@ import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customThem
 import { customThemeToCssVars } from '@/components/menu/MenuThemeProvider';
 import ServiceRequestModal from '@/components/menu/ServiceRequestModal';
 import WaterCategoryModal from '@/components/menu/WaterCategoryModal';
-import { HotelWaterSettings } from '@/lib/waterSettings';
+import OrderSlideToConfirm from '@/components/menu/OrderSlideToConfirm';import { HotelWaterSettings } from '@/lib/waterSettings';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 const Dish3DModal = dynamic(() => import('@/components/menu/Dish3DModal'), { ssr: false });
@@ -413,6 +413,7 @@ function CartDrawer({
   const [payment, setPayment] = useState<'pay_at_table' | 'card' | 'upi'>('pay_at_table');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slideKey, setSlideKey] = useState(0);
 
   const handlePlaceOrder = async () => {
     if (cart.length === 0) return;
@@ -474,6 +475,8 @@ function CartDrawer({
     } catch (err: any) {
       setError(err.message || 'We could not send your order. Please try again.');
       setSubmitting(false);
+      // Reset slide so customer can try again
+      setSlideKey((k) => k + 1);
     }
   };
 
@@ -653,22 +656,11 @@ function CartDrawer({
               {error}
             </p>
           )}
-          <button
-            onClick={handlePlaceOrder}
+          <OrderSlideToConfirm
+            key={slideKey}
+            onConfirm={handlePlaceOrder}
             disabled={submitting || cart.length === 0}
-            className="d3-btn-primary w-full"
-            style={{ justifyContent: 'center', padding: '0.875rem', fontSize: '1rem', opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer', borderRadius: 'var(--d3-btn-radius)' }}
-          >
-            {submitting ? (
-              <>
-                <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
-                  <path d="M8 2A6 6 0 0 1 14 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                {addToOrderId ? 'Adding to Order...' : 'Sending Order...'}
-              </>
-            ) : addToOrderId ? 'Add to Order →' : 'Place Order →'}
-          </button>
+          />
         </div>
       </div>
     </div>
@@ -1045,7 +1037,11 @@ export default function MenuContent({
   const currency = hotel?.currency ?? null;
 
   const pills = useMemo(() => {
-    const names = categories.map((c) => c.name).filter(Boolean);
+    const categoryIdsWithItems = new Set(
+      menuItems.map((i) => i.category_id).filter(Boolean)
+    );
+    const availableCategories = categories.filter((c) => categoryIdsWithItems.has(c.id));
+    const names = availableCategories.map((c) => c.name).filter(Boolean);
     const hasUncategorised = menuItems.some((i) => !i.category_id || !categories.some((c) => c.id === i.category_id));
     const basePills = ['All', 'Water 💧', ...names, ...(hasUncategorised ? ['Uncategorised'] : [])];
     return basePills;
@@ -1243,7 +1239,7 @@ export default function MenuContent({
 
         {/* Sticky Quick Action Pills: Call Waiter & Order Water */}
         <div
-          className="fixed top-4 right-4 z-40 flex items-center gap-2"
+          className="fixed top-24 right-4 z-40 flex flex-wrap items-center gap-2"
           style={{ maxWidth: 'calc(100vw - 2rem)' }}
         >
           <button
