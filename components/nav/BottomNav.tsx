@@ -20,6 +20,8 @@ const NAV_ITEMS: BottomNavItem[] = [
 export interface BottomNavProps {
   activeTab: string;
   cartCount: number;
+  menuSlug: string | null;
+  tableNumber: string | null;
   onTabChange: (tab: string) => void;
   onOpenCart?: () => void;
 }
@@ -27,10 +29,23 @@ export interface BottomNavProps {
 export default function BottomNav({
   activeTab,
   cartCount,
+  menuSlug,
+  tableNumber,
   onTabChange,
   onOpenCart,
 }: BottomNavProps) {
   const router = useRouter();
+
+  const menuHref = menuSlug ? `/menu/${encodeURIComponent(menuSlug)}` : '/menu';
+  const gamesHref = menuSlug ? `/games?slug=${encodeURIComponent(menuSlug)}&table=${encodeURIComponent(tableNumber || '')}` : '/games';
+  const profileHref = menuSlug ? `/profile?slug=${encodeURIComponent(menuSlug)}&table=${encodeURIComponent(tableNumber || '')}` : '/profile';
+
+  const HREFS: Record<string, string> = {
+    Menu: menuHref,
+    Cart: '/cart',
+    Games: gamesHref,
+    Profile: profileHref,
+  };
 
   const handleTabClick = (item: BottomNavItem, e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,7 +56,8 @@ export default function BottomNav({
       }
     }
     onTabChange(item.label);
-    router.push(item.href);
+    const href = HREFS[item.label] || item.href;
+    router.push(href);
   };
 
   return (

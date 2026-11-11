@@ -1264,6 +1264,8 @@ export default function MenuContent({
         <BottomNav
           activeTab={activeBottomTab}
           cartCount={totalCount}
+          menuSlug={hotel.slug || null}
+          tableNumber={initialTableNumber || null}
           onTabChange={setActiveBottomTab}
           onOpenCart={() => setIsCartOpen(true)}
         />

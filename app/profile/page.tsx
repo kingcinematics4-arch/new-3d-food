@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { User, Clock, MapPin, Phone, CreditCard } from 'lucide-react';
 
 const orders = [
@@ -14,11 +17,17 @@ const infoCards = [
 ];
 
 export default function ProfilePage() {
+  const searchParams = useSearchParams();
+  const slug = searchParams.get('slug') || null;
+  const table = searchParams.get('table') || null;
+
+  const menuHref = slug ? `/menu/${encodeURIComponent(slug)}` : '/menu';
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#0B0B0A', color: '#F3EFE7', fontFamily: "'Inter', system-ui, sans-serif" }}>
       <header className="border-b border-white/10 bg-black/80 backdrop-blur-md sticky top-0 z-20 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/menu" className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">
+          <Link href={menuHref} className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">
             <User size="14" strokeWidth="1.5" stroke="white" />
             <span>Back to Menu</span>
           </Link>
@@ -81,7 +90,7 @@ export default function ProfilePage() {
 
       <footer className="border-t border-white/10 bg-black/80 px-6 py-6 text-center">
         <p className="text-[0.55rem] text-white/40 tracking-wider uppercase">
-          DinePixel Profile &bull; Manage your dining preferences
+          DinePixel Profile &bull; Manage your dining preferences{slug ? ` &bull; Table ${table || '—'}` : ''}
         </p>
       </footer>
     </div>

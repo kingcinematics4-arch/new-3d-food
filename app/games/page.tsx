@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Gamepad2, Sparkles, LayoutGrid, Zap } from 'lucide-react';
 
 const games = [
@@ -23,6 +26,12 @@ const games = [
 ];
 
 export default function GamesPage() {
+  const searchParams = useSearchParams();
+  const slug = searchParams.get('slug') || null;
+  const table = searchParams.get('table') || null;
+
+  const menuHref = slug ? `/menu/${encodeURIComponent(slug)}` : '/menu';
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#0B0B0A', color: '#F3EFE7', fontFamily: "'Inter', system-ui, sans-serif" }}>
       <header className="border-b border-white/10 bg-black/80 backdrop-blur-md sticky top-0 z-20 px-6 py-4">
@@ -36,7 +45,7 @@ export default function GamesPage() {
               <h1 className="text-base font-bold tracking-tight text-white">Arcade</h1>
             </div>
           </div>
-          <Link href="/menu" className="px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">
+          <Link href={menuHref} className="px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">
             Back to Menu
           </Link>
         </div>
@@ -71,7 +80,7 @@ export default function GamesPage() {
 
       <footer className="border-t border-white/10 bg-black/80 px-6 py-6 text-center">
         <p className="text-[0.55rem] text-white/40 tracking-wider uppercase">
-          DinePixel Games &bull; For entertainment while you dine
+          DinePixel Games &bull; For entertainment while you dine{slug ? ` &bull; Table ${table || '—'}` : ''}
         </p>
       </footer>
     </div>
