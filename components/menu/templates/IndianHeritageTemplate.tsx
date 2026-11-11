@@ -26,7 +26,8 @@ export default function IndianHeritageTemplate({
   onRemove,
   onItemClick,
   onView3D,
-  onOpenCart,
+  onOpenWater,
+  onOpenWaiter,
 }: MenuTemplateProps) {
   return (
     <div
@@ -59,19 +60,9 @@ export default function IndianHeritageTemplate({
               <h1 className="text-xl sm:text-2xl font-normal tracking-wide text-[#E8E1D1] leading-none">
                 {hotel.name}
               </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onOpenCart}
-              className="flex items-center gap-2 px-4 py-1.5 rounded border border-[#C69A6E] bg-[#2A2015] hover:bg-[#35291C] text-[#C69A6E] text-xs font-sans tracking-widest uppercase transition-all shadow-[0_2px_12px_rgba(198,154,110,0.15)]"
-            >
-              <span className="text-sm">❖</span>
-              <span>{totalCount > 0 ? `${totalCount} Pakwan · ${formatPrice(totalPrice, currency)}` : 'Thali'}</span>
-            </button>
           </div>
         </div>
+      </div>
 
         {/* Ornate Search & Heritage Boxed Tabs */}
         <div className="max-w-4xl mx-auto px-4 pb-3">
@@ -93,6 +84,26 @@ export default function IndianHeritageTemplate({
               <circle cx="6" cy="6" r="4.5" />
               <path d="M9.5 9.5L12.5 12.5" strokeLinecap="round" />
             </svg>
+          </div>
+
+          {/* Water & Call Waiter action row */}
+          <div className="flex justify-center gap-4 mt-3">
+            <button
+              type="button"
+              onClick={onOpenWater}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#C69A6E]/30 bg-[#C69A6E]/10 text-[#C69A6E] text-xs font-sans font-medium hover:bg-[#C69A6E]/20 transition-colors"
+            >
+              <span>💧</span>
+              <span>Water</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenWaiter}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#C69A6E] bg-[#C69A6E] text-[#1D150E] text-xs font-sans font-medium hover:bg-[#A67C52] transition-colors"
+            >
+              <span>🔔</span>
+              <span>Call Waiter</span>
+            </button>
           </div>
 
           {/* Boxed Heritage Tabs with Brass Edges */}

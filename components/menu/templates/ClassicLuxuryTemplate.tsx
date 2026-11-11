@@ -26,7 +26,8 @@ export default function ClassicLuxuryTemplate({
   onRemove,
   onItemClick,
   onView3D,
-  onOpenCart,
+  onOpenWater,
+  onOpenWaiter,
 }: MenuTemplateProps) {
   return (
     <div
@@ -67,18 +68,6 @@ export default function ClassicLuxuryTemplate({
                 Table {tableNumber}
               </span>
             )}
-
-            <button
-              onClick={onOpenCart}
-              className="flex items-center gap-2.5 px-4 py-2 rounded-full border border-[#B8A47A] bg-white text-[#9A8760] hover:bg-[#F4F1EA] transition-all shadow-sm font-sans text-xs tracking-wider font-medium"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
-                <path d="M1 1h2.5l1.5 7.5h6.5l1.5-5.5h-9" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="5.5" cy="11.5" r="1" fill="currentColor" />
-                <circle cx="10.5" cy="11.5" r="1" fill="currentColor" />
-              </svg>
-              <span>{totalCount > 0 ? `${totalCount} Dish${totalCount > 1 ? 'es' : ''} · ${formatPrice(totalPrice, currency)}` : 'Order'}</span>
-            </button>
           </div>
         </div>
 
@@ -109,6 +98,26 @@ export default function ClassicLuxuryTemplate({
               <circle cx="6" cy="6" r="4.5" />
               <path d="M9.5 9.5L12.5 12.5" strokeLinecap="round" />
             </svg>
+          </div>
+
+          {/* Water & Call Waiter action row */}
+          <div className="flex justify-center gap-4 mt-3">
+            <button
+              type="button"
+              onClick={onOpenWater}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#B8A47A]/30 bg-white/80 text-[#6E6350] text-xs font-sans font-medium hover:bg-[#F4F1EA] transition-colors"
+            >
+              <span>💧</span>
+              <span>Water</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenWaiter}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#B8A47A]/30 bg-[#B8A47A] text-[#1A1A1A] text-xs font-sans font-medium hover:bg-[#9A8760] transition-colors"
+            >
+              <span>🔔</span>
+              <span>Call Waiter</span>
+            </button>
           </div>
 
           {/* Elegant Horizontal Serif Navigation Tabs */}

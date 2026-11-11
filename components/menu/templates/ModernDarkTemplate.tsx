@@ -27,7 +27,8 @@ export default function ModernDarkTemplate({
   onRemove,
   onItemClick,
   onView3D,
-  onOpenCart,
+  onOpenWater,
+  onOpenWaiter,
 }: MenuTemplateProps) {
   // Count items per category for pills
   const getCatCount = (catName: string) => {
@@ -71,20 +72,6 @@ export default function ModernDarkTemplate({
               </h1>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onOpenCart}
-              className="relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#E1C99A] hover:bg-[#F0DCAF] text-black font-bold text-xs tracking-wider uppercase transition-all shadow-[0_0_15px_rgba(225,201,154,0.3)]"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M1 1h2l1.2 6.5h7.2l1.6-4.5H3.5" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="5" cy="11" r="1.2" fill="currentColor" />
-                <circle cx="10" cy="11" r="1.2" fill="currentColor" />
-              </svg>
-              <span>{totalCount > 0 ? `${totalCount} · ${formatPrice(totalPrice, currency)}` : 'Cart'}</span>
-            </button>
-          </div>
         </div>
 
         {/* Search & Horizontal Category Scroll */}
@@ -107,6 +94,26 @@ export default function ModernDarkTemplate({
               <circle cx="6" cy="6" r="4.5" />
               <path d="M9.5 9.5L12.5 12.5" strokeLinecap="round" />
             </svg>
+          </div>
+
+          {/* Water & Call Waiter action row */}
+          <div className="flex justify-center gap-4 mt-3">
+            <button
+              type="button"
+              onClick={onOpenWater}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-white/80 text-xs font-medium hover:bg-white/10 transition-colors"
+            >
+              <span>💧</span>
+              <span>Water</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenWaiter}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#E1C99A]/30 bg-[#E1C99A] text-black text-xs font-medium hover:bg-[#F0DCAF] transition-colors"
+            >
+              <span>🔔</span>
+              <span>Call Waiter</span>
+            </button>
           </div>
 
           {/* Horizontal category track with item count capsules */}

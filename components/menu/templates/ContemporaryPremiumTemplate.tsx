@@ -26,7 +26,8 @@ export default function ContemporaryPremiumTemplate({
   onRemove,
   onItemClick,
   onView3D,
-  onOpenCart,
+  onOpenWater,
+  onOpenWaiter,
 }: MenuTemplateProps) {
   return (
     <div
@@ -55,19 +56,9 @@ export default function ContemporaryPremiumTemplate({
               <h1 className="text-xl sm:text-2xl font-light tracking-tight text-[#1A1A1A] uppercase">
                 {hotel.name}
               </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onOpenCart}
-              className="flex items-center gap-3 px-5 py-2 rounded-none border border-[#1A1A1A] bg-[#1A1A1A] text-white hover:bg-transparent hover:text-[#1A1A1A] text-xs font-mono tracking-widest uppercase transition-all duration-300"
-            >
-              <span>BAG [{totalCount}]</span>
-              <span className="text-[#A67C52] font-semibold">{formatPrice(totalPrice, currency)}</span>
-            </button>
           </div>
         </div>
+      </div>
 
         {/* Numbered Editorial Category Navigation */}
         <div className="max-w-6xl mx-auto px-4 sm:px-8 pb-3">
@@ -89,6 +80,24 @@ export default function ContemporaryPremiumTemplate({
               <circle cx="6" cy="6" r="4.5" />
               <path d="M9.5 9.5L12.5 12.5" strokeLinecap="round" />
             </svg>
+          </div>
+
+          {/* Water & Call Waiter action row */}
+          <div className="flex justify-center gap-4 mt-3">
+            <button
+              type="button"
+              onClick={onOpenWater}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-none border border-[#1A1A1A] bg-[#1A1A1A] text-white text-[0.65rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
+            >
+              <span>💧 Water</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenWaiter}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-none border border-[#A67C52] bg-[#A67C52] text-white text-[0.65rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
+            >
+              <span>🔔 Call Waiter</span>
+            </button>
           </div>
 
           {pills.length > 1 && (

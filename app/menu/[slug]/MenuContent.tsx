@@ -19,7 +19,9 @@ import { cloneCustomThemeConfig, type CustomThemeConfig } from '@/lib/customThem
 import { customThemeToCssVars } from '@/components/menu/MenuThemeProvider';
 import ServiceRequestModal from '@/components/menu/ServiceRequestModal';
 import WaterCategoryModal from '@/components/menu/WaterCategoryModal';
-import OrderSlideToConfirm from '@/components/menu/OrderSlideToConfirm';import { HotelWaterSettings } from '@/lib/waterSettings';
+import OrderSlideToConfirm from '@/components/menu/OrderSlideToConfirm';
+import BottomNav from '@/components/nav/BottomNav';
+import { HotelWaterSettings } from '@/lib/waterSettings';
 
 const FoodModelViewer = dynamic(() => import('@/components/3d/FoodModelViewer'), { ssr: false });
 const Dish3DModal = dynamic(() => import('@/components/menu/Dish3DModal'), { ssr: false });
@@ -960,6 +962,7 @@ export default function MenuContent({
   const [search, setSearch] = useState('');
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isWaterModalOpen, setIsWaterModalOpen] = useState(false);
+  const [activeBottomTab, setActiveBottomTab] = useState('Menu');
 
   // Open detail modal when any food card is clicked
   const handleCardClick = useCallback((item: PublicMenuItem) => {
@@ -1136,11 +1139,10 @@ export default function MenuContent({
   return (
     <MenuThemeProviderContext themeId={hotel?.menu_theme || undefined} customConfig={hotel?.custom_theme_config}>
       <div
-        className={`min-h-screen ${menuThemeClass(hotel?.menu_theme || undefined)}`}
+        className={`min-h-screen ${menuThemeClass(hotel?.menu_theme || undefined)} pb-[100px] sm:pb-24`}
         style={{
           background: 'var(--bg-primary)',
           fontFamily: 'var(--font-body)',
-          paddingBottom: '6rem',
           ...(hotel?.menu_theme === 'custom'
             ? (customThemeToCssVars(cloneCustomThemeConfig(hotel?.custom_theme_config) as CustomThemeConfig) as React.CSSProperties)
             : {}),
@@ -1175,6 +1177,8 @@ export default function MenuContent({
             onItemClick: handleCardClick,
             onView3D: setView3DItem,
             onOpenCart: () => setIsCartOpen(true),
+            onOpenWater: () => setIsWaterModalOpen(true),
+            onOpenWaiter: () => setIsServiceModalOpen(true),
           };
 
           switch (hotel.menu_theme) {
@@ -1237,56 +1241,7 @@ export default function MenuContent({
           tableNumber={initialTableNumber || 'Takeaway'}
         />
 
-        {/* Sticky Quick Action Pills: Call Waiter & Order Water */}
-        <div
-          className="fixed top-24 right-4 z-40 flex flex-wrap items-center gap-2"
-          style={{ maxWidth: 'calc(100vw - 2rem)' }}
-        >
-          <button
-            type="button"
-            onClick={() => setIsWaterModalOpen(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '0.4375rem 0.75rem',
-              borderRadius: 100,
-              background: 'rgba(20, 20, 19, 0.85)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(243, 239, 231, 0.15)',
-              color: 'var(--text-primary)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-            }}
-          >
-            <span>💧</span>
-            <span>Water</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsServiceModalOpen(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '0.4375rem 0.875rem',
-              borderRadius: 100,
-              background: 'var(--gold, #C9A96E)',
-              color: '#0B0B0A',
-              border: 'none',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(201,169,110,0.4)',
-            }}
-          >
-            <span>🔔</span>
-            <span>Call Waiter</span>
-          </button>
-        </div>
+        {/* Water & Call Waiter actions moved to template header row (below search) */}
 
         {isCartOpen && (
           <CartDrawer
@@ -1305,24 +1260,13 @@ export default function MenuContent({
           />
         )}
 
-        {totalCount > 0 && !isCartOpen && (
-          <div
-            className="fixed bottom-4 left-4 right-4 z-20"
-            style={{ maxWidth: 'calc(var(--d3-container-max) - 2rem)', margin: '0 auto' }}
-          >
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="d3-btn-primary w-full"
-              style={{ justifyContent: 'space-between', padding: '1rem 1.25rem', fontSize: '0.9375rem', borderRadius: 'var(--d3-btn-radius)' }}
-            >
-              <span style={{ background: 'rgba(0,0,0,0.15)', padding: '0.125rem 0.5rem', borderRadius: 'var(--d3-badge-radius)', fontSize: '0.75rem', fontWeight: 700 }}>
-                {totalCount}
-              </span>
-              <span>View Order</span>
-              <span className="d3-price">{formatPrice(totalPrice, currency)}</span>
-            </button>
-          </div>
-        )}
+        {/* Fixed bottom navigation bar (mobile only) */}
+        <BottomNav
+          activeTab={activeBottomTab}
+          cartCount={totalCount}
+          onTabChange={setActiveBottomTab}
+          onOpenCart={() => setIsCartOpen(true)}
+        />
       </div>
     </MenuThemeProviderContext>
   );

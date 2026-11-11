@@ -128,6 +128,7 @@ export async function POST(request: Request) {
       // For standalone water orders (no parent), charges stay on this order.
       const updateParts: Record<string, any> = {
         updated_at: new Date().toISOString(),
+        status: 'delivered',
       };
       const parentOrderId = (order as any).linked_order_id;
 

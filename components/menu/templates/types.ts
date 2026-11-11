@@ -28,4 +28,6 @@ export interface MenuTemplateProps {
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
   onOpenCart: () => void;
+  onOpenWater: () => void;
+  onOpenWaiter: () => void;
 }

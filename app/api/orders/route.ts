@@ -156,6 +156,60 @@ export async function GET(request: Request) {
       };
     });
 
+    // Propagate delivered water charges from linked water orders to
+    // parent food orders' water_charges field. This ensures the
+    // ACTIVE ORDER TOTAL on the food card includes delivered water
+    // charges from linked water orders.
+    // Only delivered water orders are included; pending/cancelled are
+    // excluded. Each delivered water order's charges are added exactly
+    // once (computed at query time, so no idempotency concerns).
+    // Two association paths:
+    //   1. linked_order_id column (migration 030) — precise parent link
+    //   2. hotel_id + table_number match — fallback for deployments
+    //      where migration 030 has not yet been applied.
+    const byId = new Map<string, any>();
+    for (const o of transformedOrders) byId.set(o.id, o);
+
+    const foodOrdersByTable = new Map<string, any[]>();
+    for (const o of transformedOrders) {
+      if (o.is_water_order) continue;
+      foodOrdersByTable.set(
+        `${o.hotel_id}|${o.table_number}`,
+        [...(foodOrdersByTable.get(`${o.hotel_id}|${o.table_number}`) || []), o]
+      );
+    }
+
+    for (const o of transformedOrders) {
+      if (!o.is_water_order) continue;
+      const statusLower = String(o.status || '').trim().toLowerCase();
+      const waterDelivered = o.water_delivered === true || statusLower === 'delivered';
+      if (!waterDelivered) continue;
+      const waterTotal = Number(o.water_charges || 0);
+      if (waterTotal <= 0) continue;
+
+      let parent: any = null;
+
+      // Path 1: precise linked_order_id reference
+      if (schema.linkedOrderId && o.linked_order_id) {
+        parent = byId.get(o.linked_order_id);
+        if (!parent || parent.is_water_order) parent = null;
+      }
+
+      // Path 2: fallback by hotel_id + table_number (dine-in association)
+      if (!parent && o.hotel_id && o.table_number) {
+        const candidates = foodOrdersByTable.get(`${o.hotel_id}|${o.table_number}`) || [];
+        // Pick the most recent non-cancelled food order for this table
+        const activeFood = candidates.find(
+          (p: any) => String(p.status || '').trim().toLowerCase() !== 'cancelled'
+        );
+        parent = activeFood || null;
+      }
+
+      if (parent) {
+        parent.water_charges = Number(parent.water_charges || 0) + waterTotal;
+      }
+    }
+
     return new NextResponse(JSON.stringify({ success: true, orders: transformedOrders }), {
       status: 200,
       headers: {

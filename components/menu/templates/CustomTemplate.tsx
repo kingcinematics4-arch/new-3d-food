@@ -31,8 +31,8 @@ function contrast(hex: string) {
 export default function CustomTemplate(props: CustomTemplateProps) {
   const {
     hotel, currency, tableNumber, pills, selectedCategory, onSelectCategory, search, onSearchChange,
-    filteredItems, featuredItems, popularItems, regularItems, cart, totalCount, totalPrice,
-    onAdd, onRemove, onItemClick, onView3D, onOpenCart, embeddedViewport,
+    filteredItems, featuredItems, popularItems, regularItems, cart,
+    onAdd, onRemove, onItemClick, onView3D, onOpenWater, onOpenWaiter, embeddedViewport,
   } = props;
 
   const config = cloneCustomThemeConfig(props.customConfig || (hotel as any)?.custom_theme_config);
@@ -127,14 +127,6 @@ export default function CustomTemplate(props: CustomTemplateProps) {
               </h1>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onOpenCart}
-            style={{ ...buttonStyle(true), padding: embeddedViewport ? '0.4rem 0.6rem' : (config.buttonSize === 'lg' ? '0.65rem 0.8rem' : config.buttonSize === 'sm' ? '0.38rem 0.5rem' : '0.5rem 0.65rem'), fontSize: embeddedViewport ? 11 : btnFont, flexShrink: 0, boxSizing: 'border-box', whiteSpace: 'nowrap', minWidth: 0 }}
-            className="flex items-center gap-1"
-          >
-            <span>Cart</span>{totalCount > 0 ? <span>({totalCount})</span> : null}
-          </button>
         </div>
       </header>
 
@@ -149,6 +141,36 @@ export default function CustomTemplate(props: CustomTemplateProps) {
             style={{ backgroundColor: config.cardBg, color: config.bodyTextColor || config.textColor, borderColor: alpha(p, 0.22), borderRadius: config.buttonRadius, fontFamily: bodyFamily, fontSize: embeddedViewport ? Math.max(12, config.typography.bodySize - 1) : config.typography.bodySize, boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, display: 'block', padding: embeddedViewport ? '8px 10px 8px 34px' : '8px 12px 8px 36px' }}
           />
           <svg className="pointer-events-none absolute top-1/2 -translate-y-1/2" style={{ left: embeddedViewport ? 10 : 12, width: 14, height: 14 }} viewBox="0 0 14 14" fill="none" stroke={p} strokeWidth="1.5"><circle cx="6" cy="6" r="4.5" /><path d="M9.5 9.5L12.5 12.5" strokeLinecap="round" /></svg>
+        </div>
+
+        {/* Water & Call Waiter action row */}
+        <div className="flex justify-center gap-3 mt-3" style={{ boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+          <button
+            type="button"
+            onClick={onOpenWater}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '0.375rem 0.8rem', borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius,
+              border: `1px solid ${alpha(p, 0.35)}`, backgroundColor: alpha(p, 0.12), color: p,
+              fontSize: Math.max(11, config.typography.bodySize - 1), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer',
+              transition: 'all 180ms ease', boxSizing: 'border-box',
+            }}
+          >
+            <span>💧 Water</span>
+          </button>
+          <button
+            type="button"
+            onClick={onOpenWaiter}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '0.375rem 0.8rem', borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius,
+              border: `1px solid ${p}`, backgroundColor: p, color: contrast(p),
+              fontSize: Math.max(11, config.typography.bodySize - 1), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer',
+              transition: 'all 180ms ease', boxSizing: 'border-box',
+            }}
+          >
+            <span>🔔 Call Waiter</span>
+          </button>
         </div>
         {pills.length > 1 && (
           <div
