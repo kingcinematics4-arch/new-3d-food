@@ -491,6 +491,7 @@ function CartDrawer({
           borderLeft: '1px solid var(--border-subtle)',
           display: 'flex', flexDirection: 'column',
           height: '100%', overflow: 'hidden',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 120px)',
         }}
       >
         <div
