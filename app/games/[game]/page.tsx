@@ -42,6 +42,15 @@ export default function GameRoutePage({ params }: { params: { game: string } }) 
     <>
       {node}
       <BottomNav
+        variant="bottom"
+        activeTab={activeTab}
+        cartCount={0}
+        menuSlug={slug || null}
+        tableNumber={table || null}
+        onTabChange={setActiveTab}
+      />
+      <BottomNav
+        variant="sidebar"
         activeTab={activeTab}
         cartCount={0}
         menuSlug={slug || null}

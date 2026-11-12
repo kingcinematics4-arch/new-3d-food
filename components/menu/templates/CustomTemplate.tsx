@@ -214,7 +214,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
 
 function Section({ title, p, config, layout, gap, children, embeddedViewport, headingFamily }: { title: string; p: string; config: CustomThemeConfig; layout: CustomThemeConfig['menuLayout']; gap: number; children: React.ReactNode; embeddedViewport?: boolean; headingFamily: string }) {
   const useTwoCol = !embeddedViewport && layout !== 'compact-list' && layout !== 'editorial' && layout !== 'cards';
-  const cls = layout === 'compact-list' || layout === 'editorial' ? undefined : layout === 'cards' || !useTwoCol ? 'grid grid-cols-1' : 'grid grid-cols-1 sm:grid-cols-2';
+  const cls = layout === 'compact-list' || layout === 'editorial' ? undefined : layout === 'cards' || !useTwoCol ? 'grid grid-cols-1' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
   const style: React.CSSProperties = { gap, ...(layout === 'compact-list' || layout === 'editorial' ? { display: 'flex', flexDirection: 'column' } : {}), boxSizing: 'border-box', minWidth: 0, width: '100%' };
   return (
     <section style={{ boxSizing: 'border-box', minWidth: 0, width: '100%' }}>

@@ -25,6 +25,7 @@ export interface BottomNavProps {
   tableNumber: string | null;
   onTabChange: (tab: string) => void;
   onOpenCart?: () => void;
+  variant?: 'bottom' | 'sidebar';
 }
 
 export default function BottomNav({
@@ -34,6 +35,7 @@ export default function BottomNav({
   tableNumber,
   onTabChange,
   onOpenCart,
+  variant = 'bottom',
 }: BottomNavProps) {
   const router = useRouter();
 
@@ -96,9 +98,87 @@ export default function BottomNav({
     router.push(href);
   };
 
+  const isSidebar = variant === 'sidebar';
+
+  if (isSidebar) {
+    return (
+      <nav
+        className="fixed left-0 top-0 bottom-0 z-50 w-64 hidden lg:block"
+        style={{
+          background: 'rgba(11, 11, 10, 0.96)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderRight: '1px solid rgba(184, 164, 122, 0.25)',
+        }}
+      >
+        <div className="h-full flex flex-col p-4">
+          <div className="flex items-center gap-3 px-2 py-4 border-b border-white/10">
+            <div className="w-9 h-9 rounded-xl border border-[rgba(184,164,122,0.45)] bg-gradient-to-br from-[rgba(184,164,122,0.28)] to-transparent flex items-center justify-center">
+              <Utensils size={18} color="#B8A47A" />
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.2em] text-white/45">DinePixel</p>
+              <h1 className="text-base font-semibold tracking-tight text-white">Navigation</h1>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-4 space-y-1">
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeTab === item.label;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.label}
+                  onClick={(e) => handleTabClick(item, e)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 outline-none text-left w-full"
+                  style={{
+                    background: isActive ? 'rgba(184, 164, 122, 0.15)' : 'transparent',
+                    border: isActive ? '1px solid rgba(184, 164, 122, 0.3)' : '1px solid transparent',
+                    color: isActive ? '#B8A47A' : '#A8A396',
+                  }}
+                >
+                  <Icon
+                    size={22}
+                    strokeWidth={isActive ? 2.5 : 1.5}
+                    style={{ transition: 'all 0.2s ease', flexShrink: 0 }}
+                  />
+                  <span className="font-medium text-sm tracking-tight" style={{ transition: 'all 0.2s ease' }}>
+                    {item.label}
+                  </span>
+                  {item.label === 'Cart' && cartCount > 0 && (
+                    <span className="ml-auto flex items-center justify-center"
+                      style={{
+                        width: 18,
+                        height: 18,
+                        minWidth: 18,
+                        background: '#B8A47A',
+                        color: '#0B0B0A',
+                        borderRadius: '50%',
+                        fontSize: '0.65rem',
+                        fontWeight: 800,
+                        lineHeight: 1,
+                        boxShadow: '0 0 0 2px rgba(11, 11, 10, 0.9)',
+                      }}
+                    >
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="border-t border-white/10 pt-4 text-center">
+            <p className="text-[10px] uppercase tracking-[0.15em] text-white/35">DinePixel</p>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50"
+      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
       style={{
         paddingBottom: `max(env(safe-area-inset-bottom), 0.625rem)`,
         paddingTop: '0.3125rem',
@@ -108,7 +188,7 @@ export default function BottomNav({
         borderTop: '1px solid rgba(184, 164, 122, 0.35)',
       }}
     >
-      <div className="max-w-md mx-auto px-2 flex items-center justify-between">
+      <div className="max-w-4xl mx-auto px-3 flex items-center justify-between">
         {NAV_ITEMS.map((item) => {
           const isActive = activeTab === item.label;
           const Icon = item.icon;
@@ -116,23 +196,23 @@ export default function BottomNav({
             <button
               key={item.label}
               onClick={(e) => handleTabClick(item, e)}
-              className="flex flex-col items-center justify-center gap-0.375 transition-all duration-200 outline-none"
+              className="flex flex-col items-center justify-center gap-0.5 transition-all duration-200 outline-none"
               style={{
                 flex: '1 1 0%',
                 minWidth: 0,
-                padding: '0.1875rem 0.125rem',
+                padding: '0.25rem 0.25rem',
                 opacity: isActive ? 1 : 0.55,
                 color: isActive ? '#B8A47A' : '#6B675F',
                 borderBottom: isActive ? '2px solid #B8A47A' : 'none',
               }}
             >
               <Icon
-                size={19}
+                size={22}
                 strokeWidth={isActive ? 2.5 : 1.5}
                 style={{ transition: 'all 0.2s ease', flexShrink: 0 }}
               />
               <span
-                className="text-[0.48rem] font-medium tracking-tight uppercase truncate w-full text-center leading-none"
+                className="text-[0.55rem] font-medium tracking-tight uppercase truncate w-full text-center leading-none"
                 style={{ transition: 'all 0.2s ease' }}
               >
                 {item.shortLabel}
@@ -142,16 +222,16 @@ export default function BottomNav({
                   className="flex items-center justify-center"
                   style={{
                     position: 'absolute',
-                    top: '-3px',
+                    top: '-4px',
                     right: '50%',
                     transform: 'translateX(50%)',
-                    width: 11,
-                    height: 11,
-                    minWidth: 11,
+                    width: 14,
+                    height: 14,
+                    minWidth: 14,
                     background: '#B8A47A',
                     color: '#0B0B0A',
                     borderRadius: '50%',
-                    fontSize: '0.5rem',
+                    fontSize: '0.6rem',
                     fontWeight: 800,
                     lineHeight: 1,
                     boxShadow: '0 0 0 2px rgba(11, 11, 10, 0.9)',

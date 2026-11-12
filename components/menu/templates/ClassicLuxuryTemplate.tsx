@@ -165,7 +165,7 @@ export default function ClassicLuxuryTemplate({
                   <div className="w-24 h-px bg-[#B8A47A] mx-auto mt-3 opacity-60" />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {featuredItems.map((item) => (
                     <ClassicLuxuryCard
                       key={item.id}
@@ -196,7 +196,7 @@ export default function ClassicLuxuryTemplate({
                   <div className="w-24 h-px bg-[#B8A47A] mx-auto mt-3 opacity-60" />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {popularItems.map((item) => (
                     <ClassicLuxuryCard
                       key={item.id}
@@ -228,7 +228,7 @@ export default function ClassicLuxuryTemplate({
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {regularItems.map((item) => (
                     <ClassicLuxuryCard
                       key={item.id}

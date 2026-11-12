@@ -157,13 +157,13 @@ export default function IndianHeritageTemplate({
                   <h2 className="text-2xl sm:text-3xl font-normal text-[#E8E1D1] tracking-wide">
                     ❖ Shahi Khas Curations ❖
                   </h2>
-                  <div className="flex items-center justify-center gap-2 mt-2 text-[#C69A6E]/60 text-xs">
-                    <span>✦ ─── ❖ ─── ✦</span>
+<div className="flex items-center justify-center gap-2 mt-2 text-[#C69A6E]/60 text-xs">
+                      <span>✦ ─── ❖ ─── ✦</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {featuredItems.map((item) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {featuredItems.map((item) => (
                     <IndianHeritageCard
                       key={item.id}
                       item={item}
@@ -189,13 +189,13 @@ export default function IndianHeritageTemplate({
                   <h2 className="text-2xl sm:text-3xl font-normal text-[#E8E1D1] tracking-wide">
                     ❖ Lazeez & Celebrated Pakwan ❖
                   </h2>
-                  <div className="flex items-center justify-center gap-2 mt-2 text-[#C69A6E]/60 text-xs">
-                    <span>✦ ─── ❖ ─── ✦</span>
+<div className="flex items-center justify-center gap-2 mt-2 text-[#C69A6E]/60 text-xs">
+                      <span>✦ ─── ❖ ─── ✦</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {popularItems.map((item) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {popularItems.map((item) => (
                     <IndianHeritageCard
                       key={item.id}
                       item={item}
@@ -228,7 +228,7 @@ export default function IndianHeritageTemplate({
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {regularItems.map((item) => (
                     <IndianHeritageCard
                       key={item.id}

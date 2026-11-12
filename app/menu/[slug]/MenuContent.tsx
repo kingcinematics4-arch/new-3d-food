@@ -1148,7 +1148,7 @@ export default function MenuContent({
   return (
     <MenuThemeProviderContext themeId={hotel?.menu_theme || undefined} customConfig={hotel?.custom_theme_config}>
       <div
-        className={`min-h-screen ${menuThemeClass(hotel?.menu_theme || undefined)} pb-[100px] sm:pb-24`}
+        className={`min-h-screen ${menuThemeClass(hotel?.menu_theme || undefined)} pb-[100px] sm:pb-24 lg:pl-64`}
         style={{
           background: 'var(--bg-primary)',
           fontFamily: 'var(--font-body)',
@@ -1269,8 +1269,20 @@ export default function MenuContent({
           />
         )}
 
+        {/* Sidebar navigation for desktop */}
+        <BottomNav
+          variant="sidebar"
+          activeTab={activeBottomTab}
+          cartCount={totalCount}
+          menuSlug={hotel.slug || null}
+          tableNumber={initialTableNumber || null}
+          onTabChange={setActiveBottomTab}
+          onOpenCart={() => setIsCartOpen(true)}
+        />
+
         {/* Fixed bottom navigation bar (mobile only) */}
         <BottomNav
+          variant="bottom"
           activeTab={activeBottomTab}
           cartCount={totalCount}
           menuSlug={hotel.slug || null}

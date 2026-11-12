@@ -596,7 +596,7 @@ export default function YourOrdersPage() {
 
   return (
     <div
-      className={`min-h-screen ${menuThemeClass(undefined)} pb-28`}
+      className={`min-h-screen ${menuThemeClass(undefined)} pb-28 lg:pl-64`}
       style={{ background: '#0B0B0A', fontFamily: 'var(--font-body)' }}
     >
       <header
@@ -644,7 +644,7 @@ export default function YourOrdersPage() {
         </div>
       </header>
 
-      <main className="mx-auto px-4 py-4 pb-8" style={{ maxWidth: 'var(--d3-container-max, 480px)' }}>
+      <main className="mx-auto px-4 py-4 pb-8 lg:max-w-5xl" style={{ maxWidth: 'var(--d3-container-max, 480px)' }}>
         {error && !orders.length ? (
           <div style={{ ...PANEL, padding: '2rem', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#A8A396', lineHeight: 1.7 }}>{error}</p>
@@ -715,6 +715,15 @@ export default function YourOrdersPage() {
       `}</style>
 
       <BottomNav
+        variant="bottom"
+        activeTab={activeTab}
+        cartCount={0}
+        menuSlug={slug || null}
+        tableNumber={table || null}
+        onTabChange={setActiveTab}
+      />
+      <BottomNav
+        variant="sidebar"
         activeTab={activeTab}
         cartCount={0}
         menuSlug={slug || null}

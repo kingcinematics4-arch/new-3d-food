@@ -556,7 +556,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
 
   return (
     <div
-      className={`min-h-screen ${menuThemeClass(order?.hotel_theme || order?.menu_theme || undefined)}`}
+      className={`min-h-screen ${menuThemeClass(order?.hotel_theme || order?.menu_theme || undefined)} lg:pl-64`}
       style={{
         background: 'var(--bg-primary)',
         color: 'var(--text-primary)',
@@ -671,7 +671,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       </header>
 
       <main
-        className="mx-auto px-4 py-4 pb-10"
+        className="mx-auto px-4 py-4 pb-10 lg:max-w-5xl"
         style={{ maxWidth: 'var(--d3-container-max)' }}
       >
         {loading ? (
@@ -1193,6 +1193,15 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       </main>
 
       <BottomNav
+        variant="bottom"
+        activeTab={activeTab}
+        cartCount={0}
+        menuSlug={hotelSlug || order?.hotel_slug || null}
+        tableNumber={order?.table_number || null}
+        onTabChange={setActiveTab}
+      />
+      <BottomNav
+        variant="sidebar"
         activeTab={activeTab}
         cartCount={0}
         menuSlug={hotelSlug || order?.hotel_slug || null}
