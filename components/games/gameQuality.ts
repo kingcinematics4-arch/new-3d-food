@@ -60,8 +60,13 @@ const PROFILES: Record<Quality, Omit<QualitySettings, 'level'>> = {
   },
 };
 
-export function settingsFor(level: Quality): QualitySettings {
-  return { level, ...PROFILES[level] };
+export function settingsFor(level: unknown): QualitySettings {
+  // Guard against null/undefined/invalid persisted values so a corrupted
+  // localStorage entry can never produce a null settings object.
+  const valid: Quality = (level === 'low' || level === 'mid' || level === 'high')
+    ? level
+    : detectQuality();
+  return { level: valid, ...PROFILES[valid] };
 }
 
 // ---- Device capability probe ---------------------------------------------
@@ -121,5 +126,5 @@ export function saveQuality(level: Quality) {
 }
 
 export function resolveQuality(): Quality {
-  return getSavedQuality() ?? detectQuality();
+  return settingsFor(getSavedQuality() ?? detectQuality()).level;
 }
