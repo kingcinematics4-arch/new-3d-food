@@ -1,5 +1,6 @@
 // app/api/public/orders/[id]/route.ts
 // Guest-facing read model behind /order/[orderId].
+// Validates that the order belongs to the hotel identified by the slug param.
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
@@ -30,6 +31,8 @@ export async function GET(
 ) {
   try {
     const orderId = params.id;
+    const { searchParams } = new URL(_request.url);
+    const hotelSlug = searchParams.get('slug');
 
     if (!orderId) {
       return new NextResponse(JSON.stringify({ success: false, error: 'An order reference is required' }), {
@@ -99,6 +102,16 @@ export async function GET(
 
     if (!order) {
       return new NextResponse(JSON.stringify({ success: false, error: 'We could not find that order' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    // Security: Validate that the order belongs to the hotel from the slug parameter.
+    // This prevents users from accessing orders of other hotels by guessing order IDs.
+    const orderHotelSlug = (order as any).hotels?.slug;
+    if (hotelSlug && orderHotelSlug && hotelSlug !== orderHotelSlug) {
+      return new NextResponse(JSON.stringify({ success: false, error: 'Order not found for this restaurant' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });
@@ -290,7 +303,7 @@ export async function GET(
         items: foodItems,
         hotel_theme: hotelTheme,
         hotel_custom_theme_config: hotelCustomThemeConfig,
-        hotel_slug: (order as any).hotels?.slug || null,
+        hotel_slug: orderHotelSlug,
         google_review_url: googleReviewUrl,
         currency: normalizeCurrency((order as any).hotels?.currency || null),
       },

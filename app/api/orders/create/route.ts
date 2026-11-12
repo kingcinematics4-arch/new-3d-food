@@ -29,6 +29,19 @@ const createOrderSchema = z.object({
   ).min(1, 'Order must contain at least one item'),
 });
 
+interface ActiveOrderRow {
+  id: string;
+  hotel_id: string;
+  table_number: string;
+  status: string;
+  payment_status: string;
+  payment_method: string;
+  total_amount: number;
+  created_at: string;
+  order_number?: string | null;
+  updated_at?: string | null;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -36,10 +49,59 @@ export async function POST(request: Request) {
     const itemSchema = await getOrderItemsSchema().catch(() => ({ itemName: false, itemKind: false, status: false } as any));
     const ordersSchema = await getOrdersSchema().catch(() => ({ orderNumber: false, updatedAt: false, linkedOrderId: false } as any));
 
+    // ── Active order recovery ──
+    // Before creating a new order, check if there's already an active unpaid order
+    // for this hotel+table. Active = payment_status != 'paid' AND status != 'cancelled'.
+    // This prevents duplicate orders when a customer re-scans the QR code or
+    // refreshes the page. Water-only orders are excluded from this check because
+    // they are separate records linked to a parent food order.
+    const tableNumber = validated.table_number || 'Takeaway';
+
     // Determine whether every item is a water item (free or paid bottled water)
     const allItemsWater = validated.items.every(
       (it) => isWaterItem(it) || (it.item_name && WATER_NAME_PATTERN.test(it.item_name))
     );
+
+    if (tableNumber && !allItemsWater) {
+      const { data: existingOrder, error: existingError } = await supabaseAdmin
+        .from('orders')
+        .select([
+          'id',
+          'hotel_id',
+          'table_number',
+          'status',
+          'payment_status',
+          'payment_method',
+          'total_amount',
+          'created_at',
+          ...(ordersSchema.orderNumber ? ['order_number'] : []),
+          ...(ordersSchema.updatedAt ? ['updated_at'] : []),
+        ].join(', '))
+        .eq('hotel_id', validated.hotel_id)
+        .eq('table_number', tableNumber)
+        .neq('payment_status', 'paid')
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle<ActiveOrderRow>();
+
+      if (!existingError && existingOrder) {
+        // Return the existing active order instead of creating a duplicate
+        const storedOrderNumber: string | null = (existingOrder as any).order_number || null;
+        const reference: string = orderReference({ id: existingOrder.id, order_number: storedOrderNumber });
+        return NextResponse.json(
+          {
+            success: true,
+            orderId: existingOrder.id,
+            orderNumber: reference,
+            orderCode: reference,
+            order: { ...(existingOrder as any), order_number: storedOrderNumber || reference },
+            recovered: true, // signal to client this is a recovered order
+          },
+          { status: 200 }
+        );
+      }
+    }
 
     // Calculate total amount
     // Water orders: charges are deferred until delivery (MARK AS DELIVERED).
