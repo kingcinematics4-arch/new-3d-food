@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Pause, Play, RotateCcw, LogOut } from 'lucide-react';
 
 type Stat = { label: string; value: React.ReactNode };
@@ -48,15 +49,19 @@ export function GameShell({
   gameOverExtra?: React.ReactNode;
   preview?: React.ReactNode;
 }) {
+  const router = useRouter();
+  const goBack = () => {
+    router.push(backHref || '/games');
+  };
   return (
     <div className="min-h-screen flex flex-col text-[#F3EFE7]" style={{ fontFamily: "'Inter', system-ui, sans-serif", background: 'radial-gradient(1200px 600px at 20% -10%, rgba(184,164,122,0.12), transparent 60%), radial-gradient(900px 500px at 110% 0%, rgba(255,255,255,0.05), transparent 50%), #050505' }}>
       <header className="sticky top-0 z-30 border-b border-white/10 bg-black/55 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <a href={backHref} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] text-xs font-medium transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] shrink-0">
+            <button type="button" onClick={goBack} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] text-xs font-medium transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] shrink-0">
               <ArrowLeft size={14} />
-              <span className="hidden sm:inline">Arcade</span>
-            </a>
+              <span className="hidden sm:inline">Back to Menu</span>
+            </button>
             <div className="min-w-0">
               {subtitle && <p className="text-[10px] uppercase tracking-[0.22em] text-white/40 truncate">{subtitle}</p>}
               <h1 className="text-sm sm:text-base font-semibold tracking-tight truncate">{title}</h1>
@@ -69,9 +74,9 @@ export function GameShell({
               </button>
             )}
             {running && (
-              <a href={backHref} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-white/[0.04] hover:bg-white/[0.1] text-xs font-medium transition-all" title="Exit">
+              <button type="button" onClick={goBack} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-white/[0.04] hover:bg-white/[0.1] text-xs font-medium transition-all" title="Exit">
                 <LogOut size={14} /> <span className="hidden sm:inline">Exit</span>
-              </a>
+              </button>
             )}
             {rightSlot}
           </div>
@@ -128,7 +133,7 @@ export function GameShell({
                   <button onClick={onRestart} className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-black" style={{ background: accent }}>
                     <RotateCcw size={16} /> Play Again
                   </button>
-                  <a href={backHref} className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 font-medium">Arcade</a>
+                  <button type="button" onClick={goBack} className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 font-medium">Back to Menu</button>
                 </div>
               </div>
             </div>

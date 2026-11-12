@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Volume2, VolumeX } from 'lucide-react';
 import { GameShell } from './GameShell';
 
@@ -11,6 +12,7 @@ const COLORS = ['#EF5350','#42A5F5','#66BB6A','#FFCA28','#AB47BC','#26C6DA'];
 const COLS = 11;
 
 export default function BubbleShooter({ backHref }: Props) {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const audioRef = useRef<AudioContext|null>(null);
@@ -96,7 +98,7 @@ export default function BubbleShooter({ backHref }: Props) {
       <div className="relative">
         <canvas ref={canvasRef} className="w-full h-[560px] sm:h-[600px] rounded-2xl border border-white/10 bg-[#0b0b0a]" style={{touchAction:'none'}}/>
         {ui.paused&&ui.started&&!ui.over&&!ui.won && <div className="absolute inset-0 rounded-2xl bg-black/45 backdrop-blur-sm flex items-center justify-center"><div className="px-5 py-3 rounded-xl border border-white/15 bg-black/50 text-center"><p className="text-lg font-semibold">Paused</p></div></div>}
-        {ui.won && <div className="absolute inset-0 z-20 rounded-2xl bg-black/65 backdrop-blur-md flex items-center justify-center p-5"><div className="max-w-sm w-full text-center rounded-2xl border border-white/10 bg-black/40 p-6"><p className="text-[11px] uppercase tracking-[0.22em] text-white/45 mb-2">Level {ui.level} clear</p><h2 className="text-3xl font-light tracking-tight mb-2 text-[#7dd3fc]">Great Shot!</h2><div className="text-sm text-white/65 mb-5">Score {ui.score}</div><div className="flex gap-2 justify-center"><button onClick={nextLevel} className="px-6 py-3 rounded-xl font-semibold text-black bg-[#7dd3fc]">Next Level</button><a href={backHref} className="px-6 py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 font-medium">Arcade</a></div></div></div>}
+        {ui.won && <div className="absolute inset-0 z-20 rounded-2xl bg-black/65 backdrop-blur-md flex items-center justify-center p-5"><div className="max-w-sm w-full text-center rounded-2xl border border-white/10 bg-black/40 p-6"><p className="text-[11px] uppercase tracking-[0.22em] text-white/45 mb-2">Level {ui.level} clear</p><h2 className="text-3xl font-light tracking-tight mb-2 text-[#7dd3fc]">Great Shot!</h2><div className="text-sm text-white/65 mb-5">Score {ui.score}</div><div className="flex gap-2 justify-center"><button onClick={nextLevel} className="px-6 py-3 rounded-xl font-semibold text-black bg-[#7dd3fc]">Next Level</button><button type="button" onClick={() => router.push(backHref || '/games')} className="px-6 py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 font-medium">Back to Menu</button></div></div></div>}
       </div>
     </GameShell>
   );

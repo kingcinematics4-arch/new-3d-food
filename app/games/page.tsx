@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Gamepad2, ArrowLeft, Trophy, Gauge, Blocks, Target, CarFront, Sparkles, ChevronRight, Cpu } from 'lucide-react';
@@ -67,7 +68,7 @@ export default function GamesPage() {
   const router = useRouter();
   const slug = searchParams.get('slug') || '';
   const table = searchParams.get('table') || '';
-  const menuHref = slug ? `/menu/${encodeURIComponent(slug)}${table ? `?table=${encodeURIComponent(table)}` : ''}` : '/menu';
+  const menuHref = slug ? `/menu/${encodeURIComponent(slug)}${table ? `?table=${encodeURIComponent(table)}` : ''}` : '/';
   const qs = slug ? `?slug=${encodeURIComponent(slug)}${table ? `&table=${encodeURIComponent(table)}` : ''}` : '';
   const [bests, setBests] = useState<Record<string, number>>({});
   useEffect(() => {
@@ -90,9 +91,9 @@ export default function GamesPage() {
               <h1 className="text-lg sm:text-xl font-semibold tracking-tight">Arcade Lounge</h1>
             </div>
           </div>
-          <a href={menuHref} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] text-xs font-medium transition-colors">
+          <Link href={menuHref} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] text-xs font-medium transition-colors">
             <ArrowLeft size={14} /><span>Back to Menu</span>
-          </a>
+          </Link>
         </div>
       </header>
 
