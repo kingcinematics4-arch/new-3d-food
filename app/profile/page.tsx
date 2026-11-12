@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import { User, Clock, MapPin, Phone, CreditCard } from 'lucide-react';
+import BottomNav from '@/components/nav/BottomNav';
 
 const orders = [
   { id: 'ORD-8842', date: '2 Nov 2026', items: 3, total: '₹540', status: 'Delivered' },
@@ -20,11 +22,12 @@ export default function ProfilePage() {
   const searchParams = useSearchParams();
   const slug = searchParams.get('slug') || null;
   const table = searchParams.get('table') || null;
+  const [activeTab, setActiveTab] = useState('Profile');
 
   const menuHref = slug ? `/menu/${encodeURIComponent(slug)}` : '/menu';
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0B0B0A', color: '#F3EFE7', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen flex flex-col pb-20" style={{ background: '#0B0B0A', color: '#F3EFE7', fontFamily: "'Inter', system-ui, sans-serif" }}>
       <header className="border-b border-white/10 bg-black/80 backdrop-blur-md sticky top-0 z-20 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Link href={menuHref} className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">
@@ -93,6 +96,14 @@ export default function ProfilePage() {
           DinePixel Profile &bull; Manage your dining preferences{slug ? ` &bull; Table ${table || '—'}` : ''}
         </p>
       </footer>
+
+      <BottomNav
+        activeTab={activeTab}
+        cartCount={0}
+        menuSlug={slug}
+        tableNumber={table}
+        onTabChange={setActiveTab}
+      />
     </div>
   );
 }

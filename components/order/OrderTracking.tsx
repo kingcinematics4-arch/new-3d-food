@@ -12,6 +12,7 @@ import { CustomThemeFontLoader } from '@/components/menu/CustomThemeFontLoader';
 import SplitBillModal from '@/components/order/SplitBillModal';
 import ServiceRequestModal from '@/components/menu/ServiceRequestModal';
 import { isWaterOrder, isWaterItem, cleanWaterNotes } from '@/lib/waterOrderHelper';
+import BottomNav from '@/components/nav/BottomNav';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -191,6 +192,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
   const [realtimeOk, setRealtimeOk] = useState(false);
+  const [activeTab, setActiveTab]   = useState('Your Orders');
 
   const [cancelling, setCancelling] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -1189,6 +1191,14 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
           </>
         ) : null}
       </main>
+
+      <BottomNav
+        activeTab={activeTab}
+        cartCount={0}
+        menuSlug={hotelSlug || order?.hotel_slug || null}
+        tableNumber={order?.table_number || null}
+        onTabChange={setActiveTab}
+      />
 
       <style>{`
         @keyframes ot-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }

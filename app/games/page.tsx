@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Gamepad2, ArrowLeft, Trophy, Gauge, Blocks, Target, CarFront, Sparkles, ChevronRight, Cpu } from 'lucide-react';
+import BottomNav from '@/components/nav/BottomNav';
 
 const GOLD = '#B8A47A';
 
@@ -71,6 +72,7 @@ export default function GamesPage() {
   const menuHref = slug ? `/menu/${encodeURIComponent(slug)}${table ? `?table=${encodeURIComponent(table)}` : ''}` : '/';
   const qs = slug ? `?slug=${encodeURIComponent(slug)}${table ? `&table=${encodeURIComponent(table)}` : ''}` : '';
   const [bests, setBests] = useState<Record<string, number>>({});
+  const [activeTab, setActiveTab] = useState('Games');
   useEffect(() => {
     const b: Record<string, number> = {};
     GAMES.forEach(g => { try { b[g.id] = parseInt(localStorage.getItem(g.bestKey) || '0', 10) || 0; } catch { b[g.id] = 0; } });
@@ -78,7 +80,7 @@ export default function GamesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col text-[#F3EFE7]" style={{ fontFamily: "'Inter', system-ui, sans-serif", background: 'radial-gradient(1000px 500px at 10% -10%, rgba(184,164,122,0.16), transparent 60%), radial-gradient(800px 400px at 100% 0%, rgba(66,165,245,0.08), transparent 55%), #050505' }}>
+    <div className="min-h-screen flex flex-col text-[#F3EFE7] pb-20" style={{ fontFamily: "'Inter', system-ui, sans-serif", background: 'radial-gradient(1000px 500px at 10% -10%, rgba(184,164,122,0.16), transparent 60%), radial-gradient(800px 400px at 100% 0%, rgba(66,165,245,0.08), transparent 55%), #050505' }}>
       <header className="sticky top-0 z-30 border-b border-white/10 bg-black/55 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -144,11 +146,19 @@ export default function GamesPage() {
             );
           })}
         </section>
-      </main>
+</main>
 
       <footer className="border-t border-white/10 bg-black/60 backdrop-blur px-6 py-5 text-center">
         <p className="text-[10px] uppercase tracking-[0.2em] text-white/35">DinePixel Arcade • Premium play, no bets, no rewards{slug ? ` • Table ${table || '—'}` : ''}</p>
       </footer>
+
+      <BottomNav
+        activeTab={activeTab}
+        cartCount={0}
+        menuSlug={slug || null}
+        tableNumber={table || null}
+        onTabChange={setActiveTab}
+      />
     </div>
   );
 }

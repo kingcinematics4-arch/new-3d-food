@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { formatPrice } from '@/lib/menu';
 import { menuThemeClass } from '@/lib/menuThemes';
@@ -964,6 +964,14 @@ export default function MenuContent({
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isWaterModalOpen, setIsWaterModalOpen] = useState(false);
   const [activeBottomTab, setActiveBottomTab] = useState('Menu');
+
+  // Open cart drawer if navigated from Cart tab on another page
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('openCart') === '1') {
+      setIsCartOpen(true);
+    }
+  }, [searchParams]);
 
   // Open detail modal when any food card is clicked
   const handleCardClick = useCallback((item: PublicMenuItem) => {
