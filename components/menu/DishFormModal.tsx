@@ -79,11 +79,15 @@ interface FormState {
   ingredients: string;
   allergens: string;
   dietary_tags: string[];
-  // 3D model upload state
-  modelFile: File | null;
-  modelUploading: boolean;
-  modelUploadProgress: number;
-  modelUploadError: string | null;
+  // 3D model upload state (independent GLB/USDZ assets for cross-platform AR)
+  glbFile: File | null;
+  usdzFile: File | null;
+  glbUploading: boolean;
+  usdzUploading: boolean;
+  glbUploadProgress: number;
+  usdzUploadProgress: number;
+  glbUploadError: string | null;
+  usdzUploadError: string | null;
   // Size options state
   has_sizes: boolean;
   size_selection_required: boolean;

@@ -1275,6 +1275,7 @@ export default function MenuContent({
   const [sizeModalItemId, setSizeModalItemId] = useState<string | null>(null);
   const [sizeModalQty, setSizeModalQty] = useState(1);
   const [view3DItem, setView3DItem] = useState<PublicMenuItem | null>(null);
+  const [view3DMode, setView3DMode] = useState<'3d' | 'ar'>('3d');
   const [search, setSearch] = useState('');
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isWaterModalOpen, setIsWaterModalOpen] = useState(false);
@@ -1561,7 +1562,8 @@ export default function MenuContent({
             onAdd: requestAdd,
             onRemove: removeFromCart,
             onItemClick: handleCardClick,
-            onView3D: setView3DItem,
+            onView3D: (item) => { setView3DMode('3d'); setView3DItem(item); },
+            onViewAr: (item) => { setView3DMode('ar'); setView3DItem(item); },
             onOpenCart: () => setIsCartOpen(true),
             onOpenWater: () => setIsWaterModalOpen(true),
             onOpenWaiter: () => setIsServiceModalOpen(true),
@@ -1603,7 +1605,7 @@ export default function MenuContent({
             onClose={() => setInspectItem(null)}
             onAddToCart={addToCart}
             cartQty={cart.find((c) => c.menuItem.id === inspectItem.id)?.quantity || 0}
-            onView3D={setView3DItem}
+            onView3D={(item) => { setView3DMode('3d'); setView3DItem(item); }} onViewAr={(item) => { setView3DMode('ar'); setView3DItem(item); }}
           />
         )}
 
@@ -1612,6 +1614,7 @@ export default function MenuContent({
             item={view3DItem}
             priceLabel={formatPrice(Number(view3DItem.price) || 0, currency)}
             categoryName={categories.find((c) => c.id === view3DItem.category_id)?.name || ''}
+            initialMode={view3DMode}
             onClose={() => setView3DItem(null)}
           />
         )}

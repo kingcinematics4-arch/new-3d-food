@@ -148,6 +148,7 @@ interface DishCardProps {
   onToggleAvailable: (item: MenuItem) => void;
   onToggleFeatured: (item: MenuItem) => void;
   onView3D: (item: MenuItem) => void;
+  onViewAr?: (item: MenuItem) => void;
 }
 
 export default function DishCard({
@@ -159,6 +160,7 @@ export default function DishCard({
   onToggleAvailable,
   onToggleFeatured,
   onView3D,
+  onViewAr,
 }: DishCardProps) {
   const photo = item.image_url?.trim() || '';
   const has3D = Boolean(item.model_url_glb?.trim() || item.model_url_usdz?.trim());
@@ -239,13 +241,20 @@ export default function DishCard({
           {item.is_popular && !item.is_featured && <span className="d3-chip">Popular</span>}
         </div>
 
-        {/* Top-right: 3D availability — only when a model exists */}
-        {has3D && (
-          <div style={{ position: 'absolute', top: 10, right: 10 }}>
-            <span className="d3-chip d3-chip-3d" style={{ background: 'rgba(11,10,8,0.72)', backdropFilter: 'blur(6px)' }}>
-              <CubeIcon size={10} />
-              3D
-            </span>
+        {/* Top-right: 3D/AR availability */}
+        {(item.model_url_glb?.trim() || item.model_url_usdz?.trim()) && (
+          <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {item.model_url_glb?.trim() && (
+              <span className="d3-chip d3-chip-3d" style={{ background: 'rgba(11,10,8,0.72)', backdropFilter: 'blur(6px)' }}>
+                <CubeIcon size={10} />
+                3D
+              </span>
+            )}
+            {item.model_url_glb?.trim() && item.model_url_usdz?.trim() && (
+              <span className="d3-chip d3-chip-3d" style={{ background: 'rgba(11,10,8,0.72)', backdropFilter: 'blur(6px)' }}>
+                AR Ready
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -449,10 +458,16 @@ export default function DishCard({
             borderTop: '1px solid var(--border-warm)',
           }}
         >
-          {has3D && (
+          {item.model_url_glb?.trim() && (
             <button type="button" className="d3-btn-3d" onClick={() => onView3D(item)}>
               <CubeIcon size={10} />
               View in 3D
+            </button>
+          )}
+          {item.model_url_glb?.trim() && item.model_url_usdz?.trim() && (
+            <button type="button" className="d3-btn-3d" onClick={() => (onViewAr || onView3D)(item)} title="View in AR (requires compatible device and both validated GLB/USDZ assets)">
+              <CubeIcon size={10} />
+              View in AR
             </button>
           )}
 

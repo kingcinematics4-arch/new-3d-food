@@ -31,6 +31,7 @@ export interface MenuTemplateProps {
   onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
+  onViewAr?: (item: PublicMenuItem) => void;
   onOpenCart: () => void;
   onOpenWater: () => void;
   onOpenWaiter: () => void;
