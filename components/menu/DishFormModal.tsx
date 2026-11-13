@@ -180,7 +180,7 @@ interface DishFormModalProps {
   isSaving: boolean;
   error: string | null;
   onCreateCategory: (name: string) => Promise<Category | null>;
-  onSubmit: (payload: DishPayload) => Promise<void>;
+  onSubmit: (payload: DishPayload) => Promise<MenuItem | null | void>;
   onClose: () => void;
 }
 
@@ -230,46 +230,74 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
   }, [categoryOpen]);
 
   const handleModelUpload = async () => {
-    if (!form.modelFile || !item) return;
+    if (!form.modelFile) return;
+    if (!item?.id) {
+      setForm((prev) => ({
+        ...prev,
+        modelUploadError: 'Save the dish first, then upload a 3D model so it can be linked to this product.',
+      }));
+      return;
+    }
+    if (form.modelUploading) return;
 
     setForm((prev) => ({ ...prev, modelUploading: true, modelUploadProgress: 0, modelUploadError: null }));
 
     try {
-      const formData = new FormData();
-      formData.append('file', form.modelFile);
-      formData.append('menu_item_id', item.id);
+      const json = await new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append('file', form.modelFile as File);
+        formData.append('menu_item_id', item.id);
 
-      const res = await fetch('/api/menu/3d-model', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
+        xhr.open('POST', '/api/menu/3d-model');
+        xhr.withCredentials = true;
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const pct = Math.max(0, Math.min(99, Math.round((event.loaded / event.total) * 100)));
+            setForm((prev) => ({ ...prev, modelUploadProgress: pct }));
+          } else {
+            setForm((prev) => ({ ...prev, modelUploadProgress: prev.modelUploadProgress || 10 }));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error while uploading the model. Please try again.'));
+        xhr.onload = () => {
+          let payload: any = null;
+          try {
+            payload = JSON.parse(xhr.responseText || '{}');
+          } catch {
+            payload = null;
+          }
+          if (xhr.status >= 200 && xhr.status < 300 && payload?.success) {
+            resolve(payload);
+          } else {
+            reject(new Error(payload?.error || `Upload failed (HTTP ${xhr.status}).`));
+          }
+        };
+        xhr.send(formData);
       });
-
-      const json = await res.json();
-
-      if (!json.success) {
-        throw new Error(json.error || 'Upload failed');
-      }
 
       setForm((prev) => ({
         ...prev,
-        model_url_glb: json.model.mimeType === 'model/gltf-binary' ? json.model.url : prev.model_url_glb,
-        model_url_usdz: json.model.mimeType === 'model/vnd.usdz+zip' ? json.model.url : prev.model_url_usdz,
+        model_url_glb: json.model?.mimeType === 'model/gltf-binary' ? json.model.url : prev.model_url_glb,
+        model_url_usdz: json.model?.mimeType === 'model/vnd.usdz+zip' ? json.model.url : prev.model_url_usdz,
         modelFile: null,
         modelUploading: false,
         modelUploadProgress: 100,
+        modelUploadError: null,
       }));
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      toast('3D model uploaded and linked to this dish.', 'success');
     } catch (err: any) {
       setForm((prev) => ({
         ...prev,
         modelUploading: false,
-        modelUploadError: err.message || 'Upload failed',
+        modelUploadError: err?.message || 'Upload failed. Please try again.',
       }));
     }
   };
 
   const handleFileSelect = (file: File) => {
-    setForm((prev) => ({ ...prev, modelFile: file, modelUploadError: null }));
+    setForm((prev) => ({ ...prev, modelFile: file, modelUploadError: null, modelUploadProgress: 0 }));
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -290,16 +318,21 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
   };
 
   const clearModelFile = () => {
-    setForm((prev) => ({ ...prev, modelFile: null, modelUploadError: null }));
+    setForm((prev) => ({ ...prev, modelFile: null, modelUploadError: null, modelUploadProgress: 0 }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const removeExistingModel = async () => {
     if (!item) return;
     try {
-      await fetch(`/api/menu/3d-model?menu_item_id=${item.id}`, {
+      const res = await fetch(`/api/menu/3d-model?menu_item_id=${item.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.success === false) {
+        throw new Error(json?.error || 'Failed to remove model.');
+      }
       setForm((prev) => ({
         ...prev,
         model_url_glb: '',
@@ -337,6 +370,7 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving || form.modelUploading) return;
     const price = parseFloat(form.price);
     if (!Number.isFinite(price) || price <= 0) {
       toast('Enter a valid price greater than 0.', 'error');
@@ -372,7 +406,7 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
       }
     }
 
-    await onSubmit({
+    const saved = await onSubmit({
       name: form.name.trim(),
       description: form.description.trim(),
       price,
@@ -407,6 +441,73 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
             }))
         : [],
     });
+
+    if (!saved) return;
+
+    // If a model file was selected but not uploaded yet, upload it after save so
+    // the workflow "select -> save -> upload -> persist" completes in one action.
+    if (saved?.id && form.modelFile) {
+      try {
+        const json = await new Promise<any>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          const formData = new FormData();
+          formData.append('file', form.modelFile as File);
+          formData.append('menu_item_id', saved.id);
+
+          setForm((prev) => ({ ...prev, modelUploading: true, modelUploadProgress: 0, modelUploadError: null }));
+          xhr.open('POST', '/api/menu/3d-model');
+          xhr.withCredentials = true;
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const pct = Math.max(0, Math.min(99, Math.round((event.loaded / event.total) * 100)));
+              setForm((prev) => ({ ...prev, modelUploadProgress: pct }));
+            } else {
+              setForm((prev) => ({ ...prev, modelUploadProgress: prev.modelUploadProgress || 10 }));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Network error while uploading the model. Please try again.'));
+          xhr.onload = () => {
+            let payload: any = null;
+            try {
+              payload = JSON.parse(xhr.responseText || '{}');
+            } catch {
+              payload = null;
+            }
+            if (xhr.status >= 200 && xhr.status < 300 && payload?.success) {
+              resolve(payload);
+            } else {
+              reject(new Error(payload?.error || `Upload failed (HTTP ${xhr.status}).`));
+            }
+          };
+          xhr.send(formData);
+        });
+
+        setForm((prev) => ({
+          ...prev,
+          model_url_glb: json.model?.mimeType === 'model/gltf-binary' ? json.model.url : prev.model_url_glb,
+          model_url_usdz: json.model?.mimeType === 'model/vnd.usdz+zip' ? json.model.url : prev.model_url_usdz,
+          modelFile: null,
+          modelUploading: false,
+          modelUploadProgress: 100,
+          modelUploadError: null,
+        }));
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        toast('Dish saved and 3D model uploaded.', 'success');
+        onClose();
+        return;
+      } catch (err: any) {
+        setForm((prev) => ({
+          ...prev,
+          modelUploading: false,
+          modelUploadError: err?.message || 'Dish saved, but 3D model upload failed. Please try uploading again.',
+        }));
+        toast('Dish saved, but 3D model upload failed. Please upload the model again.', 'error');
+        return;
+      }
+    }
+
+    toast(item ? 'Dish saved.' : 'Dish added.', 'success');
+    onClose();
   };
 
   const photoPreview = form.image_url.trim();
@@ -438,7 +539,7 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
       className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto"
       style={{ background: 'rgba(6,5,4,0.86)', backdropFilter: 'blur(10px)' }}
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isSaving) onClose();
+        if (e.target === e.currentTarget && !isSaving && !form.modelUploading) onClose();
       }}
       role="dialog"
       aria-modal="true"
@@ -958,17 +1059,18 @@ overflow: 'visible',
                     {!form.modelUploading && !form.modelUploadError && (
                       <button
                         type="button"
-                        onClick={handleModelUpload}
+                        onClick={(e) => { e.stopPropagation(); handleModelUpload(); }}
+                        disabled={isSaving}
                         className="d3-btn-quiet"
                         style={{ marginTop: 8, padding: '0.5rem 1rem' }}
                       >
-                        Upload Model
+                        {item?.id ? 'Upload 3D Model' : 'Save dish to upload'}
                       </button>
                     )}
 
                     <button
                       type="button"
-                      onClick={clearModelFile}
+                      onClick={(e) => { e.stopPropagation(); clearModelFile(); }}
                       style={{
                         marginTop: 8,
                         padding: '0.375rem 0.75rem',
@@ -980,7 +1082,7 @@ overflow: 'visible',
                         cursor: 'pointer',
                       }}
                     >
-                      Remove
+                      Remove selected file
                     </button>
                   </div>
                 ) : (
@@ -998,15 +1100,20 @@ overflow: 'visible',
                     </svg>
                     <div>
                       <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                        Drag & drop a 3D model here
+                        Click to choose a 3D model file
                       </span>
                       <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>
-                        or click to browse
+                        or drag & drop a file here
                       </span>
                     </div>
                     <span style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                      GLB, GLTF, USDZ, OBJ, FBX, STL, PLY, 3DS, DAE
+                      GLB, USDZ, OBJ, FBX, STL, PLY, 3DS, DAE (single self-contained file)
                     </span>
+                    {!item?.id ? (
+                      <span style={{ fontSize: '0.625rem', color: 'var(--gold)', display: 'block', marginTop: 4 }}>
+                        Save the dish first to upload and persist the 3D model.
+                      </span>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -1050,7 +1157,8 @@ overflow: 'visible',
                   </div>
                   <button
                     type="button"
-                    onClick={removeExistingModel}
+                    onClick={(e) => { e.stopPropagation(); removeExistingModel(); }}
+                    disabled={form.modelUploading || isSaving}
                     style={{
                       padding: '0.375rem 0.75rem',
                       background: 'transparent',
@@ -1058,7 +1166,8 @@ overflow: 'visible',
                       borderRadius: 6,
                       color: '#FCA5A5',
                       fontSize: '0.6875rem',
-                      cursor: 'pointer',
+                      cursor: form.modelUploading || isSaving ? 'not-allowed' : 'pointer',
+                      opacity: form.modelUploading || isSaving ? 0.6 : 1,
                     }}
                   >
                     Remove Model
@@ -1070,9 +1179,10 @@ overflow: 'visible',
               <div className="d3-note">
                 <span>
                   3D is an <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>optional</strong>{' '}
-                  enhancement. Upload a GLB or USDZ for the best 3D viewing experience. Other formats
-                  (OBJ, FBX, STL, PLY, 3DS, DAE) are accepted and stored but will show a placeholder
-                  in the 3D viewer — the food photograph stays the primary visual either way.
+                  enhancement. For correct rendering, upload a self-contained <strong>GLB</strong> (or USDZ) file that
+                  embeds geometry, materials and textures. Standalone <code>.gltf</code> files with external buffers/textures
+                  are not accepted as a single-file upload. Other formats (OBJ, FBX, STL, PLY, 3DS, DAE) may be stored but
+                  can show a placeholder in the 3D viewer — the food photograph stays the primary visual.
                 </span>
               </div>
 
@@ -1246,11 +1356,11 @@ overflow: 'visible',
               background: 'var(--bg-secondary)',
             }}
           >
-            <button type="button" className="d3-btn-subtle" onClick={onClose} disabled={isSaving}>
+            <button type="button" className="d3-btn-subtle" onClick={onClose} disabled={isSaving || form.modelUploading}>
               Cancel
             </button>
-            <button type="submit" className="d3-btn-quiet" disabled={isSaving}>
-              {isSaving ? 'Saving…' : item ? 'Save Changes' : 'Add Dish'}
+            <button type="submit" className="d3-btn-quiet" disabled={isSaving || form.modelUploading}>
+              {isSaving ? 'Saving…' : form.modelUploading ? 'Uploading 3D model…' : item ? 'Save Changes' : 'Add Dish'}
             </button>
           </div>
         </form>

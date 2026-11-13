@@ -80,7 +80,7 @@ export default function MenuManagementPage() {
     setIsFormOpen(true);
   };
 
-  const handleSubmit = async (payload: DishPayload) => {
+  const handleSubmit = async (payload: DishPayload): Promise<MenuItem | null> => {
     setIsSaving(true);
     setFormError(null);
     try {
@@ -107,10 +107,12 @@ export default function MenuManagementPage() {
       }
 
       await refetchItems();
-      setIsFormOpen(false);
-      setEditingItem(null);
+      // Return saved item; the form controls closing so it can complete a
+      // pending 3D model upload (e.g. new dish save -> upload -> persist).
+      return (json.menuItem as MenuItem | null) ?? null;
     } catch (err: any) {
       setFormError(err?.message || 'Failed to save dish');
+      return null;
     } finally {
       setIsSaving(false);
     }

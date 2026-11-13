@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, Component, ReactNode } from 'react';
+import React, { Suspense, useState, useEffect, Component, ReactNode } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Html, Center, Float } from '@react-three/drei';
 
@@ -105,6 +105,13 @@ export default function FoodModelViewer({
 }: FoodModelViewerProps) {
   const [isRotating, setIsRotating] = useState(autoRotate);
   const [hasError, setHasError] = useState(false);
+
+  // Reset viewer state when the model source changes so replacements/reloads
+  // render the new asset instead of keeping a previous error or stale canvas.
+  useEffect(() => {
+    setHasError(false);
+    setIsRotating(autoRotate);
+  }, [modelUrlGlb, modelUrlUsdz, autoRotate]);
 
   // If item has no GLB URL or GLB failed to load, check if 2D image is available
   if ((!modelUrlGlb || hasError) && imageUrl) {

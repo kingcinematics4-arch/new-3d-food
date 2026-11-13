@@ -94,7 +94,6 @@ export default function Dish3DModal({ item, priceLabel, categoryName, onClose }:
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-warm)',
           borderRadius: 10,
-          overflow: 'hidden',
         }}
       >
         {/* Viewer */}

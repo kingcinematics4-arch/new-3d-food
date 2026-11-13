@@ -92,7 +92,17 @@ export async function POST(request: Request) {
   // Determine MIME type from magic bytes
   const mimeType = sniffMenuModelMime(buffer);
   if (!mimeType || !isSupportedModelMime(mimeType)) {
-    return fail('That file type is not supported. Upload a GLB, GLTF, USDZ, OBJ, FBX, STL, PLY, 3DS, or DAE file.', 415);
+    return fail('That file type is not supported. Upload a GLB, USDZ, OBJ, FBX, STL, PLY, 3DS, or DAE file.', 415);
+  }
+
+  // A standalone .gltf JSON file typically references external .bin buffers and
+  // texture images. This upload accepts a single file, so external dependencies
+  // cannot be stored/rendered correctly; require a self-contained GLB instead.
+  if (mimeType === 'model/gltf+json') {
+    return fail(
+      'GLTF (.gltf) files with external textures or buffers cannot be uploaded as a single file. Please export a self-contained GLB file (which embeds geometry, materials and textures) and upload that instead.',
+      415
+    );
   }
 
   // Validate GLB if that's what we got
