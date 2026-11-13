@@ -637,16 +637,16 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         id: 'col-2',
         title: 'COMPANY',
         links: [
-          { id: 'link-5', label: 'About', href: '/#about' },
-          { id: 'link-6', label: 'Contact', href: '/#contact' },
+          { id: 'link-5', label: 'About', href: '/about' },
+          { id: 'link-6', label: 'Contact', href: '/contact' },
         ],
       },
       {
         id: 'col-3',
         title: 'LEGAL',
         links: [
-          { id: 'link-7', label: 'Privacy', href: '#' },
-          { id: 'link-8', label: 'Terms', href: '#' },
+          { id: 'link-7', label: 'Privacy', href: '/privacy' },
+          { id: 'link-8', label: 'Terms', href: '/terms' },
         ],
       },
     ],

@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { cache } from 'react';
 import { fetchPublicMenuData } from '@/lib/publicMenuData.server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getOrdersSchema } from '@/lib/ordersSchema';
@@ -7,9 +9,48 @@ import { redirect } from 'next/navigation';
 
 export const runtime = 'nodejs';
 
+// Deduplicate the lookup between generateMetadata() and the page render.
+const getMenuData = cache(fetchPublicMenuData);
+
 interface PageProps {
   params: { slug: string };
   searchParams: { table?: string; addToOrder?: string; orderNumber?: string; existingOrderId?: string };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const slug = params.slug;
+  const data = await getMenuData(slug);
+  const hotel = data.hotel;
+
+  if (!hotel) {
+    return {
+      title: 'Menu not found — DinePixel',
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const title = `${hotel.name} — 3D Menu | DinePixel`;
+  const description =
+    hotel.welcome_text ||
+    `Explore ${hotel.name}'s interactive 3D menu, view dishes in 3D, and order from your table.`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/menu/${encodeURIComponent(slug)}`,
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: `/menu/${encodeURIComponent(slug)}`,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
 }
 
 interface ActiveOrderRow {
@@ -68,7 +109,7 @@ async function findActiveOrder(hotelId: string, tableNumber: string) {
 export default async function MenuPage({ params, searchParams }: PageProps) {
   const { slug } = params;
 
-  const data = await fetchPublicMenuData(slug);
+  const data = await getMenuData(slug);
 
   const initialTableNumber = searchParams.table || '';
   const addToOrderId = searchParams.addToOrder || searchParams.existingOrderId || null;
