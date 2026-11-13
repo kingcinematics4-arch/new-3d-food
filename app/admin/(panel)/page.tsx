@@ -48,7 +48,7 @@ export default function AdminOverviewPage() {
       <AdminPageHeader
         eyebrow="OVERVIEW"
         title="Website"
-        description="Control every part of the public Dine3D website from here. Edits are saved as a draft and only reach visitors when you publish."
+        description="Control every part of the public DinePixel website from here. Edits are saved as a draft and only reach visitors when you publish."
       />
 
       <div className="flex flex-col gap-6">

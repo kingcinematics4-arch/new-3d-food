@@ -135,7 +135,7 @@ function toReference(branding: Branding): LogoReference {
     return {
       logoUrl,
       logoVersion: null,
-      logoAlt: branding.logoAlt || 'Dine3D',
+      logoAlt: branding.logoAlt || 'DinePixel',
       logoWidth: dimensions.width,
       logoHeight: dimensions.height,
       hasCustomLogo: false,
@@ -145,7 +145,7 @@ function toReference(branding: Branding): LogoReference {
   return {
     logoUrl,
     logoVersion: versionFromUrl(logoUrl),
-    logoAlt: branding.logoAlt || 'Dine3D',
+    logoAlt: branding.logoAlt || 'DinePixel',
     logoWidth: dimensions.width,
     logoHeight: dimensions.height,
     hasCustomLogo: true,

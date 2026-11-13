@@ -115,7 +115,7 @@ function getRequestOrigin(request: Request): string {
  *  2. Vercel deployment URL variables
  *     (VERCEL_PROJECT_PRODUCTION_URL, VERCEL_URL, NEXT_PUBLIC_VERCEL_URL)
  *  3. The incoming request origin - local development only
- *  4. Fallback to the Dine3D production deployment URL
+ *  4. Fallback to the DinePixel production deployment URL
  *
  * In production the request origin is deliberately ignored: a proxy, preview
  * domain or malformed host header can never leak into an emailed link.

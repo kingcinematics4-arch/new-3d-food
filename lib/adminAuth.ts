@@ -186,7 +186,7 @@ export interface AdminSession {
  */
 export async function createAdminSessionToken(): Promise<string> {
   const key = await getSigningKey();
-  if (!key) throw new Error('Dine3D admin is not configured.');
+  if (!key) throw new Error('DinePixel admin is not configured.');
 
   const issuedAt = Date.now();
   const payload: SessionPayload = { iat: issuedAt, exp: issuedAt + SESSION_TTL_MS };

@@ -166,13 +166,22 @@ export default function AboutDinePixelPage() {
                 Who developed DinePixel?
               </h2>
               <p className="d3-body" style={{ lineHeight: 1.8 }}>
-                DinePixel is developed and maintained by the DinePixel product team. The public site
-                does not publish a separate legal entity name, registration number or physical office
-                address. For verified business details, contact{' '}
+                DinePixel is developed and maintained by the DinePixel product team. The official
+                website for our DinePixel product is{' '}
+                <a href="https://dinepixel.com" style={{ color: 'var(--gold)' }}>
+                  https://dinepixel.com
+                </a>
+                . The public site does not publish a separate legal entity name, registration number
+                or physical office address. For verified business details, contact{' '}
                 <a href="mailto:hello@dinepixel.com" style={{ color: 'var(--gold)' }}>
                   hello@dinepixel.com
                 </a>
                 .
+              </p>
+              <p className="d3-body" style={{ lineHeight: 1.8, marginTop: '0.75rem' }}>
+                This website and its content describe only our DinePixel product. We are not
+                affiliated with, and do not claim ownership of, any separate or unrelated project
+                that may use a similar name.
               </p>
             </div>
 

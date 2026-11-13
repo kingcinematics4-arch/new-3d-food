@@ -662,7 +662,7 @@ dishes.map((dish, i) => {
         }}
       >
         <span style={{ fontSize: '0.5625rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: pageMuted }}>
-          Powered by Dine3D
+          Powered by DinePixel
         </span>
         <span
           style={{

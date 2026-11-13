@@ -272,7 +272,7 @@ export default function QRBuilderPage() {
                   color: QR_FOREGROUND,
                 }}
               >
-                Dine3D
+                DinePixel
               </p>
 
               <div>

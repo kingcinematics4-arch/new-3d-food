@@ -250,7 +250,7 @@ export default function LogoUploader({ onLogoChanged }: LogoUploaderProps) {
 
       setSuccess(
         payload.message ??
-          'Logo removed. The site is using the bundled Dine3D logo again.'
+          'Logo removed. The site is using the bundled DinePixel logo again.'
       );
     } catch {
       setError('Could not reach the server. The logo was not removed.');
@@ -313,7 +313,7 @@ export default function LogoUploader({ onLogoChanged }: LogoUploaderProps) {
       <div
         role="button"
         tabIndex={busy ? -1 : 0}
-        aria-label={`Upload the Dine3D logo. Accepts ${ACCEPTED_LOGO_LABEL} up to ${formatBytes(2 * 1024 * 1024)}.`}
+        aria-label={`Upload the DinePixel logo. Accepts ${ACCEPTED_LOGO_LABEL} up to ${formatBytes(2 * 1024 * 1024)}.`}
         aria-disabled={busy}
         onClick={() => !busy && inputRef.current?.click()}
         onKeyDown={(event) => {
@@ -458,7 +458,7 @@ export default function LogoUploader({ onLogoChanged }: LogoUploaderProps) {
           </>
         ) : (
           <>
-            Using the bundled Dine3D logo that ships with the app. Upload a file to replace it
+            Using the bundled DinePixel logo that ships with the app. Upload a file to replace it
             everywhere: site header and footer, sign-in and sign-up, admin panel, restaurant
             dashboard and the guest menu.
           </>

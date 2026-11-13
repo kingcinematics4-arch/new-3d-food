@@ -244,6 +244,9 @@ export default async function AboutPage() {
             restaurant controls close to the order. The goal is not to add another system to the
             stack. It is to make the existing service run more smoothly.
           </p>
+          <p className="d3-body-sm" style={{ marginTop: 20, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+            Official website: <a href="https://dinepixel.com" style={{ color: 'var(--gold)' }}>https://dinepixel.com</a>
+          </p>
         </div>
       </section>
 

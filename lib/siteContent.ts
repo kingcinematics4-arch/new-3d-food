@@ -1,6 +1,6 @@
 // lib/siteContent.ts
 //
-// The single source of truth for the content of the public Dine3D website.
+// The single source of truth for the content of the public DinePixel website.
 //
 // This module is intentionally dependency-free (no Supabase, no `next/headers`,
 // no `server-only`) so it can be imported from server components, route
@@ -9,7 +9,7 @@
 // DATA POLICY
 // -----------
 // There is deliberately no invented content in here. Every string that describes
-// the product is the copy that already ships on the live Dine3D site; it is
+// the product is the copy that already ships on the live DinePixel site; it is
 // carried over so the redesign is preserved and becomes editable rather than
 // replaced with placeholders.
 //
@@ -95,7 +95,7 @@ export const ICON_OPTIONS = [
 const iconName = z.enum(ICON_OPTIONS);
 export type IconName = (typeof ICON_OPTIONS)[number];
 
-/** Accent swatches offered in the branding editor. All inside the Dine3D identity. */
+/** Accent swatches offered in the branding editor. All inside the DinePixel identity. */
 export const ACCENT_PRESETS = [
   { value: '#B8A47A', label: 'Champagne' },
   { value: '#C9A96E', label: 'Muted Gold' },
@@ -118,7 +118,7 @@ export const BACKGROUND_PRESETS = [
 
 const brandingSchema = z.object({
   /**
-   * Official Dine3D logo. Set by the admin uploader, which stores the file in
+   * Official DinePixel logo. Set by the admin uploader, which stores the file in
    * Supabase Storage and writes the resulting public URL here. Left at the
    * shipped asset path when nothing has been uploaded.
    */
@@ -447,7 +447,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
     enabled: true,
     heading: 'Crafted for',
     headingAccent: 'modern dining',
-    body: 'Everything you need to bring your menu into the physical world — beautifully.',
+    body: 'Everything you need to bring your menu into the physical world � beautifully.',
     items: [
       {
         id: 'feat-1',
@@ -587,7 +587,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
     body: "Everything you need to know about DinePixel. Can't find an answer? Contact us.",
     items: [
       { id: 'faq-1', question: 'What is DinePixel?', answer: 'DinePixel is a premium restaurant technology platform that transforms static menus into interactive 3D and AR dining experiences, accessible through a simple QR code.' },
-      { id: 'faq-2', question: 'How does the QR menu work?', answer: 'Each restaurant gets a unique QR code. Guests scan it with any smartphone camera — no app download required — and instantly access the 3D menu experience.' },
+      { id: 'faq-2', question: 'How does the QR menu work?', answer: 'Each restaurant gets a unique QR code. Guests scan it with any smartphone camera � no app download required � and instantly access the 3D menu experience.' },
       { id: 'faq-3', question: 'Does DinePixel support AR?', answer: 'Yes. Where supported by the device (iOS via Safari, Android via Chrome), guests can place dishes in their real environment using native augmented reality.' },
       { id: 'faq-4', question: 'Can restaurants upload their own 3D models?', answer: 'Yes. Restaurants upload their own GLB and USDZ models per dish through the dashboard. A dish only appears in 3D once its model is saved.' },
       { id: 'faq-5', question: 'Can I customize my menu?', answer: 'Absolutely. Each restaurant has full control over branding: logo, colors, typography, cover image, categories and every dish detail.' },

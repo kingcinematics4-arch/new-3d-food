@@ -574,7 +574,7 @@ export default function CustomThemeBuilder({ hotel, initialConfig, onSaved, onCa
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#28c840' }} />
                   </div>
                   <div className="mx-auto max-w-md flex-1 truncate rounded-md px-3 py-1 text-center" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '0.6875rem', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: 'rgba(255,255,255,0.45)', boxSizing: 'border-box' }}>
-                    https://dine3d.app/menu/{hotel.slug}
+                    https://dinepixel.com/menu/{hotel.slug}
                   </div>
                   <div style={{ width: 52 }} />
                 </div>

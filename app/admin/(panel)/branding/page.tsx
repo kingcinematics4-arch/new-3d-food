@@ -70,7 +70,7 @@ export default function AdminBrandingPage() {
       <AdminPageHeader
         eyebrow="BRANDING"
         title="Brand identity"
-        description="Upload the Dine3D logo, then set the typographic pairing and colour identity for the public website."
+        description="Upload the DinePixel logo, then set the typographic pairing and colour identity for the public website."
       />
 
       <div className="flex flex-col gap-6">
@@ -110,7 +110,7 @@ export default function AdminBrandingPage() {
             </div>
 
             <AdminField label="Logo description" hint="Read aloud by screen readers.">
-              <AdminInput value={branding.logoAlt} onChange={(v) => set('logoAlt', v)} placeholder="Dine3D" />
+              <AdminInput value={branding.logoAlt} onChange={(v) => set('logoAlt', v)} placeholder="DinePixel" />
             </AdminField>
         </AdminPanel>
 

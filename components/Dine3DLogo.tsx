@@ -2,7 +2,7 @@
 
 // components/Dine3DLogo.tsx
 //
-// THE SINGLE SOURCE OF TRUTH FOR THE DINE3D LOGO.
+// THE SINGLE SOURCE OF TRUTH FOR THE DINEPIXEL LOGO.
 //
 // Every logo surface in the app renders through this component, so replacing the
 // logo updates the entire product at once. There are no duplicate logos and no

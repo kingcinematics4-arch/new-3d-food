@@ -214,7 +214,7 @@ export async function DELETE() {
       logo,
       removedFile,
       message: removedFile
-        ? 'Logo removed. The site is using the bundled Dine3D logo again.'
+        ? 'Logo removed. The site is using the bundled DinePixel logo again.'
         : 'Logo removed from the site. The stored file could not be deleted.',
     },
     { headers: NO_STORE }

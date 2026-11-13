@@ -163,7 +163,7 @@ export default function AdminMediaPage() {
         {/* ------------------------------------------------ LOGO */}
         <AdminPanel
           title="Logo"
-          description="The official Dine3D mark. Uploaded to Supabase Storage and used as supplied — never redrawn or stretched."
+          description="The official DinePixel mark. Uploaded to Supabase Storage and used as supplied — never redrawn or stretched."
         >
           <LogoUploader onLogoChanged={syncLogo} />
 
@@ -176,7 +176,7 @@ export default function AdminMediaPage() {
                 <AdminInput
                   value={draft.branding.logoAlt}
                   onChange={(v) => setBranding('logoAlt', v)}
-                  placeholder="Dine3D"
+                  placeholder="DinePixel"
                 />
               </AdminField>
               <AdminField label="Favicon path" hint="Leave empty for the browser default.">
