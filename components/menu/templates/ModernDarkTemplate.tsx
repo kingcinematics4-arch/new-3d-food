@@ -26,7 +26,8 @@ export default function ModernDarkTemplate({
   onAdd,
   onRemove,
   onItemClick,
-    onViewAr,
+  onView3D,
+  onViewAr,
   onOpenWater,
   onOpenWaiter,
 }: MenuTemplateProps) {

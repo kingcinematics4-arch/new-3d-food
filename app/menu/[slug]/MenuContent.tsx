@@ -119,7 +119,9 @@ function FoodDetailModal({
   const [qty, setQty] = useState(Math.max(1, cartQty));
   const [notes, setNotes] = useState('');
   const [selectedSize, setSelectedSize] = useState<PublicMenuItemSize | null>(null);
-  const has3D = Boolean(item.model_url_glb?.trim());
+  const hasGlb = Boolean(item.model_url_glb?.trim());
+  const hasUsdz = Boolean(item.model_url_usdz?.trim());
+  const has3D = hasGlb || hasUsdz;
   const image = item.image_url?.trim() || '';
   const ingredients = Array.isArray(item.ingredients) ? item.ingredients : [];
   const rating = Number(item.rating) || 0;
@@ -1020,7 +1022,7 @@ function FoodCard({
   onView3D: (item: PublicMenuItem) => void;
 }) {
   const inCart = cart.find((c) => c.menuItem.id === item.id);
-  const has3D = Boolean(item.model_url_glb?.trim());
+  const has3D = Boolean(item.model_url_glb?.trim() || item.model_url_usdz?.trim());
   const image = item.image_url?.trim() || '';
   const price = Number(item.price) || 0;
   const rating = Number(item.rating) || 0;
@@ -1562,8 +1564,8 @@ export default function MenuContent({
             onAdd: requestAdd,
             onRemove: removeFromCart,
             onItemClick: handleCardClick,
-            onView3D: (item) => { setView3DMode('3d'); setView3DItem(item); },
-            onViewAr: (item) => { setView3DMode('ar'); setView3DItem(item); },
+            onView3D: (item: PublicMenuItem) => { setView3DMode('3d'); setView3DItem(item); },
+            onViewAr: (item: PublicMenuItem) => { setView3DMode('ar'); setView3DItem(item); },
             onOpenCart: () => setIsCartOpen(true),
             onOpenWater: () => setIsWaterModalOpen(true),
             onOpenWaiter: () => setIsServiceModalOpen(true),
@@ -1605,7 +1607,7 @@ export default function MenuContent({
             onClose={() => setInspectItem(null)}
             onAddToCart={addToCart}
             cartQty={cart.find((c) => c.menuItem.id === inspectItem.id)?.quantity || 0}
-            onView3D={(item) => { setView3DMode('3d'); setView3DItem(item); }} onViewAr={(item) => { setView3DMode('ar'); setView3DItem(item); }}
+            onView3D={(item: PublicMenuItem) => { setView3DMode('3d'); setView3DItem(item); }}
           />
         )}
 

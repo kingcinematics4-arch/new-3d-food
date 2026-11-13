@@ -25,7 +25,8 @@ export default function FreshMinimalTemplate({
   onAdd,
   onRemove,
   onItemClick,
-    onViewAr,
+  onView3D,
+  onViewAr,
   onOpenWater,
   onOpenWaiter,
 }: MenuTemplateProps) {

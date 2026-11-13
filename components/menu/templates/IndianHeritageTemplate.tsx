@@ -25,7 +25,8 @@ export default function IndianHeritageTemplate({
   onAdd,
   onRemove,
   onItemClick,
-    onViewAr,
+  onView3D,
+  onViewAr,
   onOpenWater,
   onOpenWaiter,
 }: MenuTemplateProps) {

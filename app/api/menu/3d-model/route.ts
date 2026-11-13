@@ -198,7 +198,12 @@ export async function POST(request: Request) {
         glb_url: glbUrl || null,
         usdz_url: usdzUrl || null,
       },
-      arReady: Boolean(glbUrl && usdzUrl),
+      // Per-format availability (neither format is mandatory for the other).
+      arAvailability: {
+        android: Boolean(glbUrl),
+        apple: Boolean(usdzUrl),
+      },
+      arReady: Boolean(glbUrl || usdzUrl),
     },
     { headers: NO_STORE }
   );
@@ -261,7 +266,11 @@ export async function DELETE(request: Request) {
       removedFile: removedAny,
       message: removedAny ? 'Model removed.' : 'No uploaded model to remove.',
       models: { glb_url: glbUrl, usdz_url: usdzUrl },
-      arReady: Boolean(glbUrl && usdzUrl),
+      arAvailability: {
+        android: Boolean(glbUrl),
+        apple: Boolean(usdzUrl),
+      },
+      arReady: Boolean(glbUrl || usdzUrl),
     },
     { headers: NO_STORE }
   );

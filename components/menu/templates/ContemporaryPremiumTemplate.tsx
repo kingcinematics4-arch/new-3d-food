@@ -25,7 +25,8 @@ export default function ContemporaryPremiumTemplate({
   onAdd,
   onRemove,
   onItemClick,
-    onViewAr,
+  onView3D,
+  onViewAr,
   onOpenWater,
   onOpenWaiter,
 }: MenuTemplateProps) {

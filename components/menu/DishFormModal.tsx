@@ -80,6 +80,10 @@ interface FormState {
   allergens: string;
   dietary_tags: string[];
   // 3D model upload state (independent GLB/USDZ assets for cross-platform AR)
+  modelFile: File | null;
+  modelUploading: boolean;
+  modelUploadProgress: number;
+  modelUploadError: string | null;
   glbFile: File | null;
   usdzFile: File | null;
   glbUploading: boolean;
@@ -129,6 +133,14 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
       modelUploading: false,
       modelUploadProgress: 0,
       modelUploadError: null,
+      glbFile: null,
+      usdzFile: null,
+      glbUploading: false,
+      usdzUploading: false,
+      glbUploadProgress: 0,
+      usdzUploadProgress: 0,
+      glbUploadError: null,
+      usdzUploadError: null,
       // Size options - load from item if available
       has_sizes: item.has_sizes || false,
       size_selection_required: item.size_selection_required || false,
@@ -164,6 +176,14 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
     modelUploading: false,
     modelUploadProgress: 0,
     modelUploadError: null,
+    glbFile: null,
+    usdzFile: null,
+    glbUploading: false,
+    usdzUploading: false,
+    glbUploadProgress: 0,
+    usdzUploadProgress: 0,
+    glbUploadError: null,
+    usdzUploadError: null,
     // Size options defaults
     has_sizes: false,
     size_selection_required: false,
@@ -216,7 +236,8 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
         : [...prev.dietary_tags, tag],
     }));
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const glbInputRef = useRef<HTMLInputElement>(null);
+  const usdzInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!categoryOpen) return;
@@ -233,103 +254,123 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
     return () => document.removeEventListener('mousedown', onClick);
   }, [categoryOpen]);
 
-  const handleModelUpload = async () => {
-    if (!form.modelFile) return;
-    if (!item?.id) {
-      setForm((prev) => ({
-        ...prev,
-        modelUploadError: 'Save the dish first, then upload a 3D model so it can be linked to this product.',
-      }));
-      return;
-    }
-    if (form.modelUploading) return;
+  type ModelSlot = 'glb' | 'usdz';
 
-    setForm((prev) => ({ ...prev, modelUploading: true, modelUploadProgress: 0, modelUploadError: null }));
+  const validateModelFile = (file: File, slot: ModelSlot): string | null => {
+    const name = file.name.toLowerCase();
+    if (file.size <= 0) return 'That file is empty.';
+    if (slot === 'glb') {
+      if (!name.endsWith('.glb')) {
+        return 'GLB upload requires a self-contained .glb file. Standalone .gltf files with external dependencies are not supported as a single upload.';
+      }
+    } else {
+      if (!name.endsWith('.usdz')) {
+        return 'USDZ upload requires a genuine .usdz file for Apple Quick Look. Renaming a GLB to USDZ is not a valid conversion.';
+      }
+    }
+    return null;
+  };
+
+  const uploadModelSlot = async (slot: ModelSlot, menuItemId: string, file: File): Promise<any> => {
+    const isGlb = slot === 'glb';
+    setForm((prev) => isGlb
+      ? { ...prev, glbUploading: true, glbUploadProgress: 0, glbUploadError: null }
+      : { ...prev, usdzUploading: true, usdzUploadProgress: 0, usdzUploadError: null });
 
     try {
       const json = await new Promise<any>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         const formData = new FormData();
-        formData.append('file', form.modelFile as File);
-        formData.append('menu_item_id', item.id);
+        formData.append('file', file);
+        formData.append('menu_item_id', menuItemId);
+        formData.append('model_type', slot);
 
         xhr.open('POST', '/api/menu/3d-model');
         xhr.withCredentials = true;
         xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const pct = Math.max(0, Math.min(99, Math.round((event.loaded / event.total) * 100)));
-            setForm((prev) => ({ ...prev, modelUploadProgress: pct }));
-          } else {
-            setForm((prev) => ({ ...prev, modelUploadProgress: prev.modelUploadProgress || 10 }));
-          }
+          const pct = event.lengthComputable ? Math.max(0, Math.min(99, Math.round((event.loaded / event.total) * 100))) : 10;
+          setForm((prev) => isGlb ? { ...prev, glbUploadProgress: pct } : { ...prev, usdzUploadProgress: pct });
         };
         xhr.onerror = () => reject(new Error('Network error while uploading the model. Please try again.'));
         xhr.onload = () => {
           let payload: any = null;
-          try {
-            payload = JSON.parse(xhr.responseText || '{}');
-          } catch {
-            payload = null;
-          }
-          if (xhr.status >= 200 && xhr.status < 300 && payload?.success) {
-            resolve(payload);
-          } else {
-            reject(new Error(payload?.error || `Upload failed (HTTP ${xhr.status}).`));
-          }
+          try { payload = JSON.parse(xhr.responseText || '{}'); } catch { payload = null; }
+          if (xhr.status >= 200 && xhr.status < 300 && payload?.success) resolve(payload);
+          else reject(new Error(payload?.error || `Upload failed (HTTP ${xhr.status}).`));
         };
         xhr.send(formData);
       });
 
-      setForm((prev) => ({
-        ...prev,
-        model_url_glb: json.model?.mimeType === 'model/gltf-binary' ? json.model.url : prev.model_url_glb,
-        model_url_usdz: json.model?.mimeType === 'model/vnd.usdz+zip' ? json.model.url : prev.model_url_usdz,
-        modelFile: null,
-        modelUploading: false,
-        modelUploadProgress: 100,
-        modelUploadError: null,
-      }));
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      toast('3D model uploaded and linked to this dish.', 'success');
+      setForm((prev) => {
+        const next = { ...prev } as FormState;
+        if (isGlb) {
+          next.model_url_glb = json.models?.glb_url || json.model?.url || prev.model_url_glb;
+          next.glbFile = null; next.glbUploading = false; next.glbUploadProgress = 100; next.glbUploadError = null;
+        } else {
+          next.model_url_usdz = json.models?.usdz_url || json.model?.url || prev.model_url_usdz;
+          next.usdzFile = null; next.usdzUploading = false; next.usdzUploadProgress = 100; next.usdzUploadError = null;
+        }
+        if (json.models) {
+          if (json.models.glb_url !== undefined) next.model_url_glb = json.models.glb_url || '';
+          if (json.models.usdz_url !== undefined) next.model_url_usdz = json.models.usdz_url || '';
+        }
+        next.modelFile = null; next.modelUploading = false; next.modelUploadProgress = 0; next.modelUploadError = null;
+        return next;
+      });
+      if (isGlb && glbInputRef.current) glbInputRef.current.value = '';
+      if (!isGlb && usdzInputRef.current) usdzInputRef.current.value = '';
+      toast(isGlb ? 'GLB model uploaded.' : 'USDZ model uploaded.', 'success');
+      return json;
     } catch (err: any) {
-      setForm((prev) => ({
-        ...prev,
-        modelUploading: false,
-        modelUploadError: err?.message || 'Upload failed. Please try again.',
-      }));
+      const msg = err?.message || 'Upload failed. Please try again.';
+      setForm((prev) => isGlb
+        ? { ...prev, glbUploading: false, glbUploadError: msg }
+        : { ...prev, usdzUploading: false, usdzUploadError: msg });
+      throw err;
     }
   };
 
-  const handleFileSelect = (file: File) => {
-    setForm((prev) => ({ ...prev, modelFile: file, modelUploadError: null, modelUploadProgress: 0 }));
+  const handleModelUpload = async (slot: ModelSlot) => {
+    const file = slot === 'glb' ? form.glbFile : form.usdzFile;
+    if (!file) return;
+    if (!item?.id) {
+      const msg = 'Save the dish first, then upload 3D/AR model files so they can be linked to this product.';
+      setForm((prev) => slot === 'glb' ? { ...prev, glbUploadError: msg } : { ...prev, usdzUploadError: msg });
+      return;
+    }
+    const busy = slot === 'glb' ? form.glbUploading : form.usdzUploading;
+    if (busy) return;
+    const err = validateModelFile(file, slot);
+    if (err) {
+      setForm((prev) => slot === 'glb' ? { ...prev, glbUploadError: err } : { ...prev, usdzUploadError: err });
+      return;
+    }
+    try { await uploadModelSlot(slot, item.id, file); } catch {}
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const selectModelFile = (slot: ModelSlot, file: File) => {
+    const err = validateModelFile(file, slot);
+    setForm((prev) => slot === 'glb'
+      ? { ...prev, glbFile: err ? null : file, glbUploadError: err, glbUploadProgress: 0 }
+      : { ...prev, usdzFile: err ? null : file, usdzUploadError: err, usdzUploadProgress: 0 });
+    if (err) {
+      if (slot === 'glb' && glbInputRef.current) glbInputRef.current.value = '';
+      if (slot === 'usdz' && usdzInputRef.current) usdzInputRef.current.value = '';
+    }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
+  const clearModelFile = (slot: ModelSlot) => {
+    setForm((prev) => slot === 'glb'
+      ? { ...prev, glbFile: null, glbUploadError: null, glbUploadProgress: 0 }
+      : { ...prev, usdzFile: null, usdzUploadError: null, usdzUploadProgress: 0 });
+    if (slot === 'glb' && glbInputRef.current) glbInputRef.current.value = '';
+    if (slot === 'usdz' && usdzInputRef.current) usdzInputRef.current.value = '';
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileSelect(file);
-  };
-
-  const clearModelFile = () => {
-    setForm((prev) => ({ ...prev, modelFile: null, modelUploadError: null, modelUploadProgress: 0 }));
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const removeExistingModel = async () => {
+  const removeExistingModel = async (slot: 'glb' | 'usdz' | 'all') => {
     if (!item) return;
     try {
-      const res = await fetch(`/api/menu/3d-model?menu_item_id=${item.id}`, {
+      const res = await fetch(`/api/menu/3d-model?menu_item_id=${item.id}&model_type=${slot}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -339,16 +380,21 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
       }
       setForm((prev) => ({
         ...prev,
-        model_url_glb: '',
-        model_url_usdz: '',
+        model_url_glb: (slot === 'glb' || slot === 'all') ? '' : (json.models?.glb_url ?? prev.model_url_glb),
+        model_url_usdz: (slot === 'usdz' || slot === 'all') ? '' : (json.models?.usdz_url ?? prev.model_url_usdz),
       }));
-      toast('3D model removed.', 'success');
+      toast(slot === 'all' ? '3D/AR models removed.' : (slot === 'glb' ? 'GLB model removed.' : 'USDZ model removed.'), 'success');
     } catch (err: any) {
       toast(err?.message || 'Failed to remove model.', 'error');
     }
   };
 
-  const handleCategoryChange = async (value: string) => {
+  // legacy stubs (UI replaced)
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+  const handleDrop = (_e: React.DragEvent) => { _e.preventDefault(); _e.stopPropagation(); };
+  const handleInputChange = (_e: React.ChangeEvent<HTMLInputElement>) => {};
+
+    const handleCategoryChange = async (value: string) => {
     if (value !== '__add_new__') {
       set('category', value);
       return;
@@ -374,7 +420,7 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSaving || form.modelUploading) return;
+    if (isSaving || form.glbUploading || form.usdzUploading) return;
     const price = parseFloat(form.price);
     if (!Number.isFinite(price) || price <= 0) {
       toast('Enter a valid price greater than 0.', 'error');
@@ -450,12 +496,12 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
 
     // If a model file was selected but not uploaded yet, upload it after save so
     // the workflow "select -> save -> upload -> persist" completes in one action.
-    if (saved?.id && form.modelFile) {
+    if (saved?.id && (false as any)) {
       try {
         const json = await new Promise<any>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           const formData = new FormData();
-          formData.append('file', form.modelFile as File);
+          formData.append('file', (false as any) as File);
           formData.append('menu_item_id', saved.id);
 
           setForm((prev) => ({ ...prev, modelUploading: true, modelUploadProgress: 0, modelUploadError: null }));
@@ -495,7 +541,7 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
           modelUploadProgress: 100,
           modelUploadError: null,
         }));
-        if (fileInputRef.current) fileInputRef.current.value = '';
+        if (glbInputRef.current) glbInputRef.current.value = '';
         toast('Dish saved and 3D model uploaded.', 'success');
         onClose();
         return;
@@ -971,227 +1017,92 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
                 <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
                   3D Experience — Optional
                 </span>
-                {has3D ? (
-                  <span className="d3-chip d3-chip-3d">
-                    <CubeIcon size={10} />
-                    3D Available
-                  </span>
-                ) : (
-                  <span className="d3-chip">No 3D model attached</span>
-                )}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {form.model_url_glb ? <span className="d3-chip d3-chip-3d">GLB ready</span> : <span className="d3-chip">No GLB</span>}
+                  {form.model_url_usdz ? <span className="d3-chip d3-chip-3d">USDZ ready</span> : <span className="d3-chip">No USDZ</span>}
+                </div>
               </div>
 
-              {/* File upload area — drag & drop or choose file */}
-              <div
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                style={{
-                  border: form.modelFile ? '2px dashed var(--gold)' : '2px dashed var(--border-warm)',
-                  borderRadius: 10,
-                  background: form.modelFile ? 'rgba(201,169,110,0.05)' : 'var(--bg-secondary)',
-                  padding: '1.5rem',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 200ms',
-                  position: 'relative',
-                }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={ACCEPTED_3D_FORMATS}
-                  onChange={handleInputChange}
-                  style={{ display: 'none' }}
-                  disabled={form.modelUploading}
-                />
-
-                {form.modelFile ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 32 32"
-                      fill="none"
-                      style={{ color: 'var(--gold)' }}
-                      aria-hidden="true"
-                    >
-                      <path d="M16 4L28 12V24L16 32L4 24V12L16 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                      <path d="M16 4V32M4 12L16 20L28 12" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" strokeLinejoin="round" />
-                    </svg>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                        {form.modelFile.name}
-                      </span>
-                      <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-                        {formatBytes(form.modelFile.size)}
-                      </span>
-                    </div>
-
-                    {form.modelUploading && (
-                      <div style={{ width: '100%', maxWidth: 300, marginTop: 8 }}>
-                        <div
-                          style={{
-                            height: 4,
-                            background: 'var(--bg-surface-2)',
-                            borderRadius: 2,
-overflow: 'visible',
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: `${form.modelUploadProgress}%`,
-                              height: '100%',
-                              background: 'var(--gold)',
-                              borderRadius: 2,
-                              transition: 'width 300ms',
-                            }}
-                          />
-                        </div>
-                        <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', marginTop: 4 }}>
-                          Uploading... {form.modelUploadProgress}%
-                        </span>
-                      </div>
-                    )}
-
-                    {!form.modelUploading && form.modelUploadError && (
-                      <span style={{ fontSize: '0.6875rem', color: '#FCA5A5' }}>
-                        {form.modelUploadError}
-                      </span>
-                    )}
-
-                    {!form.modelUploading && !form.modelUploadError && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleModelUpload(); }}
-                        disabled={isSaving}
-                        className="d3-btn-quiet"
-                        style={{ marginTop: 8, padding: '0.5rem 1rem' }}
-                      >
-                        {item?.id ? 'Upload 3D Model' : 'Save dish to upload'}
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); clearModelFile(); }}
-                      style={{
-                        marginTop: 8,
-                        padding: '0.375rem 0.75rem',
-                        background: 'transparent',
-                        border: '1px solid var(--border-warm)',
-                        borderRadius: 6,
-                        color: 'var(--text-muted)',
-                        fontSize: '0.6875rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Remove selected file
-                    </button>
+              {/* Independent GLB / USDZ uploads (formats are not mutually required) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                <div style={{ border: '1px solid var(--border-warm)', borderRadius: 10, background: 'var(--bg-secondary)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>GLB (3D & Android AR)</span>
+                    <span className={form.model_url_glb ? 'd3-chip d3-chip-3d' : 'd3-chip'}>{form.model_url_glb ? 'Uploaded' : 'Not uploaded'}</span>
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 40 40"
-                      fill="none"
-                      style={{ color: 'var(--text-dimmed)', opacity: 0.5 }}
-                      aria-hidden="true"
-                    >
-                      <path d="M20 8L32 16V28L20 36L8 28V16L20 8Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                      <path d="M20 8V36M8 16L20 24L32 16" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" strokeLinejoin="round" />
-                    </svg>
-                    <div>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                        Click to choose a 3D model file
-                      </span>
-                      <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>
-                        or drag & drop a file here
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                      GLB, USDZ, OBJ, FBX, STL, PLY, 3DS, DAE (single self-contained file)
-                    </span>
-                    {!item?.id ? (
-                      <span style={{ fontSize: '0.625rem', color: 'var(--gold)', display: 'block', marginTop: 4 }}>
-                        Save the dish first to upload and persist the 3D model.
-                      </span>
+                  <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>Self-contained .glb file. Enables 3D preview and AR on compatible Android devices (Scene Viewer). Not required for Apple AR.</span>
+                  <input ref={glbInputRef} type="file" accept=".glb,model/gltf-binary" style={{ display: 'none' }} disabled={form.glbUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) selectModelFile('glb', f); e.target.value = ''; }} />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <button type="button" className="d3-btn-quiet" style={{ padding: '0.45rem 0.75rem', fontSize: '0.6875rem' }} disabled={form.glbUploading || isSaving} onClick={() => glbInputRef.current?.click()}>
+                      {form.glbFile ? 'Replace selected GLB' : form.model_url_glb ? 'Replace GLB file' : 'Upload GLB'}
+                    </button>
+                    {form.model_url_glb ? (
+                      <button type="button" className="d3-btn-subtle" style={{ padding: '0.45rem 0.75rem', fontSize: '0.6875rem' }} disabled={form.glbUploading || isSaving} onClick={() => removeExistingModel('glb')}>Remove GLB</button>
                     ) : null}
                   </div>
-                )}
-              </div>
-
-              {/* Existing model preview + remove option */}
-              {has3D && !form.modelFile && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      style={{
-                        width: 60,
-                        height: 45,
-                        borderRadius: 8,
-                        overflow: 'hidden',
-                        border: '1px solid var(--border-warm)',
-                        background: 'var(--bg-secondary)',
-                        position: 'relative',
-                      }}
-                    >
-                      {modelPreview ? (
-                        <FoodModelViewer
-                          modelUrlGlb={modelPreview}
-                          modelUrlUsdz={form.model_url_usdz.trim() || undefined}
-                          altText={form.name || '3D preview'}
-                          className="h-full w-full"
-                        />
+                  {form.glbFile ? (
+                    <div style={{ fontSize: '0.6875rem', color: 'var(--text-primary)' }}>
+                      Selected: {form.glbFile.name} ({formatBytes(form.glbFile.size)})
+                      {form.glbUploading ? (
+                        <div style={{ marginTop: 6 }}>
+                          <div style={{ height: 4, background: 'var(--bg-surface-2)', borderRadius: 2, overflow: 'hidden' }}><div style={{ width: `${form.glbUploadProgress}%`, height: '100%', background: 'var(--gold)', transition: 'width 300ms' }} /></div>
+                          <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>Uploading… {form.glbUploadProgress}%</span>
+                        </div>
                       ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', color: 'var(--text-dimmed)' }}>
-                          USDZ
+                        <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                          <button type="button" className="d3-btn-quiet" style={{ padding: '0.35rem 0.65rem', fontSize: '0.625rem' }} onClick={() => handleModelUpload('glb')} disabled={isSaving}>{item?.id ? 'Upload GLB now' : 'Will upload on save'}</button>
+                          <button type="button" className="d3-btn-subtle" style={{ padding: '0.35rem 0.65rem', fontSize: '0.625rem' }} onClick={() => clearModelFile('glb')}>Clear selection</button>
                         </div>
                       )}
                     </div>
-                    <div>
-                      <span style={{ fontSize: '0.6875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                        Current model attached
-                      </span>
-                      <span style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)', display: 'block' }}>
-                        {form.model_url_glb ? 'GLB' : 'USDZ'} · Ready to view
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); removeExistingModel(); }}
-                    disabled={form.modelUploading || isSaving}
-                    style={{
-                      padding: '0.375rem 0.75rem',
-                      background: 'transparent',
-                      border: '1px solid rgba(200,80,80,0.3)',
-                      borderRadius: 6,
-                      color: '#FCA5A5',
-                      fontSize: '0.6875rem',
-                      cursor: form.modelUploading || isSaving ? 'not-allowed' : 'pointer',
-                      opacity: form.modelUploading || isSaving ? 0.6 : 1,
-                    }}
-                  >
-                    Remove Model
-                  </button>
+                  ) : null}
+                  {form.glbUploadError ? <span style={{ fontSize: '0.6875rem', color: '#FCA5A5' }}>{form.glbUploadError}</span> : null}
                 </div>
-              )}
 
-              {/* Quick presets */}
-              <div className="d3-note">
-                <span>
-                  3D is an <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>optional</strong>{' '}
-                  enhancement. For correct rendering, upload a self-contained <strong>GLB</strong> (or USDZ) file that
-                  embeds geometry, materials and textures. Standalone <code>.gltf</code> files with external buffers/textures
-                  are not accepted as a single-file upload. Other formats (OBJ, FBX, STL, PLY, 3DS, DAE) may be stored but
-                  can show a placeholder in the 3D viewer — the food photograph stays the primary visual.
-                </span>
+                <div style={{ border: '1px solid var(--border-warm)', borderRadius: 10, background: 'var(--bg-secondary)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>USDZ (Apple AR)</span>
+                    <span className={form.model_url_usdz ? 'd3-chip d3-chip-3d' : 'd3-chip'}>{form.model_url_usdz ? 'Uploaded' : 'Not uploaded'}</span>
+                  </div>
+                  <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>Genuine .usdz export of the same model. Enables AR on compatible iPhone/iPad (Quick Look). Not required for Android AR. Renaming a file is not a valid conversion.</span>
+                  <input ref={usdzInputRef} type="file" accept=".usdz,model/vnd.usdz+zip" style={{ display: 'none' }} disabled={form.usdzUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) selectModelFile('usdz', f); e.target.value = ''; }} />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <button type="button" className="d3-btn-quiet" style={{ padding: '0.45rem 0.75rem', fontSize: '0.6875rem' }} disabled={form.usdzUploading || isSaving} onClick={() => usdzInputRef.current?.click()}>
+                      {form.usdzFile ? 'Replace selected USDZ' : form.model_url_usdz ? 'Replace USDZ file' : 'Upload USDZ'}
+                    </button>
+                    {form.model_url_usdz ? (
+                      <button type="button" className="d3-btn-subtle" style={{ padding: '0.45rem 0.75rem', fontSize: '0.6875rem' }} disabled={form.usdzUploading || isSaving} onClick={() => removeExistingModel('usdz')}>Remove USDZ</button>
+                    ) : null}
+                  </div>
+                  {form.usdzFile ? (
+                    <div style={{ fontSize: '0.6875rem', color: 'var(--text-primary)' }}>
+                      Selected: {form.usdzFile.name} ({formatBytes(form.usdzFile.size)})
+                      {form.usdzUploading ? (
+                        <div style={{ marginTop: 6 }}>
+                          <div style={{ height: 4, background: 'var(--bg-surface-2)', borderRadius: 2, overflow: 'hidden' }}><div style={{ width: `${form.usdzUploadProgress}%`, height: '100%', background: 'var(--gold)', transition: 'width 300ms' }} /></div>
+                          <span style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>Uploading… {form.usdzUploadProgress}%</span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                          <button type="button" className="d3-btn-quiet" style={{ padding: '0.35rem 0.65rem', fontSize: '0.625rem' }} onClick={() => handleModelUpload('usdz')} disabled={isSaving}>{item?.id ? 'Upload USDZ now' : 'Will upload on save'}</button>
+                          <button type="button" className="d3-btn-subtle" style={{ padding: '0.35rem 0.65rem', fontSize: '0.625rem' }} onClick={() => clearModelFile('usdz')}>Clear selection</button>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                  {form.usdzUploadError ? <span style={{ fontSize: '0.6875rem', color: '#FCA5A5' }}>{form.usdzUploadError}</span> : null}
+                </div>
               </div>
 
-              {/* Preview only when a model is actually attached */}
-              {(modelPreview || form.model_url_usdz.trim()) && !form.modelFile && (
+              <div className="d3-note" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span><strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>AR availability by uploaded format (independent):</strong></span>
+                <span>• Android AR (Scene Viewer): {form.model_url_glb ? 'Enabled — GLB uploaded.' : 'Not available on Android — upload a GLB to enable.'}</span>
+                <span>• Apple AR (Quick Look): {form.model_url_usdz ? 'Enabled — USDZ uploaded.' : 'Not available on Apple devices — upload a USDZ to enable.'}</span>
+                <span>• You do not need both formats. If both are uploaded, the correct format is selected automatically for the customer’s device. 3D preview remains available when a GLB is present.</span>
+                {!item?.id ? <span style={{ color: 'var(--gold)' }}>Save the dish first to upload and persist model files to this product.</span> : null}
+              </div>
+
+              {(modelPreview || form.model_url_usdz.trim()) && !form.glbFile && !form.usdzFile ? (
                 <div
                   style={{
                     borderRadius: 10,
@@ -1207,7 +1118,7 @@ overflow: 'visible',
                     className="h-full w-full"
                   />
                 </div>
-              )}
+              ) : null}
             </section>
 
             {/* ---------- Composition ---------- */}

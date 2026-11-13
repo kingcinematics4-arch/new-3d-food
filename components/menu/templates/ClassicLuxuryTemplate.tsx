@@ -25,7 +25,8 @@ export default function ClassicLuxuryTemplate({
   onAdd,
   onRemove,
   onItemClick,
-    onViewAr,
+  onView3D,
+  onViewAr,
   onOpenWater,
   onOpenWaiter,
 }: MenuTemplateProps) {
@@ -176,6 +177,7 @@ export default function ClassicLuxuryTemplate({
                       onRemove={onRemove}
                       onItemClick={onItemClick}
                       onView3D={onView3D}
+                                 onViewAr={onViewAr}
                       isHero
                     />
                   ))}
@@ -207,6 +209,7 @@ export default function ClassicLuxuryTemplate({
                       onRemove={onRemove}
                       onItemClick={onItemClick}
                       onView3D={onView3D}
+                                 onViewAr={onViewAr}
                     />
                   ))}
                 </div>
@@ -239,6 +242,7 @@ export default function ClassicLuxuryTemplate({
                       onRemove={onRemove}
                       onItemClick={onItemClick}
                       onView3D={onView3D}
+                                 onViewAr={onViewAr}
                     />
                   ))}
                 </div>
@@ -259,6 +263,7 @@ function ClassicLuxuryCard({
   onRemove,
   onItemClick,
   onView3D,
+  onViewAr,
   isHero = false,
 }: {
   item: PublicMenuItem;
@@ -268,13 +273,16 @@ function ClassicLuxuryCard({
   onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
+  onViewAr?: (item: PublicMenuItem) => void;
   isHero?: boolean;
 }) {
   const inCartItems = cart.filter((c) => c.menuItem.id === item.id);
   const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
   const inCart = inCartItems.length > 0 ? inCartItems[0] : undefined;
   const inCartSize = inCart?.size?.id || null;
-  const has3D = Boolean(item.model_url_glb?.trim());
+  const hasGlb = Boolean(item.model_url_glb?.trim());
+  const hasUsdz = Boolean(item.model_url_usdz?.trim());
+  const has3D = hasGlb || hasUsdz;
   const image = item.image_url?.trim() || '';
 
   return (
@@ -316,21 +324,31 @@ function ClassicLuxuryCard({
             )}
           </div>
 
-          {has3D && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onView3D(item);
-              }}
-              className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded bg-[#1A1A1A]/90 hover:bg-[#1A1A1A] border border-[#B8A47A] text-[#CDB98F] text-[0.625rem] font-sans font-bold tracking-wider uppercase shadow-md transition-all hover:scale-105"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M6 1L11 3.5V8.5L6 11L1 8.5V3.5L6 1Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-                <path d="M6 1V11M1 3.5L6 6L11 3.5" stroke="currentColor" strokeWidth="1" strokeOpacity="0.6" strokeLinejoin="round" />
-              </svg>
-              <span>View in 3D</span>
-            </button>
-          )}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+            {hasGlb ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView3D(item);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#1A1A1A]/90 hover:bg-[#1A1A1A] border border-[#B8A47A] text-[#CDB98F] text-[0.625rem] font-sans font-bold tracking-wider uppercase shadow-md transition-all hover:scale-105"
+              >
+                <span>View in 3D</span>
+              </button>
+            ) : null}
+            {has3D ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  (onViewAr || onView3D)(item);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#1A1A1A]/90 hover:bg-[#1A1A1A] border border-[#B8A47A] text-[#CDB98F] text-[0.625rem] font-sans font-bold tracking-wider uppercase shadow-md transition-all hover:scale-105"
+                title="View in AR on compatible devices (Android uses GLB, Apple uses USDZ)"
+              >
+                <span>View in AR</span>
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 

@@ -241,20 +241,25 @@ export default function DishCard({
           {item.is_popular && !item.is_featured && <span className="d3-chip">Popular</span>}
         </div>
 
-        {/* Top-right: 3D/AR availability */}
+        {/* Top-right: 3D/AR availability (format-based; formats are independent) */}
         {(item.model_url_glb?.trim() || item.model_url_usdz?.trim()) && (
           <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {item.model_url_glb?.trim() && (
+            {item.model_url_glb?.trim() ? (
               <span className="d3-chip d3-chip-3d" style={{ background: 'rgba(11,10,8,0.72)', backdropFilter: 'blur(6px)' }}>
                 <CubeIcon size={10} />
                 3D
               </span>
-            )}
-            {item.model_url_glb?.trim() && item.model_url_usdz?.trim() && (
+            ) : null}
+            {item.model_url_glb?.trim() ? (
               <span className="d3-chip d3-chip-3d" style={{ background: 'rgba(11,10,8,0.72)', backdropFilter: 'blur(6px)' }}>
-                AR Ready
+                AR · Android
               </span>
-            )}
+            ) : null}
+            {item.model_url_usdz?.trim() ? (
+              <span className="d3-chip d3-chip-3d" style={{ background: 'rgba(11,10,8,0.72)', backdropFilter: 'blur(6px)' }}>
+                AR · Apple
+              </span>
+            ) : null}
           </div>
         )}
       </div>
@@ -458,18 +463,18 @@ export default function DishCard({
             borderTop: '1px solid var(--border-warm)',
           }}
         >
-          {item.model_url_glb?.trim() && (
+          {item.model_url_glb?.trim() ? (
             <button type="button" className="d3-btn-3d" onClick={() => onView3D(item)}>
               <CubeIcon size={10} />
               View in 3D
             </button>
-          )}
-          {item.model_url_glb?.trim() && item.model_url_usdz?.trim() && (
-            <button type="button" className="d3-btn-3d" onClick={() => (onViewAr || onView3D)(item)} title="View in AR (requires compatible device and both validated GLB/USDZ assets)">
+          ) : null}
+          {(item.model_url_glb?.trim() || item.model_url_usdz?.trim()) ? (
+            <button type="button" className="d3-btn-3d" onClick={() => (onViewAr || onView3D)(item)} title="View in AR on compatible devices (Android uses GLB, Apple uses USDZ)">
               <CubeIcon size={10} />
               View in AR
             </button>
-          )}
+          ) : null}
 
           <button type="button" className="d3-btn-inline" onClick={() => onEdit(item)}>
             <PencilIcon />
