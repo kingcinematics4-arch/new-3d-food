@@ -45,9 +45,19 @@ const schema = {
 
 const exploreLinks = [
   {
+    href: '/about-dinepixel',
+    label: 'About DinePixel',
+    description: 'A comprehensive, factual overview of the platform.',
+  },
+  {
     href: '/features',
     label: 'Features',
     description: 'A complete view of the QR ordering, menu and dashboard capabilities.',
+  },
+  {
+    href: '/how-it-works',
+    label: 'How it works',
+    description: 'The guest and restaurant flows, step by step.',
   },
   {
     href: '/qr-ordering-system',
@@ -55,9 +65,14 @@ const exploreLinks = [
     description: 'The full scan-to-order and live tracking flow.',
   },
   {
-    href: '/digital-menu-for-restaurants',
-    label: 'Digital menu for restaurants',
-    description: 'Keep menu content, pricing and availability current.',
+    href: '/pricing',
+    label: 'Pricing',
+    description: 'Published plans and what each one includes.',
+  },
+  {
+    href: '/faq',
+    label: 'FAQ',
+    description: 'Short, factual answers to common questions.',
   },
   {
     href: '/contact',

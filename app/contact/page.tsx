@@ -64,9 +64,24 @@ const topics = [
 
 const relatedLinks = [
   {
+    href: '/about-dinepixel',
+    label: 'About DinePixel',
+    description: 'A comprehensive, factual overview of the platform.',
+  },
+  {
     href: '/features',
     label: 'Features',
     description: 'See what is included in the DinePixel platform.',
+  },
+  {
+    href: '/faq',
+    label: 'FAQ',
+    description: 'Short, factual answers to common questions.',
+  },
+  {
+    href: '/pricing',
+    label: 'Pricing',
+    description: 'Published plans and what each one includes.',
   },
   {
     href: '/qr-ordering-system',
@@ -76,7 +91,7 @@ const relatedLinks = [
   {
     href: '/about',
     label: 'About DinePixel',
-    description: 'The thinking behind the platform.',
+    description: 'The brand page.',
   },
 ];
 

@@ -156,6 +156,16 @@ const schema = {
 
 const exploreLinks = [
   {
+    href: '/about-dinepixel',
+    label: 'About DinePixel',
+    description: 'A comprehensive, factual overview of the platform.',
+  },
+  {
+    href: '/how-it-works',
+    label: 'How it works',
+    description: 'The guest and restaurant flows, step by step.',
+  },
+  {
     href: '/qr-ordering-system',
     label: 'QR ordering system',
     description: 'The full scan-to-order and live tracking flow.',
@@ -174,6 +184,16 @@ const exploreLinks = [
     href: '/restaurant-management-software',
     label: 'Restaurant management software',
     description: 'The dashboard, order board and operational controls.',
+  },
+  {
+    href: '/pricing',
+    label: 'Pricing',
+    description: 'Published plans and what each one includes.',
+  },
+  {
+    href: '/faq',
+    label: 'FAQ',
+    description: 'Short, factual answers to common questions.',
   },
 ];
 

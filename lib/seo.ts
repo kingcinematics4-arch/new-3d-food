@@ -175,6 +175,51 @@ export function faqSchema(items: SeoFaqItem[]) {
   };
 }
 
+interface HowToInput {
+  name: string;
+  description: string;
+  path: string;
+  steps: { label: string; description: string }[];
+}
+
+export function howToSchema({ name, description, path, steps }: HowToInput) {
+  return {
+    '@type': 'HowTo',
+    name,
+    description,
+    url: absoluteUrl(path),
+    inLanguage: 'en',
+    step: steps.map((step, index) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      name: step.label,
+      text: step.description,
+    })),
+  };
+}
+
+interface OfferCatalogInput {
+  name: string;
+  path: string;
+  offers: { name: string; price: string }[];
+}
+
+export function offerCatalogSchema({ name, path, offers }: OfferCatalogInput) {
+  return {
+    '@type': 'OfferCatalog',
+    name,
+    url: absoluteUrl(path),
+    itemListElement: offers.map((offer, index) => ({
+      '@type': 'Offer',
+      position: index + 1,
+      name: offer.name,
+      price: offer.price,
+      priceCurrency: 'INR',
+      url: absoluteUrl(path),
+    })),
+  };
+}
+
 interface ArticleSchemaInput {
   headline: string;
   description: string;
