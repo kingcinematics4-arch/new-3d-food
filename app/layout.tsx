@@ -4,12 +4,18 @@ import { AuthProvider } from '@/lib/authContext';
 import { BrandLogoProvider } from '@/components/branding/BrandLogoProvider';
 import { getLogoReference } from '@/lib/branding.server';
 import { withCacheBust } from '@/lib/branding';
-import { getPublicSiteUrl } from '@/lib/siteUrl';
+import { getCanonicalSiteUrl } from '@/lib/siteUrl';
+import {
+  organizationSchema,
+  PRIMARY_KEYWORDS,
+  SITE_DESCRIPTION,
+  websiteSchema,
+} from '@/lib/seo';
 
 export const runtime = 'nodejs';
 
-/** Social preview card. The same official artwork, on the brand background. */
-const OG_IMAGE = '/images/dine3d-og.png';
+/** Social preview card. Absolute so it resolves correctly on every deployment. */
+const OG_IMAGE = 'https://dinepixel.com/images/dine3d-og.png';
 
 /** MIME type of an owner-supplied logo, so the tab icon is declared correctly. */
 function logoMimeType(url: string): string {
@@ -37,22 +43,17 @@ function logoMimeType(url: string): string {
  */
 export async function generateMetadata(): Promise<Metadata> {
   const logo = await getLogoReference();
-  const description =
-    'Turn your restaurant menu into an interactive 3D dining experience. Scan a QR code, explore dishes in 3D, and understand your meal before ordering.';
+  const description = SITE_DESCRIPTION;
 
   // Resolves the relative social image and canonical paths. Configured first,
   // and never an untrusted request host.
-  const metadataBase = new URL(getPublicSiteUrl());
+  const metadataBase = new URL(getCanonicalSiteUrl());
 
   return {
     metadataBase,
-    alternates: {
-      canonical: '/',
-    },
-    title: 'DinePixel — See It. Experience It. Dine It.',
+    title: 'DinePixel – Premium QR Ordering System for Restaurants in India',
     description,
-    keywords:
-      'restaurant 3d menu, ar food menu, interactive dining, qr code menu, 3d food visualization, restaurant technology, dinepixel',
+    keywords: PRIMARY_KEYWORDS,
     ...(logo.hasCustomLogo
       ? {
           icons: {
@@ -66,14 +67,14 @@ export async function generateMetadata(): Promise<Metadata> {
         }
       : {}),
     openGraph: {
-      title: 'DinePixel — Premium 3D Restaurant Menu Platform',
+      title: 'DinePixel – Premium QR Ordering System for Restaurants in India',
       description,
       type: 'website',
       images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'DinePixel' }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'DinePixel — See It. Experience It. Dine It.',
+      title: 'DinePixel – Premium QR Ordering System for Restaurants in India',
       description,
       images: [OG_IMAGE],
     },
@@ -82,9 +83,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Resolved once, on the server, so the first painted HTML already contains
-  // the correct logo. The provider still revalidates in the browser, which is
-  // what covers a page rendered at build time and a logo replaced in another tab.
+  // the correct logo. The provider still revalidates in the browser, which
+  // is what covers a page rendered at build time and a logo replaced in another tab.
   const initialLogo = await getLogoReference();
+  const globalStructuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      organizationSchema(initialLogo.logoUrl || '/images/dine3d-logo.png'),
+      websiteSchema(),
+    ],
+  };
 
   return (
     <html lang="en" className="dark">
@@ -97,6 +105,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="flex flex-col min-h-screen antialiased" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(globalStructuredData) }}
+        />
         <AuthProvider>
           <BrandLogoProvider initialLogo={initialLogo}>{children}</BrandLogoProvider>
         </AuthProvider>

@@ -29,10 +29,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const title = `${hotel.name} — 3D Menu | DinePixel`;
+  const hotelName = hotel.name.trim();
+  const title = `${hotelName} — 3D Menu | DinePixel`;
   const description =
     hotel.welcome_text ||
-    `Explore ${hotel.name}'s interactive 3D menu, view dishes in 3D, and order from your table.`;
+    `Explore ${hotelName}'s interactive 3D menu, view dishes in 3D, and order from your table.`;
 
   return {
     title,

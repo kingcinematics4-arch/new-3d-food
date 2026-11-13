@@ -1,10 +1,10 @@
 import type { MetadataRoute } from 'next';
-import { getPublicSiteUrl } from '@/lib/siteUrl';
+import { getCanonicalSiteUrl } from '@/lib/siteUrl';
 
 export const dynamic = 'force-dynamic';
 
 export default function robots(): MetadataRoute.Robots {
-  const base = getPublicSiteUrl();
+  const base = getCanonicalSiteUrl();
 
   return {
     rules: [

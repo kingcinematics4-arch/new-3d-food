@@ -18,6 +18,18 @@ export const DEFAULT_PRODUCTION_URL = 'https://new-3d-food.vercel.app';
 /** Canonical production origin used for every emailed confirmation link. */
 export const PRODUCTION_SITE_URL = DEFAULT_PRODUCTION_URL;
 
+/**
+ * Canonical public origin for SEO metadata, Open Graph, the XML sitemap and
+ * robots.txt. This is deliberately independent of the deployment/auth origin:
+ * search engines should always see the branded domain, even when the app is
+ * previewed on a Vercel URL.
+ */
+export const CANONICAL_SITE_URL = 'https://dinepixel.com';
+
+export function getCanonicalSiteUrl(): string {
+  return CANONICAL_SITE_URL;
+}
+
 function cleanUrl(url: string): string {
   let cleaned = url.trim();
   if (

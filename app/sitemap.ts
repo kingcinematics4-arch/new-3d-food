@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getPublicSiteUrl } from '@/lib/siteUrl';
+import { getCanonicalSiteUrl } from '@/lib/siteUrl';
 import { getSiteContentRecord } from '@/lib/siteContent.server';
 
 // Read fresh on every request so a newly activated hotel is included and a
@@ -13,7 +13,7 @@ interface HotelRow {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = getPublicSiteUrl();
+  const base = getCanonicalSiteUrl();
   const entries: MetadataRoute.Sitemap = [];
 
   // Homepage. Prefer the published-content timestamp when available.
@@ -38,12 +38,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const legalLastModified = new Date('2026-11-13T00:00:00.000Z');
   const staticPages: Array<{
     path: string;
-    changeFrequency: 'monthly' | 'yearly';
+    changeFrequency: 'weekly' | 'monthly' | 'yearly';
     priority: number;
     lastModified?: Date;
   }> = [
     { path: '/about', changeFrequency: 'monthly', priority: 0.7, lastModified: homeLastModified },
     { path: '/contact', changeFrequency: 'monthly', priority: 0.7, lastModified: homeLastModified },
+    { path: '/features', changeFrequency: 'monthly', priority: 0.8, lastModified: legalLastModified },
+    { path: '/qr-ordering-system', changeFrequency: 'monthly', priority: 0.9, lastModified: legalLastModified },
+    { path: '/restaurant-qr-menu', changeFrequency: 'monthly', priority: 0.8, lastModified: legalLastModified },
+    { path: '/digital-menu-for-restaurants', changeFrequency: 'monthly', priority: 0.8, lastModified: legalLastModified },
+    { path: '/qr-ordering-system-thane', changeFrequency: 'monthly', priority: 0.7, lastModified: legalLastModified },
+    { path: '/qr-ordering-system-navi-mumbai', changeFrequency: 'monthly', priority: 0.7, lastModified: legalLastModified },
+    { path: '/qr-ordering-system-mumbai', changeFrequency: 'monthly', priority: 0.7, lastModified: legalLastModified },
+    { path: '/restaurant-management-software', changeFrequency: 'monthly', priority: 0.8, lastModified: legalLastModified },
+    { path: '/blog', changeFrequency: 'weekly', priority: 0.6, lastModified: legalLastModified },
+    { path: '/blog/qr-ordering-system-guide', changeFrequency: 'monthly', priority: 0.6, lastModified: legalLastModified },
+    { path: '/blog/digital-menu-for-restaurants', changeFrequency: 'monthly', priority: 0.6, lastModified: legalLastModified },
+    { path: '/blog/restaurant-automation-software', changeFrequency: 'monthly', priority: 0.6, lastModified: legalLastModified },
     { path: '/privacy', changeFrequency: 'yearly', priority: 0.3, lastModified: legalLastModified },
     { path: '/terms', changeFrequency: 'yearly', priority: 0.3, lastModified: legalLastModified },
   ];
