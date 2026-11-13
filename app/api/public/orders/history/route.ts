@@ -109,6 +109,9 @@ export async function GET(request: Request) {
       ...(itemSchema.cancelledAt ? ['cancelled_at'] : []),
       ...(itemSchema.cancellationReason ? ['cancellation_reason'] : []),
       ...(itemSchema.cancelledBy ? ['cancelled_by'] : []),
+      ...(itemSchema.sizeId ? ['size_id'] : []),
+      ...(itemSchema.sizeName ? ['size_name'] : []),
+      ...(itemSchema.sizePrice ? ['size_price'] : []),
       'menu_items (name)',
     ].join(', ');
 
@@ -212,6 +215,9 @@ export async function GET(request: Request) {
           ...(itemSchema.cancelledAt ? { cancelled_at: item.cancelled_at ?? null } : {}),
           ...(itemSchema.cancellationReason ? { cancellation_reason: item.cancellation_reason ?? null } : {}),
           ...(itemSchema.cancelledBy ? { cancelled_by: item.cancelled_by ?? null } : {}),
+          ...(itemSchema.sizeId ? { size_id: item.size_id || null } : {}),
+          ...(itemSchema.sizeName ? { size_name: item.size_name || null } : {}),
+          ...(itemSchema.sizePrice ? { size_price: item.size_price !== undefined ? Number(item.size_price) : null } : {}),
         };
       });
 

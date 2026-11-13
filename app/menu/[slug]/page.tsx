@@ -71,10 +71,13 @@ export default async function MenuPage({ params, searchParams }: PageProps) {
   const data = await fetchPublicMenuData(slug);
 
   const initialTableNumber = searchParams.table || '';
+  const addToOrderId = searchParams.addToOrder || searchParams.existingOrderId || null;
 
   // If a table number is provided via QR code, check for an active unpaid order
   // before rendering the menu. If one exists, redirect to the order tracking page.
-  if (initialTableNumber && data.hotel) {
+  // Exception: when the customer explicitly opened the menu to add dishes to an
+  // existing order, redirecting back would make "Add Another Dish" impossible.
+  if (initialTableNumber && data.hotel && !addToOrderId) {
     try {
       const activeOrder = await findActiveOrder(data.hotel.id, initialTableNumber);
       if (activeOrder) {
@@ -94,7 +97,7 @@ export default async function MenuPage({ params, searchParams }: PageProps) {
       initialItems={data.menuItems}
       initialCategories={data.categories}
       initialError={data.error}
-      addToOrderId={searchParams.addToOrder || searchParams.existingOrderId || null}
+      addToOrderId={addToOrderId}
       addToOrderNumber={searchParams.orderNumber || null}
     />
   );

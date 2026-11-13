@@ -46,6 +46,12 @@ export interface OrderItemsSchema {
   itemName: boolean;
   /** public.order_items.item_kind exists (migration 028 applied). e.g. 'water' */
   itemKind: boolean;
+  /** public.order_items.size_id exists (migration 033 applied). */
+  sizeId: boolean;
+  /** public.order_items.size_name exists (migration 033 applied). */
+  sizeName: boolean;
+  /** public.order_items.size_price exists (migration 033 applied). */
+  sizePrice: boolean;
 }
 
 // Postgres / PostgREST codes for "that column is not in the schema".
@@ -122,5 +128,8 @@ export async function getOrderItemsSchema(): Promise<OrderItemsSchema> {
     cancelledBy: await orderItemColumnExists('cancelled_by'),
     itemName: await orderItemColumnExists('item_name'),
     itemKind: await orderItemColumnExists('item_kind'),
+    sizeId: await orderItemColumnExists('size_id'),
+    sizeName: await orderItemColumnExists('size_name'),
+    sizePrice: await orderItemColumnExists('size_price'),
   };
 }

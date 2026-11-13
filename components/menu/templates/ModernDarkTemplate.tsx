@@ -3,7 +3,7 @@
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
 import Dine3DLogo from '@/components/Dine3DLogo';
-import type { MenuTemplateProps } from './types';
+import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
 export default function ModernDarkTemplate({
@@ -277,13 +277,16 @@ function ModernDarkCard({
 }: {
   item: PublicMenuItem;
   currency: string | null;
-  cart: { menuItem: PublicMenuItem; quantity: number }[];
-  onAdd: (item: PublicMenuItem) => void;
-  onRemove: (id: string) => void;
+  cart: CartItem[];
+  onAdd: (item: PublicMenuItem, qty?: number, notes?: string, size?: PublicMenuItemSize | null, sizePrice?: number) => void;
+  onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
 }) {
-  const inCart = cart.find((c) => c.menuItem.id === item.id);
+  const inCartItems = cart.filter((c) => c.menuItem.id === item.id);
+  const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
+  const inCart = inCartItems.length > 0 ? inCartItems[0] : undefined;
+  const inCartSize = inCart?.size?.id || null;
   const has3D = Boolean(item.model_url_glb?.trim());
   const image = item.image_url?.trim() || '';
 
@@ -367,19 +370,19 @@ function ModernDarkCard({
 
         {/* TACTILE BOTTOM QUICK ADD ACTION */}
         <div className="pt-2 border-t border-white/10">
-          {inCart ? (
+          {inCartQty > 0 ? (
             <div
               onClick={(e) => e.stopPropagation()}
               className="flex items-center justify-between w-full bg-neutral-900 border border-[#E1C99A]/50 rounded-xl px-2 py-1"
             >
               <button
-                onClick={() => onRemove(item.id)}
+                onClick={() => onRemove(item.id, inCartSize)}
                 className="w-7 h-7 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white font-bold flex items-center justify-center transition-colors"
               >
                 −
               </button>
               <span className="text-xs font-bold text-[#E1C99A]">
-                {inCart.quantity} in Order
+                {inCartQty} in Order
               </span>
               <button
                 onClick={() => onAdd(item)}

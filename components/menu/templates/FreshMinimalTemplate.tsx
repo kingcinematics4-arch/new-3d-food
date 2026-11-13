@@ -3,7 +3,7 @@
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
 import Dine3DLogo from '@/components/Dine3DLogo';
-import type { MenuTemplateProps } from './types';
+import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
 export default function FreshMinimalTemplate({
@@ -242,13 +242,16 @@ function FreshMinimalCard({
 }: {
   item: PublicMenuItem;
   currency: string | null;
-  cart: { menuItem: PublicMenuItem; quantity: number }[];
-  onAdd: (item: PublicMenuItem) => void;
-  onRemove: (id: string) => void;
+  cart: CartItem[];
+  onAdd: (item: PublicMenuItem, qty?: number, notes?: string, size?: PublicMenuItemSize | null, sizePrice?: number) => void;
+  onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
 }) {
-  const inCart = cart.find((c) => c.menuItem.id === item.id);
+  const inCartItems = cart.filter((c) => c.menuItem.id === item.id);
+  const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
+  const inCart = inCartItems.length > 0 ? inCartItems[0] : undefined;
+  const inCartSize = inCart?.size?.id || null;
   const has3D = Boolean(item.model_url_glb?.trim());
   const image = item.image_url?.trim() || '';
 
@@ -326,19 +329,19 @@ function FreshMinimalCard({
           {formatPrice(Number(item.price) || 0, currency)}
         </span>
 
-        {inCart ? (
+        {inCartQty > 0 ? (
           <div
             onClick={(e) => e.stopPropagation()}
             className="flex items-center gap-2 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full px-2 py-0.5"
           >
             <button
-              onClick={() => onRemove(item.id)}
+              onClick={() => onRemove(item.id, inCartSize)}
               className="w-6 h-6 rounded-full bg-white text-[#2E7D32] font-bold flex items-center justify-center hover:bg-[#C8E6C9] transition-colors shadow-xs"
             >
               −
             </button>
             <span className="text-xs font-bold text-[#2E7D32]">
-              {inCart.quantity}
+              {inCartQty}
             </span>
             <button
               onClick={() => onAdd(item)}

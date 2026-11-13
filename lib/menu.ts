@@ -1,6 +1,29 @@
 // lib/menu.ts
 import { z } from 'zod';
 
+// Size option schema for menu items
+export const menuItemSizeSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'Size name is required'),
+  price: z.number().positive('Price must be greater than 0'),
+  position: z.number().int().default(0),
+  is_available: z.boolean().default(true),
+});
+
+export type MenuItemSizeInput = z.infer<typeof menuItemSizeSchema>;
+
+export interface MenuItemSize {
+  id: string;
+  menu_item_id: string;
+  hotel_id: string;
+  name: string;
+  price: number;
+  position: number;
+  is_available: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export const menuItemSchema = z.object({
   id: z.string().optional(),
   category_id: z.string().uuid().nullable().optional(),
@@ -21,6 +44,10 @@ export const menuItemSchema = z.object({
   calories: z.number().optional(),
   preparation_time_mins: z.number().optional(),
   ingredients: z.array(z.string()).default([]),
+  // Size options fields
+  has_sizes: z.boolean().default(false),
+  size_selection_required: z.boolean().default(false),
+  sizes: z.array(menuItemSizeSchema).optional(),
 });
 
 export type MenuItemInput = z.infer<typeof menuItemSchema>;
@@ -48,6 +75,10 @@ export interface MenuItem {
   preparation_time_mins?: number;
   ingredients?: string[];
   created_at?: string;
+  // Size options fields
+  has_sizes?: boolean;
+  size_selection_required?: boolean;
+  sizes?: MenuItemSize[];
 }
 
 export interface PublicHotel {

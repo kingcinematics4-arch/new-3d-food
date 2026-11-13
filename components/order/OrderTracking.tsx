@@ -26,6 +26,9 @@ interface LiveOrderItem {
   notes: string | null;
   status?: string | null;
   item_kind?: string | null;
+  size_id?: string | null;
+  size_name?: string | null;
+  size_price?: number | null;
 }
 
 interface LiveOrder {
@@ -63,16 +66,16 @@ interface LiveOrder {
 }
 
 // ---------------------------------------------------------------------------
-// Status â†’ stage mapping
+// Status → stage mapping
 //
 // Stored statuses (written by the hotel dashboard API):
-//   pending   â†’ Order Placed          (just received)
-//   accepted  â†’ Accepted by Restaurant (restaurant confirmed)
-//   preparing â†’ Preparing              (kitchen working on it)
-//   ready     â†’ Ready                  (food ready)
-//   completed â†’ Completed              (order closed)
-//   delivered â†’ treated as completed
-//   cancelled â†’ terminal error state
+//   pending   → Order Placed          (just received)
+//   accepted  → Accepted by Restaurant (restaurant confirmed)
+//   preparing → Preparing              (kitchen working on it)
+//   ready     → Ready                  (food ready)
+//   completed → Completed              (order closed)
+//   delivered → treated as completed
+//   cancelled → terminal error state
 //
 // The STAGES array drives the visual progress bar. Five stages are shown so
 // the 'accepted' step is always visible and never silently skipped.
@@ -157,7 +160,7 @@ function isTerminal(status: string): boolean {
    * redirect is gated on payment_status becoming 'paid', which the
    * hotel sets AFTER completion. If polling/realtime stopped the moment
    * the order hit 'completed', a guest who refreshed between completion
-   * and payment would never see the paid transition â€” and never be
+   * and payment would never see the paid transition — and never be
    * redirected. So the tracking page stays live until the order is
    * both terminal AND paid (or cancelled).
    */
@@ -348,7 +351,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
       setItemQtyUpdating(null);
     }
   }, [orderId]);
-  // Initial load â€” fires once on mount. Without this the page stays on
+  // Initial load — fires once on mount. Without this the page stays on
   // `loading=true` forever because every other effect below guards on
   // `order` being non-null first.
   // -----------------------------------------------------------------------
@@ -361,7 +364,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // Supabase Realtime subscription
   //
   // We subscribe to postgres_changes on the specific order row so the page
-  // updates the moment the hotel writes a new status â€” no poll needed for the
+  // updates the moment the hotel writes a new status — no poll needed for the
   // happy path.
   //
   // Security: uses the public anon key (supabaseClient). The filter limits
@@ -404,7 +407,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
           if (!dead) setRealtimeOk(status === 'SUBSCRIBED');
         });
     } catch {
-      // Realtime not available â€” polling fallback handles it.
+      // Realtime not available — polling fallback handles it.
     }
 
     return () => {
@@ -419,11 +422,11 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // -----------------------------------------------------------------------
   // Polling fallback (and safety-net when Realtime is active)
   //
-  // â€¢ Every poll fetches the current order status every 5 s
-  // â€¢ Uses recursive setTimeout (not setInterval) so a previous in-flight
-  //   fetch always completes before the next poll starts â€” no overlapping
+  // • Every poll fetches the current order status every 5 s
+  // • Uses recursive setTimeout (not setInterval) so a previous in-flight
+  //   fetch always completes before the next poll starts — no overlapping
   //   API requests.
-  // â€¢ Terminal order â†’ stop polling
+  // • Terminal order → stop polling
   // -----------------------------------------------------------------------
   useEffect(() => {
     if (!order) return;
@@ -450,12 +453,12 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
   // -----------------------------------------------------------------------
   // Auto-redirect to Google Review URL once payment is marked PAID
   //
-  // â€¢ Triggered ONLY when payment_status becomes 'paid' (staff marks it).
-  // â€¢ Only once per order (sessionStorage guard survives refresh)
-  // â€¢ If paid but URL is missing from current payload (stale initial data),
+  // • Triggered ONLY when payment_status becomes 'paid' (staff marks it).
+  // • Only once per order (sessionStorage guard survives refresh)
+  // • If paid but URL is missing from current payload (stale initial data),
   //   force one authoritative refresh from /api/public/orders/[id] before
   //   showing NOT CONFIGURED. Never fabricate a URL.
-  // â€¢ Redirect happens on the guest's device via real-time / polling
+  // • Redirect happens on the guest's device via real-time / polling
   // -----------------------------------------------------------------------
   useEffect(() => {
     if (!order) return;
@@ -629,7 +632,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
               </h1>
               <p style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', margin: 0 }}>
                 {order?.order_number ? `Ref #${order.order_number}` : 'Order status'}
-                {order?.table_number ? ` Â· Table ${order.table_number}` : ''}
+                {order?.table_number ? ` · Table ${order.table_number}` : ''}
               </p>
             </div>
           </div>
@@ -689,7 +692,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
               <circle cx="12" cy="12" r="10" stroke="var(--gold)" strokeOpacity="0.2" strokeWidth="1.5" />
               <path d="M12 2A10 10 0 0 1 22 12" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Loading your orderâ€¦</p>
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Loading your order…</p>
           </div>
         ) : order ? (
           <div style={PANEL}>
@@ -733,7 +736,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                     className="d3-btn-inline d3-btn-danger"
                     style={{ opacity: cancelling ? 0.6 : 1, minHeight: 32 }}
                   >
-                    {cancelling ? 'Cancellingâ€¦' : 'Cancel Order'}
+                    {cancelling ? 'Cancelling…' : 'Cancel Order'}
                   </button>
                 )}
               </div>
@@ -863,8 +866,13 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       <div key={item.id} style={{ padding: '0.625rem 0', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '0.5rem', alignItems: 'start' }}>
                           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', display: 'inline-flex', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8125rem', color: cancelled ? 'var(--text-dimmed)' : 'var(--text-primary)', lineHeight: 1.3, textDecoration: cancelled ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name || 'Item'}</span>
+                              {item.size_name && (
+                                <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', background: 'var(--bg-surface-2)', padding: '0.125rem 0.375rem', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
+                                  {item.size_name}
+                                </span>
+                              )}
                             </span>
                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.4 }}>
                               Unit price: {formatPrice(unitPrice, order?.currency)} each
@@ -885,7 +893,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                                     className="d3-btn-subtle"
                                     style={{ width: 32, height: 32, padding: 0, borderRadius: 'var(--d3-input-radius)' }}
                                   >
-                                    âˆ’
+                                    −
                                   </button>
                                   <span style={{ fontSize: '0.8125rem', minWidth: 18, textAlign: 'center', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</span>
                                   <button
@@ -907,7 +915,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                                   className="d3-btn-inline d3-btn-danger"
                                   style={{ minHeight: 32 }}
                                 >
-                                  {itemCancelling === item.id ? 'â€¦' : 'Cancel Item'}
+                                  {itemCancelling === item.id ? '…' : 'Cancel Item'}
                                 </button>
                               )}
                             </div>
@@ -1114,7 +1122,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                         }}
                       >
                         <span>{reason}</span>
-                        {cancellationReason === reason && <span style={{ color: 'var(--gold)' }}>â—</span>}
+                        {cancellationReason === reason && <span style={{ color: 'var(--gold)' }}>●</span>}
                       </button>
                     ))}
                     {cancellationReason === 'Other' && (
@@ -1149,7 +1157,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                       className="d3-btn-primary d3-btn-danger"
                       style={{ width: '100%', opacity: !cancellationReason || cancelling ? 0.6 : 1 }}
                     >
-                      {cancelling ? 'Cancellingâ€¦' : 'Confirm Cancellation'}
+                      {cancelling ? 'Cancelling…' : 'Confirm Cancellation'}
                     </button>
                   </div>
                 </div>

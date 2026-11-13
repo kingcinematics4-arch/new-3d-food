@@ -3,7 +3,7 @@
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
 import Dine3DLogo from '@/components/Dine3DLogo';
-import type { MenuTemplateProps } from './types';
+import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
 export default function ContemporaryPremiumTemplate({
@@ -250,13 +250,16 @@ function ContemporaryHeroCard({
 }: {
   item: PublicMenuItem;
   currency: string | null;
-  cart: { menuItem: PublicMenuItem; quantity: number }[];
-  onAdd: (item: PublicMenuItem) => void;
-  onRemove: (id: string) => void;
+  cart: CartItem[];
+  onAdd: (item: PublicMenuItem, qty?: number, notes?: string, size?: PublicMenuItemSize | null, sizePrice?: number) => void;
+  onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
 }) {
-  const inCart = cart.find((c) => c.menuItem.id === item.id);
+  const inCartItems = cart.filter((c) => c.menuItem.id === item.id);
+  const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
+  const inCart = inCartItems.length > 0 ? inCartItems[0] : undefined;
+  const inCartSize = inCart?.size?.id || null;
   const has3D = Boolean(item.model_url_glb?.trim());
   const image = item.image_url?.trim() || '';
 
@@ -334,19 +337,19 @@ function ContemporaryHeroCard({
 
         {/* Action Row */}
         <div className="pt-4 border-t border-[#1A1A1A]/10">
-          {inCart ? (
+          {inCartQty > 0 ? (
             <div
               onClick={(e) => e.stopPropagation()}
               className="flex items-center justify-between w-full border border-[#1A1A1A] p-2"
             >
               <button
-                onClick={() => onRemove(item.id)}
+                onClick={() => onRemove(item.id, inCartSize)}
                 className="w-8 h-8 border border-[#1A1A1A] bg-white font-mono text-xs hover:bg-[#1A1A1A] hover:text-white"
               >
                 −
               </button>
               <span className="font-mono text-xs uppercase">
-                {inCart.quantity} SELECTED
+                {inCartQty} SELECTED
               </span>
               <button
                 onClick={() => onAdd(item)}
@@ -384,13 +387,16 @@ function ContemporaryEditorialCard({
 }: {
   item: PublicMenuItem;
   currency: string | null;
-  cart: { menuItem: PublicMenuItem; quantity: number }[];
-  onAdd: (item: PublicMenuItem) => void;
-  onRemove: (id: string) => void;
+  cart: CartItem[];
+  onAdd: (item: PublicMenuItem, qty?: number, notes?: string, size?: PublicMenuItemSize | null, sizePrice?: number) => void;
+  onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
 }) {
-  const inCart = cart.find((c) => c.menuItem.id === item.id);
+  const inCartItems = cart.filter((c) => c.menuItem.id === item.id);
+  const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
+  const inCart = inCartItems.length > 0 ? inCartItems[0] : undefined;
+  const inCartSize = inCart?.size?.id || null;
   const has3D = Boolean(item.model_url_glb?.trim());
   const image = item.image_url?.trim() || '';
 
@@ -454,19 +460,19 @@ function ContemporaryEditorialCard({
       </div>
 
       <div className="pt-3 border-t border-[#1A1A1A]/10 flex items-center justify-between gap-2">
-        {inCart ? (
+        {inCartQty > 0 ? (
           <div
             onClick={(e) => e.stopPropagation()}
             className="flex items-center justify-between w-full border border-[#1A1A1A] p-1.5"
           >
             <button
-              onClick={() => onRemove(item.id)}
+              onClick={() => onRemove(item.id, inCartSize)}
               className="w-6 h-6 border border-[#1A1A1A] bg-white font-mono text-xs hover:bg-[#1A1A1A] hover:text-white"
             >
               −
             </button>
             <span className="font-mono text-xs uppercase">
-              {inCart.quantity} SELECTED
+              {inCartQty} SELECTED
             </span>
             <button
               onClick={() => onAdd(item)}

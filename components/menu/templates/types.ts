@@ -1,10 +1,14 @@
-import type { PublicHotel, PublicMenuItem, PublicCategory } from '@/app/menu/[slug]/MenuContent';
+import type { PublicHotel, PublicMenuItem, PublicCategory, PublicMenuItemSize } from '@/app/menu/[slug]/MenuContent';
 
 export interface CartItem {
   menuItem: PublicMenuItem;
   quantity: number;
   notes?: string;
+  size?: PublicMenuItemSize | null;
+  sizePrice?: number;
 }
+
+export type { PublicMenuItemSize };
 
 export interface MenuTemplateProps {
   hotel: PublicHotel;
@@ -23,8 +27,8 @@ export interface MenuTemplateProps {
   cart: CartItem[];
   totalCount: number;
   totalPrice: number;
-  onAdd: (item: PublicMenuItem, qty?: number) => void;
-  onRemove: (itemId: string) => void;
+  onAdd: (item: PublicMenuItem, qty?: number, notes?: string, size?: PublicMenuItemSize | null, sizePrice?: number) => void;
+  onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
   onOpenCart: () => void;

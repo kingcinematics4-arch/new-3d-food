@@ -14,6 +14,7 @@ export interface SplitBillModalProps {
     quantity: number;
     price_at_time: number;
     status?: string | null;
+    size_name?: string | null;
   }>;
   isOpen: boolean;
   onClose: () => void;
@@ -521,6 +522,11 @@ export default function SplitBillModal({
                             <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary, #F3EFE7)', display: 'block' }}>
                               {item.name || 'Dish'}
                             </span>
+                            {item.size_name && (
+                              <span style={{ fontSize: '0.6875rem', color: 'var(--gold, #C9A96E)', display: 'block', marginTop: 1 }}>
+                                Size: {item.size_name}
+                              </span>
+                            )}
                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed, #7A766F)' }}>
                               {formatPrice(Number(item.price_at_time), currency)} each • {maxAvailable} left
                             </span>

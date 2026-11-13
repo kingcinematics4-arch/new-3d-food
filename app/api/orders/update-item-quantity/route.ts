@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validated = schema.parse(body);
 
-    const lookupColumn = isStoredReferenceNumber(validated.order_id) ? 'order_number' : 'id';
+const lookupColumn = isStoredReferenceNumber(validated.order_id) ? 'order_number' : 'id';
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select('id, status, hotel_id')
@@ -58,6 +58,14 @@ export async function POST(request: Request) {
       return new NextResponse(JSON.stringify({ success: false, error: 'Quantity cannot be edited at this stage' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
 
+    // Check for size columns once, used in both RPC success and fallback paths
+    const itemSchemaHasStatus = await columnExists('order_items', 'status');
+    const itemSchemaHasItemName = await columnExists('order_items', 'item_name');
+    const itemSchemaHasItemKind = await columnExists('order_items', 'item_kind');
+    const itemSchemaHasSizeId = await columnExists('order_items', 'size_id');
+    const itemSchemaHasSizeName = await columnExists('order_items', 'size_name');
+    const itemSchemaHasSizePrice = await columnExists('order_items', 'size_price');
+
     try {
       const { error: rpcErr } = await supabaseAdmin.rpc('update_order_item_quantity_atomic', {
         p_order_id: orderId,
@@ -65,14 +73,14 @@ export async function POST(request: Request) {
         p_quantity: validated.quantity,
       });
       if (!rpcErr) {
-        const itemSchemaHasStatus = await columnExists('order_items', 'status');
-        const itemSchemaHasItemName = await columnExists('order_items', 'item_name');
-        const itemSchemaHasItemKind = await columnExists('order_items', 'item_kind');
         const itemSelect = [
           'id', 'menu_item_id', 'quantity', 'price_at_time', 'notes',
           ...(itemSchemaHasItemName ? ['item_name'] : []),
           ...(itemSchemaHasItemKind ? ['item_kind'] : []),
           ...(itemSchemaHasStatus ? ['status'] : []),
+          ...(itemSchemaHasSizeId ? ['size_id'] : []),
+          ...(itemSchemaHasSizeName ? ['size_name'] : []),
+          ...(itemSchemaHasSizePrice ? ['size_price'] : []),
           'menu_items(name)',
         ].join(', ');
         const { data: fullOrder } = await supabaseAdmin
@@ -88,6 +96,10 @@ export async function POST(request: Request) {
           notes: it.notes,
           item_kind: itemSchemaHasItemKind ? (it.item_kind ?? null) : null,
           status: itemSchemaHasStatus ? (it.status ?? 'active') : 'active',
+          // Size fields
+          size_id: itemSchemaHasSizeId ? (it.size_id ?? null) : null,
+          size_name: itemSchemaHasSizeName ? (it.size_name ?? null) : null,
+          size_price: itemSchemaHasSizePrice ? (it.size_price ?? null) : null,
         }));
         const hotelTheme = await getHotelThemeForOrder(orderId);
         return new NextResponse(JSON.stringify({ success: true, order: { ...((fullOrder as any) || {}), items, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -95,10 +107,6 @@ export async function POST(request: Request) {
     } catch (e) {
       // continue
     }
-
-    const itemSchemaHasStatus = await columnExists('order_items', 'status');
-    const itemSchemaHasItemName = await columnExists('order_items', 'item_name');
-    const itemSchemaHasItemKind = await columnExists('order_items', 'item_kind');
     const { data: item, error: itemError } = await supabaseAdmin
       .from('order_items')
       .select(itemSchemaHasStatus ? 'id, order_id, status, quantity, price_at_time' : 'id, order_id, quantity, price_at_time')
@@ -149,6 +157,9 @@ export async function POST(request: Request) {
       ...(itemSchemaHasItemName ? ['item_name'] : []),
       ...(itemSchemaHasItemKind ? ['item_kind'] : []),
       ...(itemSchemaHasStatus ? ['status'] : []),
+      ...(itemSchemaHasSizeId ? ['size_id'] : []),
+      ...(itemSchemaHasSizeName ? ['size_name'] : []),
+      ...(itemSchemaHasSizePrice ? ['size_price'] : []),
       'menu_items(name)',
     ].join(', ');
     const { data: fullOrder, error: fullErr } = await supabaseAdmin
@@ -166,6 +177,10 @@ export async function POST(request: Request) {
       notes: it.notes,
       item_kind: itemSchemaHasItemKind ? (it.item_kind ?? null) : null,
       status: itemSchemaHasStatus ? (it.status ?? 'active') : 'active',
+      // Size fields
+      size_id: itemSchemaHasSizeId ? (it.size_id ?? null) : null,
+      size_name: itemSchemaHasSizeName ? (it.size_name ?? null) : null,
+      size_price: itemSchemaHasSizePrice ? (it.size_price ?? null) : null,
     }));
 
     const hotelTheme = await getHotelThemeForOrder(orderId);

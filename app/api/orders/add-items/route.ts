@@ -12,6 +12,10 @@ const itemSchema = z.object({
   notes: z.string().optional().nullable(),
   item_name: z.string().optional().nullable(),
   item_kind: z.string().optional().nullable(),
+  // Size options
+  size_id: z.string().uuid().nullable().optional(),
+  size_name: z.string().optional().nullable(),
+  size_price: z.number().nonnegative().nullish(),
 });
 
 const schema = z.object({
@@ -86,11 +90,13 @@ export async function POST(request: Request) {
       if (mi.is_available === false) {
         return new NextResponse(JSON.stringify({ success: false, error: 'One or more items are not available' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
       }
+      // Use size_price if provided, otherwise use menu item price
+      const priceAtTime = it.size_price !== undefined && it.size_price !== null && Number.isFinite(it.size_price) ? it.size_price : mi.price;
       const insertRow: any = {
         order_id: orderId,
         menu_item_id: it.menu_item_id,
         quantity: it.quantity,
-        price_at_time: mi.price,
+        price_at_time: priceAtTime,
         notes: it.notes || null,
       };
       if (await columnExists('order_items', 'item_name')) {
@@ -102,6 +108,16 @@ export async function POST(request: Request) {
       if (await columnExists('order_items', 'status')) {
         insertRow.status = 'active';
       }
+      // Size fields
+      if (await columnExists('order_items', 'size_id') && it.size_id) {
+        insertRow.size_id = it.size_id;
+      }
+      if (await columnExists('order_items', 'size_name') && it.size_name) {
+        insertRow.size_name = it.size_name;
+      }
+      if (await columnExists('order_items', 'size_price') && it.size_price !== undefined && it.size_price !== null && Number.isFinite(it.size_price)) {
+        insertRow.size_price = it.size_price;
+      }
       toInsert.push(insertRow);
     }
 
@@ -111,6 +127,7 @@ export async function POST(request: Request) {
     const itemSchemaHasStatus = await columnExists('order_items', 'status');
     const itemSchemaHasItemName = await columnExists('order_items', 'item_name');
     const itemSchemaHasItemKind = await columnExists('order_items', 'item_kind');
+    const itemSchemaHasSize = await columnExists('order_items', 'size_id');
     const { data: allItems } = await supabaseAdmin
       .from('order_items')
       .select(itemSchemaHasStatus ? 'quantity, price_at_time, status' : 'quantity, price_at_time')
@@ -137,6 +154,7 @@ export async function POST(request: Request) {
       ...(itemSchemaHasItemName ? ['item_name'] : []),
       ...(itemSchemaHasItemKind ? ['item_kind'] : []),
       ...(itemSchemaHasStatus ? ['status'] : []),
+      ...(itemSchemaHasSize ? ['size_id', 'size_name', 'size_price'] : []),
       'menu_items(name)',
     ].join(', ');
     const { data: fullOrder, error: fullErr } = await supabaseAdmin
@@ -154,6 +172,9 @@ export async function POST(request: Request) {
       notes: it.notes,
       item_kind: itemSchemaHasItemKind ? (it.item_kind ?? null) : null,
       status: itemSchemaHasStatus ? (it.status ?? 'active') : 'active',
+      size_id: itemSchemaHasSize ? (it.size_id ?? null) : null,
+      size_name: itemSchemaHasSize ? (it.size_name ?? null) : null,
+      size_price: itemSchemaHasSize && it.size_price !== undefined && it.size_price !== null ? Number(it.size_price) : null,
     }));
     const hotelTheme = await getHotelThemeForOrder(orderId);
     return new NextResponse(JSON.stringify({ success: true, order: { ...((fullOrder as Record<string, any>) || {}), items: itemsOut, hotel_theme: hotelTheme || (fullOrder as any)?.hotel_theme } }), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });

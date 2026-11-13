@@ -21,13 +21,77 @@ const createOrderSchema = z.object({
     z.object({
       menu_item_id: z.string().min(1).nullable().optional(),
       quantity: z.number().int().positive(),
-      price_at_time: z.number().nonnegative(), // allows 0 for free items like Free Water
+      price_at_time: z.number().nonnegative(),
       notes: z.string().optional().nullable(),
       item_name: z.string().optional().nullable(),
-      item_kind: z.string().optional().nullable(), // e.g. 'water' (migration 028)
+      item_kind: z.string().optional().nullable(),
+      // Size options
+      size_id: z.string().uuid().nullable().optional(),
+      size_name: z.string().optional().nullable(),
+      // `null` is accepted for backwards compatibility with older cached
+      // clients: a normal (no-size) dish omits this field, and a stale bundle
+      // may still send `null`. Rejecting null made the whole order fail.
+      size_price: z.number().nonnegative().nullish(),
     })
   ).min(1, 'Order must contain at least one item'),
 });
+
+type ValidatedItems = z.infer<typeof createOrderSchema>['items'];
+type ItemSchema = Awaited<ReturnType<typeof getOrderItemsSchema>>;
+
+function buildOrderItemRows(
+  orderId: string,
+  items: ValidatedItems,
+  itemSchema: ItemSchema
+): Record<string, any>[] {
+  return items.map((item) => {
+    const rawId = typeof item.menu_item_id === 'string' ? item.menu_item_id.trim() : '';
+    const menuItemId = rawId && isUuid(rawId) ? rawId : null;
+    const isWater = item.item_kind === 'water' || (!menuItemId && !!item.item_name && WATER_NAME_PATTERN.test(item.item_name));
+    const kind = isWater ? 'water' : (item.item_kind || null);
+    const name = item.item_name || (isWater ? 'Free Water' : null);
+
+    // Embed water metadata tag in notes if DB column item_name/item_kind is not yet deployed
+    let finalNotes = item.notes ? cleanWaterNotes(item.notes) : null;
+    if (isWater && name) {
+      const tag = `[water_item:{"name":${JSON.stringify(name)},"kind":"water"}]`;
+      finalNotes = finalNotes ? `${tag} ${finalNotes}` : tag;
+    }
+
+    const row: Record<string, any> = {
+      order_id: orderId,
+      menu_item_id: menuItemId,
+      quantity: item.quantity,
+      price_at_time: item.price_at_time,
+      notes: finalNotes,
+    };
+    if (itemSchema.itemName) row.item_name = name;
+    if (itemSchema.itemKind && kind) row.item_kind = kind;
+    if (itemSchema.status) row.status = 'active';
+    // Size fields
+    if (itemSchema.sizeId && item.size_id && isUuid(item.size_id)) row.size_id = item.size_id;
+    if (itemSchema.sizeName && item.size_name) row.size_name = item.size_name;
+    if (itemSchema.sizePrice && item.size_price !== undefined && item.size_price !== null && Number.isFinite(item.size_price)) row.size_price = item.size_price;
+    return row;
+  });
+}
+
+async function recalculateOrderTotal(orderId: string, itemSchema: ItemSchema): Promise<number> {
+  const cols = ['quantity', 'price_at_time', ...(itemSchema.status ? ['status'] : [])].join(', ');
+  const { data, error } = await supabaseAdmin
+    .from('order_items')
+    .select(cols)
+    .eq('order_id', orderId);
+  if (error) throw new Error(`Order total recalculation failed: ${error.message}`);
+
+  let total = 0;
+  for (const it of data || []) {
+    const row = it as any;
+    if (itemSchema.status && String(row.status || '').toLowerCase() === 'cancelled') continue;
+    total += Number(row.quantity || 0) * Number(row.price_at_time || 0);
+  }
+  return total;
+}
 
 interface ActiveOrderRow {
   id: string;
@@ -86,7 +150,84 @@ export async function POST(request: Request) {
         .maybeSingle<ActiveOrderRow>();
 
       if (!existingError && existingOrder) {
-        // Return the existing active order instead of creating a duplicate
+        // Append the incoming cart to the existing active order instead of
+        // silently dropping it. Previously this branch returned the old order
+        // without inserting the new items, so a guest who re-opened the menu
+        // or re-scanned the QR for a table that already had an open order saw
+        // only the earlier single item in Live Orders.
+        const newRows = buildOrderItemRows(existingOrder.id, validated.items, itemSchema);
+
+        // Merge exact duplicates into the existing active line instead of
+        // creating a second row for the same dish/size/price/note. This keeps
+        // Live Orders and the bill readable while still preserving every unit.
+        const existingCols = [
+          'id',
+          'menu_item_id',
+          'quantity',
+          'price_at_time',
+          'notes',
+          ...(itemSchema.sizeId ? ['size_id'] : []),
+          ...(itemSchema.status ? ['status'] : []),
+        ].join(', ');
+        const { data: existingItemsData, error: existingItemsError } = await supabaseAdmin
+          .from('order_items')
+          .select(existingCols)
+          .eq('order_id', existingOrder.id);
+        if (existingItemsError) throw new Error(`Order items read failed: ${existingItemsError.message}`);
+        const existingItems = (existingItemsData || []) as any[];
+
+        const rowsToInsert: Record<string, any>[] = [];
+        for (const row of newRows) {
+          const match = row.menu_item_id
+            ? (existingItems || []).find((it: any) => {
+                if (itemSchema.status && String(it.status || '').toLowerCase() === 'cancelled') return false;
+                if (it.menu_item_id !== row.menu_item_id) return false;
+                const existingSize = itemSchema.sizeId ? (it.size_id || null) : null;
+                const newSize = itemSchema.sizeId ? (row.size_id || null) : null;
+                if (existingSize !== newSize) return false;
+                if (Number(it.price_at_time || 0) !== Number(row.price_at_time || 0)) return false;
+                if ((it.notes || null) !== (row.notes || null)) return false;
+                return true;
+              })
+            : undefined;
+
+          if (match) {
+            const mergedQty = Number(match.quantity || 0) + Number(row.quantity || 0);
+            const { error: qtyError } = await supabaseAdmin
+              .from('order_items')
+              .update({ quantity: mergedQty })
+              .eq('id', match.id);
+            if (qtyError) throw new Error(`Order item quantity update failed: ${qtyError.message}`);
+            match.quantity = mergedQty;
+          } else {
+            rowsToInsert.push(row);
+          }
+        }
+
+        if (rowsToInsert.length > 0) {
+          const { error: addItemsError } = await supabaseAdmin
+            .from('order_items')
+            .insert(rowsToInsert);
+          if (addItemsError) throw new Error(`Order items insertion failed: ${addItemsError.message}`);
+        }
+
+        const recalculatedTotal = await recalculateOrderTotal(existingOrder.id, itemSchema);
+        const updatePayload: Record<string, any> = { total_amount: recalculatedTotal };
+        if (ordersSchema.updatedAt) updatePayload.updated_at = new Date().toISOString();
+        const { error: updateError } = await supabaseAdmin
+          .from('orders')
+          .update(updatePayload)
+          .eq('id', existingOrder.id);
+        if (updateError) throw new Error(`Order total update failed: ${updateError.message}`);
+
+        try {
+          await supabaseAdmin.from('order_status_history').insert({
+            order_id: existingOrder.id,
+            status: existingOrder.status || 'pending',
+            note: 'Additional items received from customer',
+          });
+        } catch {}
+
         const storedOrderNumber: string | null = (existingOrder as any).order_number || null;
         const reference: string = orderReference({ id: existingOrder.id, order_number: storedOrderNumber });
         return NextResponse.json(
@@ -95,8 +236,13 @@ export async function POST(request: Request) {
             orderId: existingOrder.id,
             orderNumber: reference,
             orderCode: reference,
-            order: { ...(existingOrder as any), order_number: storedOrderNumber || reference },
-            recovered: true, // signal to client this is a recovered order
+            order: {
+              ...(existingOrder as any),
+              total_amount: recalculatedTotal,
+              order_number: storedOrderNumber || reference,
+            },
+            recovered: true,
+            itemsAdded: true,
           },
           { status: 200 }
         );
@@ -176,31 +322,7 @@ export async function POST(request: Request) {
     const reference: string = orderReference({ id: newOrderData.id, order_number: storedOrderNumber });
 
     // 2. Insert Order Items
-    const orderItemsToInsert = validated.items.map((item) => {
-      const rawId = typeof item.menu_item_id === 'string' ? item.menu_item_id.trim() : '';
-      const menuItemId = rawId && isUuid(rawId) ? rawId : null;
-      const isWater = item.item_kind === 'water' || (!menuItemId && !!item.item_name && WATER_NAME_PATTERN.test(item.item_name));
-      const kind = isWater ? 'water' : (item.item_kind || null);
-      const name = item.item_name || (isWater ? 'Free Water' : null);
-
-      // Embed water metadata tag in notes if DB column item_name/item_kind is not yet deployed
-      let finalNotes = item.notes ? cleanWaterNotes(item.notes) : null;
-      if (isWater && name) {
-        const tag = `[water_item:{"name":${JSON.stringify(name)},"kind":"water"}]`;
-        finalNotes = finalNotes ? `${tag} ${finalNotes}` : tag;
-      }
-
-      const row: Record<string, any> = {
-        order_id: newOrderData.id,
-        menu_item_id: menuItemId,
-        quantity: item.quantity,
-        price_at_time: item.price_at_time,
-        notes: finalNotes,
-      };
-      if (itemSchema.itemName) row.item_name = name;
-      if (itemSchema.itemKind && kind) row.item_kind = kind;
-      return row;
-    });
+    const orderItemsToInsert = buildOrderItemRows(newOrderData.id, validated.items, itemSchema);
 
     const { error: itemsError } = await supabaseAdmin
       .from('order_items')

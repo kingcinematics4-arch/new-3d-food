@@ -4,7 +4,7 @@ import React from 'react';
 import { formatPrice } from '@/lib/menu';
 import Dine3DLogo from '@/components/Dine3DLogo';
 import { cloneCustomThemeConfig, fontCssFamily, type CustomThemeConfig } from '@/lib/customTheme';
-import type { MenuTemplateProps } from './types';
+import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
 interface CustomTemplateProps extends MenuTemplateProps {
@@ -230,11 +230,14 @@ function Section({ title, p, config, layout, gap, children, embeddedViewport, he
 function CustomDishCard({
   item, currency, cart, config, cardStyles, buttonStyles, badge, onAdd, onRemove, onItemClick, onView3D, embeddedViewport, headingFamily, priceFamily,
 }: {
-  item: PublicMenuItem; currency: string | null; cart: { menuItem: PublicMenuItem; quantity: number }[]; config: CustomThemeConfig;
+  item: PublicMenuItem; currency: string | null; cart: CartItem[]; config: CustomThemeConfig;
   cardStyles: React.CSSProperties; buttonStyles: React.CSSProperties; badge: React.CSSProperties;
-  onAdd: (item: PublicMenuItem) => void; onRemove: (id: string) => void; onItemClick: (item: PublicMenuItem) => void; onView3D: (item: PublicMenuItem) => void; embeddedViewport?: boolean; headingFamily: string; priceFamily: string;
+  onAdd: (item: PublicMenuItem, qty?: number, notes?: string, size?: PublicMenuItemSize | null, sizePrice?: number) => void; onRemove: (itemId: string, sizeId: string | null) => void; onItemClick: (item: PublicMenuItem) => void; onView3D: (item: PublicMenuItem) => void; embeddedViewport?: boolean; headingFamily: string; priceFamily: string;
 }) {
-  const inCart = cart.find((c) => c.menuItem.id === item.id);
+  const inCartItems = cart.filter((c) => c.menuItem.id === item.id);
+  const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
+  const inCart = inCartItems.length > 0 ? inCartItems[0] : undefined;
+  const inCartSize = inCart?.size?.id || null;
   const has3D = Boolean(item.model_url_glb?.trim());
   const image = item.image_url?.trim() || '';
   const p = config.primaryColor;
@@ -256,7 +259,7 @@ function CustomDishCard({
           <span style={{ fontFamily: priceFamily, fontSize: config.typography.priceSize, fontWeight: 700, color: p }}>{formatPrice(Number(item.price) || 0, currency)}</span>
         </div>
         <div onClick={(e) => e.stopPropagation()}>
-          {inCart ? <Qty p={p} config={config} qty={inCart.quantity} onMinus={() => onRemove(item.id)} onPlus={() => onAdd(item)} /> : <button onClick={() => onAdd(item)} style={buttonStyles}>Add</button>}
+          {inCartQty > 0 ? <Qty p={p} config={config} qty={inCartQty} onMinus={() => onRemove(item.id, inCartSize)} onPlus={() => onAdd(item)} /> : <button onClick={() => onAdd(item)} style={buttonStyles}>Add</button>}
         </div>
       </div>
     );
@@ -289,7 +292,7 @@ function CustomDishCard({
           {Number(item.rating) > 0 ? <span>★ {Number(item.rating).toFixed(1)}</span> : null}
         </div>
         <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 'auto' }}>
-          {inCart ? <Qty p={p} config={config} qty={inCart.quantity} onMinus={() => onRemove(item.id)} onPlus={() => onAdd(item)} full embeddedViewport={embeddedViewport} /> : <button type="button" onClick={() => onAdd(item)} style={{ ...buttonStyles, width: '100%', boxSizing: 'border-box', padding: addPad, fontSize: addFont }}>Add to order</button>}
+          {inCartQty > 0 ? <Qty p={p} config={config} qty={inCartQty} onMinus={() => onRemove(item.id, inCartSize)} onPlus={() => onAdd(item)} full embeddedViewport={embeddedViewport} /> : <button type="button" onClick={() => onAdd(item)} style={{ ...buttonStyles, width: '100%', boxSizing: 'border-box', padding: addPad, fontSize: addFont }}>Add to order</button>}
         </div>
       </div>
     </div>

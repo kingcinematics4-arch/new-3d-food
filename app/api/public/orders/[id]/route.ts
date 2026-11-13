@@ -87,6 +87,9 @@ export async function GET(
       ...(itemSchema.cancelledAt ? ['cancelled_at'] : []),
       ...(itemSchema.cancellationReason ? ['cancellation_reason'] : []),
       ...(itemSchema.cancelledBy ? ['cancelled_by'] : []),
+      ...(itemSchema.sizeId ? ['size_id'] : []),
+      ...(itemSchema.sizeName ? ['size_name'] : []),
+      ...(itemSchema.sizePrice ? ['size_price'] : []),
       'menu_items (name)',
     ];
 
@@ -129,6 +132,10 @@ export async function GET(
         line_total: priceAtTime * quantity,
         notes: resolved.notes,
         item_kind: resolved.item_kind,
+        // Size fields
+        size_id: item.size_id || null,
+        size_name: item.size_name || null,
+        size_price: item.size_price !== undefined ? Number(item.size_price) : null,
         ...(itemSchema.status ? { status: item.status ?? 'active' } : {}),
         ...(itemSchema.cancelledAt ? { cancelled_at: item.cancelled_at ?? null } : {}),
         ...(itemSchema.cancellationReason ? { cancellation_reason: item.cancellation_reason ?? null } : {}),
@@ -246,6 +253,10 @@ export async function GET(
               line_total: resolved.price_at_time * resolved.quantity,
               notes: resolved.notes,
               item_kind: resolved.item_kind,
+              // Size fields
+              size_id: item.size_id || null,
+              size_name: item.size_name || null,
+              size_price: item.size_price !== undefined ? Number(item.size_price) : null,
               ...(itemSchema.status ? { status: item.status ?? 'active' } : {}),
             };
           });

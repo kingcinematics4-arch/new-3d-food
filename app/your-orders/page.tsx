@@ -27,6 +27,8 @@ interface OrderItem {
   notes: string | null;
   status?: string | null;
   item_kind?: string | null;
+  size_name?: string | null;
+  size_price?: number | null;
 }
 
 interface Order {
@@ -338,6 +340,11 @@ function OrderCard({ order, hotelSlug, onTrackClick }: OrderCardProps) {
                           ×{item.quantity}
                         </span>
                       </span>
+                      {item.size_name && (
+                        <span style={{ fontSize: '0.625rem', color: GOLD, lineHeight: 1.2 }}>
+                          Size: {item.size_name}
+                        </span>
+                      )}
                       <span style={{ fontSize: '0.625rem', color: '#6B675F', fontFamily: NUMBER_FONT, fontVariantNumeric: 'tabular-nums' }}>
                         Unit: {formatPrice(unitPrice, order.currency)} each
                       </span>

@@ -51,6 +51,15 @@ export interface DishPayload {
   ingredients: string[];
   rating: number;
   order_count: number;
+  // Size options
+  has_sizes: boolean;
+  size_selection_required: boolean;
+  sizes: Array<{
+    name: string;
+    price: number;
+    position: number;
+    is_available: boolean;
+  }>;
 }
 
 interface FormState {
@@ -75,6 +84,16 @@ interface FormState {
   modelUploading: boolean;
   modelUploadProgress: number;
   modelUploadError: string | null;
+  // Size options state
+  has_sizes: boolean;
+  size_selection_required: boolean;
+  sizes: Array<{
+    id?: string;
+    name: string;
+    price: string;
+    position: number;
+    is_available: boolean;
+  }>;
 }
 
 function numberToInput(value: unknown): string {
@@ -106,6 +125,16 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
       modelUploading: false,
       modelUploadProgress: 0,
       modelUploadError: null,
+      // Size options - load from item if available
+      has_sizes: item.has_sizes || false,
+      size_selection_required: item.size_selection_required || false,
+      sizes: (item.sizes || []).map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        price: numberToInput(s.price),
+        position: s.position || 0,
+        is_available: s.is_available !== false,
+      })),
     };
   }
 
@@ -131,6 +160,10 @@ function initialState(item: MenuItem | null, categories: Category[]): FormState 
     modelUploading: false,
     modelUploadProgress: 0,
     modelUploadError: null,
+    // Size options defaults
+    has_sizes: false,
+    size_selection_required: false,
+    sizes: [],
   };
 }
 
@@ -323,6 +356,22 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
       return;
     }
 
+    // Validate sizes if enabled
+    if (form.has_sizes) {
+      const validSizes = form.sizes.filter(s => s.name.trim() && parseFloat(s.price) > 0);
+      if (validSizes.length === 0) {
+        toast('Add at least one size with a name and price.', 'error');
+        return;
+      }
+      // Check for duplicate size names
+      const names = validSizes.map(s => s.name.trim().toLowerCase());
+      const uniqueNames = new Set(names);
+      if (names.length !== uniqueNames.size) {
+        toast('Size names must be unique.', 'error');
+        return;
+      }
+    }
+
     await onSubmit({
       name: form.name.trim(),
       description: form.description.trim(),
@@ -344,6 +393,19 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
       ingredients: splitList(form.ingredients),
       rating: item ? Number(item.rating) || 0 : 0,
       order_count: item ? Number(item.order_count) || 0 : 0,
+      // Size options
+      has_sizes: form.has_sizes,
+      size_selection_required: form.has_sizes ? form.size_selection_required : false,
+      sizes: form.has_sizes
+        ? form.sizes
+            .filter(s => s.name.trim() && parseFloat(s.price) > 0)
+            .map((s, idx) => ({
+              name: s.name.trim(),
+              price: parseFloat(s.price),
+              position: idx,
+              is_available: s.is_available,
+            }))
+        : [],
     });
   };
 
@@ -483,6 +545,124 @@ const categoryPortalRef = useRef<HTMLUListElement>(null);
                   />
                 </div>
               </div>
+
+              {/* ---------- Size Options ---------- */}
+              <section style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <span className="d3-eyebrow" style={{ fontSize: '0.5625rem' }}>
+                    Size Options
+                  </span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.has_sizes}
+                      onChange={(e) => set('has_sizes', e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: 'var(--gold)', cursor: 'pointer' }}
+                    />
+                    Enable size variants
+                  </label>
+                </div>
+
+                {form.has_sizes && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-dimmed)', lineHeight: 1.5 }}>
+                      Add size variants with custom names and prices. Customers must select a size when ordering.
+                    </p>
+
+                    {form.sizes.map((size, index) => (
+                      <div key={size.id || index} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <input
+                          type="text"
+                          value={size.name}
+                          onChange={(e) => {
+                            const newSizes = [...form.sizes];
+                            newSizes[index] = { ...newSizes[index], name: e.target.value };
+                            set('sizes', newSizes);
+                          }}
+                          placeholder="Size name (e.g. Small, Medium, Large)"
+                          className="d3-input"
+                          style={{ flex: '1 1 180px', minWidth: 150 }}
+                        />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.6875rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          <span>{currencyLabel}</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            min="0"
+                            value={size.price}
+                            onChange={(e) => {
+                              const newSizes = [...form.sizes];
+                              newSizes[index] = { ...newSizes[index], price: e.target.value };
+                              set('sizes', newSizes);
+                            }}
+                            placeholder="0.00"
+                            className="d3-input"
+                            style={{ width: 100 }}
+                          />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.6875rem', color: 'var(--text-secondary)' }}>
+                          <input
+                            type="checkbox"
+                            checked={size.is_available}
+                            onChange={(e) => {
+                              const newSizes = [...form.sizes];
+                              newSizes[index] = { ...newSizes[index], is_available: e.target.checked };
+                              set('sizes', newSizes);
+                            }}
+                            style={{ width: 14, height: 14, accentColor: 'var(--gold)' }}
+                          />
+                          Available
+                        </label>
+                        {form.sizes.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newSizes = form.sizes.filter((_, i) => i !== index);
+                              set('sizes', newSizes);
+                            }}
+                            style={{
+                              padding: '0.375rem 0.625rem',
+                              background: 'transparent',
+                              border: '1px solid rgba(200,80,80,0.3)',
+                              borderRadius: 6,
+                              color: '#FCA5A5',
+                              fontSize: '0.625rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newSizes = [...form.sizes, { name: '', price: '', position: form.sizes.length, is_available: true }];
+                        set('sizes', newSizes);
+                      }}
+                      className="d3-btn-inline"
+                      style={{ width: 'fit-content', borderStyle: 'dashed' }}
+                    >
+                      + Add Size
+                    </button>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: '0.5rem', borderTop: '1px solid var(--border-warm)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        <input
+                          type="checkbox"
+                          checked={form.size_selection_required}
+                          onChange={(e) => set('size_selection_required', e.target.checked)}
+                          style={{ width: 16, height: 16, accentColor: 'var(--gold)' }}
+                        />
+                        Require size selection (customer must choose a size before adding to cart)
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </section>
 
               <div>
                 <label className="d3-label" htmlFor="dish-description">

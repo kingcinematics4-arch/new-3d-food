@@ -1,0 +1,38 @@
+﻿[
+    {
+        "table":  "hotels",
+        "exported":  true,
+        "rows":  1,
+        "note":  ""
+    },
+    {
+        "table":  "categories",
+        "exported":  true,
+        "rows":  16,
+        "note":  ""
+    },
+    {
+        "table":  "menu_items",
+        "exported":  true,
+        "rows":  3,
+        "note":  ""
+    },
+    {
+        "table":  "menu_item_sizes",
+        "exported":  false,
+        "rows":  0,
+        "note":  "table missing (migration not applied)"
+    },
+    {
+        "table":  "orders",
+        "exported":  true,
+        "rows":  115,
+        "note":  ""
+    },
+    {
+        "table":  "order_items",
+        "exported":  true,
+        "rows":  172,
+        "note":  ""
+    }
+]

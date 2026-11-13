@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     // updated_at column has not been created, because selecting a
     // missing column fails the whole query (42703).
     const schema = await getOrdersSchema();
-    const itemSchema = await getOrderItemsSchema().catch(() => ({ itemName: false, status: false, cancelledAt: false, cancellationReason: false, cancelledBy: false, itemKind: false } as any));
+    const itemSchema = await getOrderItemsSchema().catch(() => ({ itemName: false, status: false, cancelledAt: false, cancellationReason: false, cancelledBy: false, itemKind: false, sizeId: false, sizeName: false, sizePrice: false } as any));
 
     const itemCols = [
       'id',
@@ -59,6 +59,9 @@ export async function GET(request: Request) {
       ...(itemSchema.cancelledAt ? ['cancelled_at'] : []),
       ...(itemSchema.cancellationReason ? ['cancellation_reason'] : []),
       ...(itemSchema.cancelledBy ? ['cancelled_by'] : []),
+      ...(itemSchema.sizeId ? ['size_id'] : []),
+      ...(itemSchema.sizeName ? ['size_name'] : []),
+      ...(itemSchema.sizePrice ? ['size_price'] : []),
       'menu_items ( name, price )',
     ].join(',\n          ');
 

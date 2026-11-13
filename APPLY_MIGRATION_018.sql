@@ -1,13 +1,13 @@
-﻿-- =============================================================================
+-- =============================================================================
 -- supabase/migrations/018_apply_pending_migrations.sql
 --
 -- CONSOLIDATED FORWARD-ONLY MIGRATION
--- Applies the net effect of migrations 007 â†’ 017 that were authored locally
+-- Applies the net effect of migrations 007 → 017 that were authored locally
 -- but never executed against the live database
 -- (sqfuoqmmaorjxlleggfu.supabase.co).
 --
--- LIVE SCHEMA AUDIT â€” 2026-11-02
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- LIVE SCHEMA AUDIT — 2026-11-02
+-- ─────────────────────────────────────────────────────────────────────────────
 -- public.orders (actual live columns):
 --   id, hotel_id, customer_name, customer_phone, table_number, notes, status,
 --   payment_status, payment_method, subtotal, tax, service_charge,
@@ -23,18 +23,18 @@
 -- Records to preserve: 52 orders, 69 order_items
 --
 -- GUARANTEES
---   â€¢ Every ALTER uses ADD COLUMN IF NOT EXISTS  â†’ safe to re-run
---   â€¢ No DROP TABLE, TRUNCATE, DELETE, or RESET
---   â€¢ No RLS changes; existing policies are untouched
---   â€¢ No duplicate column creation
---   â€¢ All 52 orders and 69 order_items are preserved with original data intact
+--   • Every ALTER uses ADD COLUMN IF NOT EXISTS  → safe to re-run
+--   • No DROP TABLE, TRUNCATE, DELETE, or RESET
+--   • No RLS changes; existing policies are untouched
+--   • No duplicate column creation
+--   • All 52 orders and 69 order_items are preserved with original data intact
 -- =============================================================================
 
 BEGIN;
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
--- SECTION A: public.orders â€” missing columns from migrations 007, 008, 015/016
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- ─────────────────────────────────────────────────────────────────────────────
+-- SECTION A: public.orders — missing columns from migrations 007, 008, 015/016
+-- ─────────────────────────────────────────────────────────────────────────────
 
 -- A1. updated_at (migration 007)
 ALTER TABLE public.orders
@@ -162,9 +162,9 @@ WHERE status = 'cancelled'
   AND cancellation_source IS NULL
   AND cancelled_by IS NULL;
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
--- SECTION B: public.order_items â€” missing columns from migration 017
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- ─────────────────────────────────────────────────────────────────────────────
+-- SECTION B: public.order_items — missing columns from migration 017
+-- ─────────────────────────────────────────────────────────────────────────────
 
 -- B1. Add cancellation tracking columns
 ALTER TABLE public.order_items
@@ -182,17 +182,17 @@ WHERE status IS NULL;
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id_status
   ON public.order_items (order_id, status);
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- ─────────────────────────────────────────────────────────────────────────────
 -- SECTION C: PostgREST schema cache refresh
 -- Notifies PostgREST to reload its schema cache so the new columns are
 -- immediately visible without a container restart.
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- ─────────────────────────────────────────────────────────────────────────────
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
 
 -- =============================================================================
--- VERIFICATION QUERIES (read-only â€” safe to run any time after applying)
+-- VERIFICATION QUERIES (read-only — safe to run any time after applying)
 -- =============================================================================
 
 -- V1. Confirm order_items columns

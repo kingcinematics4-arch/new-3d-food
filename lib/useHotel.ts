@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './authContext';
 import { queryClient } from './queryClient';
@@ -36,6 +36,18 @@ export interface Hotel {
   updated_at: string;
 }
 
+export interface MenuItemSize {
+  id: string;
+  menu_item_id: string;
+  hotel_id: string;
+  name: string;
+  price: number;
+  position: number;
+  is_available: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MenuItem {
   id: string;
   hotel_id: string;
@@ -60,6 +72,10 @@ export interface MenuItem {
   ingredients: string[];
   created_at: string;
   updated_at: string;
+  // Size options fields
+  has_sizes?: boolean;
+  size_selection_required?: boolean;
+  sizes?: MenuItemSize[];
 }
 
 export interface Order {
@@ -115,6 +131,12 @@ export interface OrderItem {
   item_name?: string | null;
   /** Added by migration 028. Stable product kind, e.g. 'water'. */
   item_kind?: string | null;
+  /** Added by migration 033. Size variant ID for size-specific pricing. */
+  size_id?: string | null;
+  /** Added by migration 033. Size variant name (e.g. 'Small', 'Medium'). */
+  size_name?: string | null;
+  /** Added by migration 033. Size-specific price at time of order. */
+  size_price?: number | null;
   menu_item?: {
     name: string;
   };
@@ -270,9 +292,32 @@ export function useOrders(hotelId: string | null, opts?: { scope?: 'month' | 'al
     staleTime: 15_000,
     gcTime: 600_000,
     refetchInterval: 3000,
+    // Live Orders must keep polling even when the dashboard tab is in the
+    // background. Without this, browsers throttle/pause the interval and a
+    // newly placed order can appear "missing" until the page is reloaded.
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const { data: orders = [], isLoading: loading, error, refetch } = query;
+
+  // Immediate refresh when the Live Orders tab becomes visible again, instead
+  // of waiting for the next polling tick.
+  useEffect(() => {
+    if (!hotelId || typeof document === 'undefined') return;
+    const refresh = () => {
+      if (document.visibilityState === 'visible') {
+        queryClient.invalidateQueries({ queryKey: queryKeys.orders(hotelId) });
+      }
+    };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [hotelId, queryClient]);
 
   const updateOrderStatusMutation = useMutation({
     mutationFn: async ({ orderId, status, cancellationReason }: { orderId: string; status: string; cancellationReason?: string }) => {

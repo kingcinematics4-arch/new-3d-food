@@ -3,7 +3,7 @@
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
 import Dine3DLogo from '@/components/Dine3DLogo';
-import type { MenuTemplateProps } from './types';
+import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
 export default function ClassicLuxuryTemplate({
@@ -263,14 +263,17 @@ function ClassicLuxuryCard({
 }: {
   item: PublicMenuItem;
   currency: string | null;
-  cart: { menuItem: PublicMenuItem; quantity: number }[];
-  onAdd: (item: PublicMenuItem) => void;
-  onRemove: (id: string) => void;
+  cart: CartItem[];
+  onAdd: (item: PublicMenuItem, qty?: number, notes?: string, size?: PublicMenuItemSize | null, sizePrice?: number) => void;
+  onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
   isHero?: boolean;
 }) {
-  const inCart = cart.find((c) => c.menuItem.id === item.id);
+  const inCartItems = cart.filter((c) => c.menuItem.id === item.id);
+  const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
+  const inCart = inCartItems.length > 0 ? inCartItems[0] : undefined;
+  const inCartSize = inCart?.size?.id || null;
   const has3D = Boolean(item.model_url_glb?.trim());
   const image = item.image_url?.trim() || '';
 
@@ -365,19 +368,19 @@ function ClassicLuxuryCard({
 
         {/* Action Button */}
         <div className="pt-3 border-t border-[#B8A47A]/20 flex items-center justify-between gap-3">
-          {inCart ? (
+          {inCartQty > 0 ? (
             <div
               onClick={(e) => e.stopPropagation()}
               className="flex items-center justify-between w-full bg-[#FAF8F5] border border-[#B8A47A] rounded-lg px-3 py-1.5"
             >
               <button
-                onClick={() => onRemove(item.id)}
+                onClick={() => onRemove(item.id, inCartSize)}
                 className="w-7 h-7 rounded-full bg-white border border-[#B8A47A]/50 text-[#1A1A1A] font-sans font-semibold text-sm hover:bg-[#F4F1EA] transition-colors"
               >
                 −
               </button>
               <span className="text-sm font-sans font-medium text-[#1A1A1A]">
-                {inCart.quantity} in Degustation
+                {inCartQty} in Degustation
               </span>
               <button
                 onClick={() => onAdd(item)}

@@ -14,7 +14,7 @@
    CSS CUSTOM PROPERTIES (DESIGN TOKENS)
    ============================================ */
 :root {
-  /* Backgrounds â€” near-black through deep charcoal */
+  /* Backgrounds — near-black through deep charcoal */
   --bg-primary:   #0B0B0A;
   --bg-secondary: #121210;
   --bg-tertiary:  #171613;
@@ -23,21 +23,21 @@
   --bg-surface-3: #232019;
   --bg-elevated:  #26231D;
 
-  /* Champagne accent â€” used sparingly, never as a fill */
+  /* Champagne accent — used sparingly, never as a fill */
   --gold:         #B8A47A;
   --gold-bright:  #CDB98F;
   --gold-dim:     #6E6350;
   --gold-pale:    #D9CBAB;
   --gold-deep:    #9A8760;
 
-  /* Typography â€” warm ivory */
+  /* Typography — warm ivory */
   --text-primary:   #F3EFE7;
   --text-secondary: #C2BCB0;
   --text-muted:     #9B968C;
   --text-dimmed:    #6B675F;
   --text-gold:      #B8A47A;
 
-  /* Borders â€” thin, warm, barely there */
+  /* Borders — thin, warm, barely there */
   --border-subtle:  rgba(184,164,122,0.10);
   --border-light:   rgba(184,164,122,0.18);
   --border-medium:  rgba(184,164,122,0.28);
@@ -66,7 +66,7 @@
      LAYOUT DESIGN TOKENS
      These control structural properties (radius, spacing,
      image ratio, container width) so each menu theme can
-     present a genuinely different layout â€” not just colours.
+     present a genuinely different layout — not just colours.
      Defaults here match the Classic Luxury theme.
      ============================================ */
   --d3-card-radius: 8px;
@@ -121,7 +121,7 @@ body {
    TYPOGRAPHY SYSTEM
    ============================================ */
 
-/* Display headings â€” editorial serif */
+/* Display headings — editorial serif */
 .d3-display {
   font-family: var(--font-display);
   font-weight: 400;
@@ -220,7 +220,7 @@ body {
    BUTTONS
    ============================================ */
 
-/* Primary CTA â€” charcoal body, champagne hairline, champagne type */
+/* Primary CTA — charcoal body, champagne hairline, champagne type */
 .d3-btn-primary {
   display: inline-flex;
   align-items: center;
@@ -256,7 +256,7 @@ body {
   cursor: not-allowed;
 }
 
-/* Ghost / outline button â€” hairline only */
+/* Ghost / outline button — hairline only */
 .d3-btn-ghost {
   display: inline-flex;
   align-items: center;
@@ -327,7 +327,7 @@ body {
    no fills, no glows.
    ============================================ */
 
-/* Primary action â€” charcoal + champagne hairline */
+/* Primary action — charcoal + champagne hairline */
 .d3-btn-quiet {
   display: inline-flex;
   align-items: center;
@@ -352,7 +352,7 @@ body {
   color: var(--gold);
 }
 
-/* Secondary action â€” transparent, low contrast */
+/* Secondary action — transparent, low contrast */
 .d3-btn-subtle {
   display: inline-flex;
   align-items: center;
@@ -400,7 +400,7 @@ body {
   color: var(--text-primary);
 }
 
-/* 3D affordance â€” small, refined, never a glow */
+/* 3D affordance — small, refined, never a glow */
 .d3-btn-3d {
   display: inline-flex;
   align-items: center;
@@ -479,7 +479,7 @@ body {
   border-radius: 10px;
 }
 
-/* Dish card â€” restrained hover, photography is the focus */
+/* Dish card — restrained hover, photography is the focus */
 .d3-dish-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-warm);
@@ -551,7 +551,7 @@ body {
    Applied to the public site root by the
    accent/background/button choices saved in
    the Dine3D admin panel. The rules only
-   recolour the existing treatments â€” the
+   recolour the existing treatments — the
    champagne/ivory identity is preserved.
    ============================================ */
 
@@ -645,7 +645,7 @@ body {
   background: var(--bg-surface-2);
 }
 
-/* Inline notice â€” neutral, no colour coding */
+/* Inline notice — neutral, no colour coding */
 .d3-note {
   display: flex;
   align-items: flex-start;
@@ -815,7 +815,7 @@ body {
 }
 
 /* The crop window a padded logo is presented through. Only rendered when the
-   file's visible bounds have actually been measured â€” an uncropped logo keeps
+   file's visible bounds have actually been measured — an uncropped logo keeps
    its original plain layout and is not constrained by this at all.
 
    It is sized on whichever axis runs out first: a wide mark claims the full
@@ -1000,7 +1000,7 @@ body {
   color: #C46658;
 }
 
-/* Status badges â€” a single champagne highlight, everything else quiet */
+/* Status badges — a single champagne highlight, everything else quiet */
 .d3-status-placed   { background: rgba(184,164,122,0.12); border: 1px solid rgba(184,164,122,0.34); color: var(--gold-pale); }
 .d3-status-accepted { background: rgba(243,239,231,0.05); border: 1px solid var(--border-warm); color: var(--text-primary); }
 .d3-status-preparing{ background: rgba(243,239,231,0.04); border: 1px solid var(--border-warm); color: var(--text-secondary); }
@@ -1008,7 +1008,7 @@ body {
 .d3-status-completed{ background: transparent; border: 1px solid var(--border-warm); color: var(--text-dimmed); }
 .d3-status-cancelled{ background: rgba(196,102,88,0.05); border: 1px solid rgba(196,102,88,0.24); color: #D9A79E; }
 
-/* Live marker â€” champagne, softly breathing */
+/* Live marker — champagne, softly breathing */
 .d3-live-dot {
   width: 5px;
   height: 5px;

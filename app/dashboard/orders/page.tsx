@@ -105,6 +105,7 @@ interface NormalisedItem {
   notes?: string | null;
   status?: string | null;
   item_kind?: string | null;
+  size_name?: string | null;
 }
 
 function WaterDropletIcon({ size = 14 }: { size?: number }) {
@@ -458,7 +459,7 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
         {/* Order context */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ fontSize: '0.5625rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dimmed)' }}>
-            TABLE {order.table_number || '—'} · <span style={{ fontFamily: 'ui-monospace, monospace' }}>{order.id.slice(0, 8).toUpperCase()}</span>
+            TABLE {order.table_number || '—'} · <span style={{ fontFamily: 'ui-monospace, monospace' }}>{order.order_number || order.id.slice(0, 8).toUpperCase()}</span>
           </div>
           {formatOrderDateIST(order.created_at) && (
             <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>{formatOrderDateIST(order.created_at)}</div>
@@ -475,6 +476,11 @@ function ItemModal({ modal, currency, updatingOrderIds, onClose, onStatusUpdate,
             <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: itemIsCancelled ? '#C46658' : 'var(--text-primary)', display: 'inline-flex', alignItems: 'center' }}>
               {isWaterItem(item) && <WaterDropletIcon size={14} />}
               {item.name} {itemIsCancelled ? '(CANCELLED)' : ''}
+              {item.size_name && (
+                <span style={{ marginLeft: 6, fontSize: '0.625rem', fontWeight: 500, color: 'var(--gold)', background: 'rgba(201,169,110,0.12)', border: '1px solid rgba(201,169,110,0.28)', borderRadius: 4, padding: '0.0625rem 0.3125rem' }}>
+                  {item.size_name}
+                </span>
+              )}
             </span>
             <span style={{ fontSize: '0.8125rem', color: 'var(--gold)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {formatPrice(item.price * item.quantity, currency)}
@@ -809,6 +815,7 @@ export default function LiveOrdersPage() {
           notes: item.notes,
           status: item.status || (item.is_cancelled ? 'cancelled' : 'active'),
           item_kind: item.item_kind ?? null,
+          size_name: item.size_name || null,
         } as NormalisedItem;
       });
   };
@@ -983,6 +990,7 @@ export default function LiveOrdersPage() {
                     notes: item.notes,
                     status: item.status || (item.is_cancelled ? 'cancelled' : 'active'),
                     item_kind: item.item_kind ?? 'water',
+                    size_name: item.size_name || null,
                   } as NormalisedItem;
                 });
                 const waterCharges: number = (order as any).water_charges ?? 0;
@@ -1046,7 +1054,7 @@ export default function LiveOrdersPage() {
                         Table {order.table_number || '\u2014'}
                       </div>
                       <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.625rem', color: 'var(--text-dimmed)', marginTop: 2 }}>
-                        {order.id.slice(0, 8).toUpperCase()}
+                        {order.order_number || order.id.slice(0, 8).toUpperCase()}
                       </div>
                       {formatOrderDateIST(order.created_at) && (
                         <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>{formatOrderDateIST(order.created_at)}</div>
@@ -1187,7 +1195,7 @@ export default function LiveOrdersPage() {
                       Table {order.table_number || '\u2014'}
                     </div>
                     <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.625rem', color: 'var(--text-dimmed)', marginTop: 2 }}>
-                      {order.id.slice(0, 8).toUpperCase()}
+                      {order.order_number || order.id.slice(0, 8).toUpperCase()}
                     </div>
                     {formatOrderDateIST(order.created_at) && (
                       <div style={{ fontSize: '12px', color: 'var(--text-dimmed)', marginTop: 2, lineHeight: 1.3 }}>{formatOrderDateIST(order.created_at)}</div>
@@ -1266,7 +1274,7 @@ export default function LiveOrdersPage() {
                         <span style={{ fontSize: '0.8125rem', color: itemIsCancelled ? '#C46658' : 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
                           {isWaterItem(item) && <WaterDropletIcon size={13} />}
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {item.quantity} × {item.name}{itemIsCancelled ? ' [C]' : ''}
+                            {item.quantity} × {item.name}{item.size_name ? ` (${item.size_name})` : ''}{itemIsCancelled ? ' [C]' : ''}
                           </span>
                         </span>
                         <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', fontWeight: 500, flexShrink: 0 }}>

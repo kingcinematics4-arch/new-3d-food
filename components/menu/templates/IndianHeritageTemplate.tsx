@@ -3,7 +3,7 @@
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
 import Dine3DLogo from '@/components/Dine3DLogo';
-import type { MenuTemplateProps } from './types';
+import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
 export default function IndianHeritageTemplate({
@@ -262,13 +262,16 @@ function IndianHeritageCard({
 }: {
   item: PublicMenuItem;
   currency: string | null;
-  cart: { menuItem: PublicMenuItem; quantity: number }[];
-  onAdd: (item: PublicMenuItem) => void;
-  onRemove: (id: string) => void;
+  cart: CartItem[];
+  onAdd: (item: PublicMenuItem, qty?: number, notes?: string, size?: PublicMenuItemSize | null, sizePrice?: number) => void;
+  onRemove: (itemId: string, sizeId: string | null) => void;
   onItemClick: (item: PublicMenuItem) => void;
   onView3D: (item: PublicMenuItem) => void;
 }) {
-  const inCart = cart.find((c) => c.menuItem.id === item.id);
+  const inCartItems = cart.filter((c) => c.menuItem.id === item.id);
+  const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
+  const inCart = inCartItems.length > 0 ? inCartItems[0] : undefined;
+  const inCartSize = inCart?.size?.id || null;
   const has3D = Boolean(item.model_url_glb?.trim());
   const image = item.image_url?.trim() || '';
 
@@ -360,19 +363,19 @@ function IndianHeritageCard({
 
         {/* BRASS THALI ACTION */}
         <div className="pt-2.5 border-t border-[#5A4630] flex items-center justify-between gap-2">
-          {inCart ? (
+          {inCartQty > 0 ? (
             <div
               onClick={(e) => e.stopPropagation()}
               className="flex items-center justify-between w-full bg-[#1D150E] border border-[#C69A6E] rounded px-3 py-1"
             >
               <button
-                onClick={() => onRemove(item.id)}
+                onClick={() => onRemove(item.id, inCartSize)}
                 className="w-6 h-6 rounded bg-[#2A2015] text-[#E8E1D1] font-sans font-bold text-xs flex items-center justify-center hover:bg-[#35291C]"
               >
                 −
               </button>
               <span className="text-xs font-sans font-semibold text-[#D4AF7C]">
-                {inCart.quantity} in Thali
+                {inCartQty} in Thali
               </span>
               <button
                 onClick={() => onAdd(item)}
