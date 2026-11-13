@@ -82,7 +82,6 @@ export const metadata: Metadata = {
 import HomeHero from '@/components/site/HomeHero';
 import HomeFeatures from '@/components/site/HomeFeatures';
 import HomeHowItWorks from '@/components/site/HomeHowItWorks';
-import HomePricing from '@/components/site/HomePricing';
 import HomeFaq from '@/components/site/HomeFaq';
 import HomeFooter from '@/components/site/HomeFooter';
 import BrandDivider from '@/components/site/BrandDivider';
@@ -171,8 +170,6 @@ export default async function PublicHomePage() {
           label={SECTION_LABELS.analytics}
           content={content.analytics}
         />
-
-        <HomePricing pricing={content.pricing} />
 
         <HomeHowItWorks howItWorks={content.howItWorks} />
 
