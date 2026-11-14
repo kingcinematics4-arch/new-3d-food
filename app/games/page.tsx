@@ -90,7 +90,7 @@ export default function GamesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col text-[#F3EFE7] pb-20 lg:pl-64" style={{ fontFamily: "'Inter', system-ui, sans-serif", background: 'radial-gradient(1000px 500px at 10% -10%, rgba(184,164,122,0.16), transparent 60%), radial-gradient(800px 400px at 100% 0%, rgba(66,165,245,0.08), transparent 55%), #050505' }}>
+    <div className="min-h-screen flex flex-col text-[#F3EFE7] pb-28 sm:pb-24 lg:pl-64" style={{ fontFamily: "'Inter', system-ui, sans-serif", background: 'radial-gradient(1000px 500px at 10% -10%, rgba(184,164,122,0.16), transparent 60%), radial-gradient(800px 400px at 100% 0%, rgba(66,165,245,0.08), transparent 55%), #050505' }}>
       <header className="sticky top-0 z-30 border-b border-white/10 bg-black/55 backdrop-blur-xl">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">

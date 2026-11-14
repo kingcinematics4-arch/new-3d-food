@@ -113,10 +113,21 @@ export default function ArViewer({
           rel="ar"
           href={usdz}
           style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '0.625rem 1.1rem', borderRadius: 999, border: '1px solid rgba(201,169,110,0.5)',
-            background: 'rgba(11,10,8,0.78)', color: 'var(--gold)', fontSize: '0.6875rem',
-            letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '0.625rem 1.25rem',
+            borderRadius: 999,
+            border: '1px solid var(--gold, #B8A47A)',
+            background: 'var(--gold, #B8A47A)',
+            color: '#0B0B0A',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            textDecoration: 'none',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
           }}
         >
           View in AR (Quick Look)
@@ -144,7 +155,13 @@ export default function ArViewer({
 
   const ModelViewerTag = 'model-viewer' as any;
   return (
-    <div className={className} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
+    <div
+      className={className}
+      style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280, touchAction: 'none' }}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+    >
       <ModelViewerTag
         ref={ref}
         src={glb}
@@ -155,13 +172,13 @@ export default function ArViewer({
         ar-scale="auto"
         xr-environment
         camera-controls
-        touch-action="pan-y"
+        touch-action="none"
         shadow-intensity="1.5"
         exposure="1"
         environment-image="neutral"
         alt={altText}
         poster={posterUrl || undefined}
-        style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)' }}
+        style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)', touchAction: 'none' }}
       >
         {loadError ? (
           <div style={{ position: 'absolute', left: 10, right: 10, bottom: 10, padding: '0.5rem 0.75rem', borderRadius: 8, background: 'rgba(120,40,40,0.85)', color: '#fff', fontSize: '0.6875rem' }}>

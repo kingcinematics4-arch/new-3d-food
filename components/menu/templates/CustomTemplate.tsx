@@ -198,7 +198,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
 
       <main
         className={`mx-auto w-full ${embeddedViewport ? 'max-w-full px-2.5 py-3' : 'max-w-4xl px-3 py-4 sm:px-4'}`}
-        style={{ display: 'flex', flexDirection: 'column', gap: embeddedViewport ? (config.spacing === 'compact' ? 14 : config.spacing === 'spacious' ? 26 : 18) : (config.spacing === 'compact' ? 20 : config.spacing === 'spacious' ? 40 : 28), paddingBottom: embeddedViewport ? 32 : 24, boxSizing: 'border-box', minWidth: 0 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: embeddedViewport ? (config.spacing === 'compact' ? 14 : config.spacing === 'spacious' ? 26 : 18) : (config.spacing === 'compact' ? 20 : config.spacing === 'spacious' ? 40 : 28), paddingBottom: embeddedViewport ? 32 : 'calc(env(safe-area-inset-bottom) + 90px)', boxSizing: 'border-box', minWidth: 0 }}
       >
         {filteredItems.length === 0 ? (
           <div className="py-20 text-center" style={{ color: config.secondaryTextColor || config.mutedTextColor }}><p>No dishes match your search.</p></div>
@@ -280,7 +280,31 @@ function CustomDishCard({
           <span style={{ ...badge, fontSize: embeddedViewport ? 10 : 11, padding: embeddedViewport ? '0.16rem 0.45rem' : badge.padding }}><span style={{ width: 6, height: 6, borderRadius: 2, background: item.is_veg ? '#22c55e' : '#ef4444' }} />{item.is_veg ? 'Veg' : 'Non-veg'}</span>
           {item.is_featured ? <span style={{ ...badge, fontSize: embeddedViewport ? 10 : 11, padding: embeddedViewport ? '0.16rem 0.45rem' : badge.padding, background: p, color: contrast(p), borderColor: p }}>Featured</span> : null}
         </div>
-        {has3D ? <button type="button" onClick={(e) => { e.stopPropagation(); onView3D(item); }} style={{ position: 'absolute', top: 8, right: 8, ...badge, fontSize: embeddedViewport ? 10 : 11, padding: embeddedViewport ? '0.16rem 0.45rem' : badge.padding, cursor: 'pointer' }}>3D</button> : null}
+        {has3D ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onView3D(item); }}
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: embeddedViewport ? '0.2rem 0.5rem' : '0.28rem 0.6rem',
+              borderRadius: config.badgeRadius || 6,
+              background: 'rgba(11,10,8,0.88)',
+              border: `1px solid ${p}`,
+              color: p,
+              fontSize: embeddedViewport ? 10 : 11,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              cursor: 'pointer',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+              transition: 'all 150ms ease',
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: p, display: 'inline-block' }} />
+            <span>3D LIVE</span>
+          </button>
+        ) : null}
       </div>
       <div style={{ padding: pad, display: 'flex', flexDirection: 'column', flex: 1, boxSizing: 'border-box', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6, minWidth: 0 }}>

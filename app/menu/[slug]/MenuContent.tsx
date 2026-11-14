@@ -119,6 +119,7 @@ function FoodDetailModal({
   const [qty, setQty] = useState(Math.max(1, cartQty));
   const [notes, setNotes] = useState('');
   const [selectedSize, setSelectedSize] = useState<PublicMenuItemSize | null>(null);
+  const [activeMedia, setActiveMedia] = useState<'photo' | '3d'>('photo');
   const hasGlb = Boolean(item.model_url_glb?.trim());
   const hasUsdz = Boolean(item.model_url_usdz?.trim());
   const has3D = hasGlb || hasUsdz;
@@ -129,202 +130,272 @@ function FoodDetailModal({
   const availableSizes = (item.sizes || []).filter(s => s.is_available);
 
   const effectivePrice = selectedSize ? selectedSize.price : Number(item.price) || 0;
-  // Any dish that actually has selectable sizes requires one. The hotel-level
-  // size_selection_required flag is treated as a default; it must never allow
-  // an un-sized item into the cart once size options exist.
   const requiresSize = availableSizes.length > 0;
   const canAddToCart = !requiresSize || selectedSize !== null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${item.name} details`}
     >
-         <div
-          className="w-full sm:max-w-xl max-h-[90vh] overflow-y-auto"
+      <div
+        className="w-full sm:max-w-xl max-h-[92vh] sm:max-h-[88vh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl"
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-medium, rgba(184,164,122,0.25))',
+        }}
+      >
+        {/* Top Media Header: Image or 3D viewer */}
+        <div
+          className="relative w-full flex-shrink-0"
           style={{
-            background: 'var(--bg-surface)',
-            borderTop: '1px solid var(--border-light)',
-            borderLeft: '1px solid var(--border-subtle)',
-            borderRight: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--d3-modal-radius)',
-            boxShadow: '0 -32px 80px rgba(0,0,0,0.8)',
+            height: 'min(38vh, 260px)',
+            background: 'var(--bg-secondary)',
+            overflow: 'hidden',
           }}
         >
-          <div
-            className="d3-food-image relative"
-            style={{
-              height: 'calc(var(--d3-image-height) * 0.8)',
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--d3-modal-image-radius)',
-              overflow: 'hidden',
-            }}
-          >
-          {image ? (
+          {activeMedia === '3d' && has3D ? (
+            <FoodModelViewer
+              modelUrlGlb={item.model_url_glb || undefined}
+              modelUrlUsdz={item.model_url_usdz || undefined}
+              imageUrl={image || undefined}
+              altText={item.name}
+              autoRotate
+              className="h-full w-full"
+            />
+          ) : image ? (
             <img
               src={image}
               alt={item.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            <NoAssetPanel label="No photo" height="100%" />
+            <NoAssetPanel label="No photo available" height="100%" />
           )}
 
+          {/* Close button */}
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close details"
             style={{
-              position: 'absolute', top: 10, right: 10,
-              width: 28, height: 28, borderRadius: '50%',
-              background: 'rgba(0,0,0,0.7)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
+              position: 'absolute', top: 12, right: 12,
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'rgba(0,0,0,0.75)',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.2))',
+              color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
+              zIndex: 10,
             }}
           >
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
 
-          <div style={{ position: 'absolute', top: 10, left: 10 }}>
+          {/* Badges: Veg/Non-veg */}
+          <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 10, display: 'flex', gap: 6 }}>
             <span
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '0.15625rem 0.4375rem',
+                padding: '0.2rem 0.5rem',
                 borderRadius: 4,
-                fontSize: '0.5rem',
-                fontWeight: 600,
-                letterSpacing: '0.12em',
+                fontSize: '0.625rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                background: 'rgba(11,11,10,0.75)',
-                border: '1px solid var(--border-warm)',
-                color: item.is_veg ? 'var(--gold)' : 'var(--text-dimmed)',
+                background: 'rgba(11,11,10,0.82)',
+                border: '1px solid var(--border-warm, rgba(255,255,255,0.15))',
+                color: item.is_veg ? '#34d399' : '#f87171',
+                backdropFilter: 'blur(6px)',
               }}
             >
               <span
                 style={{
-                  width: 5, height: 5, borderRadius: 1,
-                  border: `1px solid ${item.is_veg ? 'var(--gold-dim)' : 'var(--text-dimmed)'}`,
+                  width: 6, height: 6, borderRadius: '50%',
+                  backgroundColor: item.is_veg ? '#34d399' : '#f87171',
                 }}
               />
               {item.is_veg ? 'Veg' : 'Non-veg'}
             </span>
           </div>
 
+          {/* Media Switcher (Photo / 3D) if 3D is available */}
           {has3D && (
-            <button
-              onClick={() => onView3D(item)}
+            <div
               style={{
-                position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '0.375rem 0.75rem',
-                borderRadius: 100,
-                background: 'rgba(0,0,0,0.8)',
-                border: '1px solid rgba(201,169,110,0.3)',
-                color: 'var(--gold)',
-                fontSize: '0.5625rem', fontWeight: 600,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                position: 'absolute', bottom: 10, left: 12, zIndex: 10,
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: 3, borderRadius: 999,
+                background: 'rgba(11,10,8,0.85)',
+                border: '1px solid var(--border-medium, rgba(184,164,122,0.35))',
+                backdropFilter: 'blur(8px)',
               }}
             >
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                <path d="M6 1L6 11M1 6L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2" />
-              </svg>
-              View in 3D
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveMedia('photo')}
+                style={{
+                  padding: '0.3rem 0.65rem',
+                  borderRadius: 999,
+                  fontSize: '0.6875rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: activeMedia === 'photo' ? 'var(--gold, #B8A47A)' : 'transparent',
+                  color: activeMedia === 'photo' ? '#0B0B0A' : 'var(--text-secondary, #F3EFE7)',
+                  transition: 'all 150ms ease',
+                }}
+              >
+                Photo
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveMedia('3d')}
+                style={{
+                  padding: '0.3rem 0.65rem',
+                  borderRadius: 999,
+                  fontSize: '0.6875rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: activeMedia === '3d' ? 'var(--gold, #B8A47A)' : 'transparent',
+                  color: activeMedia === '3d' ? '#0B0B0A' : 'var(--text-secondary, #F3EFE7)',
+                  transition: 'all 150ms ease',
+                }}
+              >
+                3D Model
+              </button>
+              <button
+                type="button"
+                onClick={() => onView3D(item)}
+                style={{
+                  padding: '0.3rem 0.65rem',
+                  borderRadius: 999,
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: '1px solid var(--gold, #B8A47A)',
+                  background: 'rgba(184,164,122,0.15)',
+                  color: 'var(--gold, #B8A47A)',
+                  transition: 'all 150ms ease',
+                }}
+                title="Open full screen 3D and real space AR"
+              >
+                AR Fullscreen
+              </button>
+            </div>
           )}
         </div>
 
-        <div className="p-3 flex flex-col gap-2.5">
+        {/* Scrollable details container */}
+        <div
+          className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-3.5"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           <div className="flex items-start justify-between gap-4">
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <h2
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: '1.25rem',
-                  fontWeight: 500,
+                  fontSize: '1.35rem',
+                  fontWeight: 600,
                   color: 'var(--text-primary)',
                   letterSpacing: '-0.015em',
-                  lineHeight: 1.2,
-                  marginBottom: 2,
+                  lineHeight: 1.25,
+                  margin: 0,
+                  marginBottom: 4,
                 }}
               >
                 {item.name}
               </h2>
               {item.description ? (
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
                   {item.description}
                 </p>
               ) : null}
             </div>
-            <span className="d3-price"
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.25rem',
-                fontWeight: 500,
-                color: 'var(--gold)',
-                letterSpacing: '-0.02em',
-                flexShrink: 0,
-              }}
-            >
-              {formatPrice(effectivePrice, currency)}
-              {selectedSize && <span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: 8 }}>({selectedSize.name})</span>}
-            </span>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <span
+                className="d3-price"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.35rem',
+                  fontWeight: 600,
+                  color: 'var(--gold)',
+                  letterSpacing: '-0.02em',
+                  display: 'block',
+                }}
+              >
+                {formatPrice(effectivePrice, currency)}
+              </span>
+              {selectedSize && (
+                <span style={{ fontSize: '0.6875rem', fontWeight: 500, color: 'var(--text-dimmed)' }}>
+                  ({selectedSize.name})
+                </span>
+              )}
+            </div>
           </div>
 
+          {/* Size selection if dish offers sizes */}
           {availableSizes.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', paddingTop: '0.25rem' }}>
-              <label className="d3-label" style={{ fontSize: '0.625rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label className="d3-label" style={{ fontSize: '0.6875rem', fontWeight: 600 }}>
                 Select Size {requiresSize && <span style={{ color: '#FCA5A5', marginLeft: 4 }}>*</span>}
               </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                {availableSizes.map((size) => (
-                  <button
-                    key={size.id}
-                    type="button"
-                    onClick={() => setSelectedSize(size)}
-                    style={{
-                      padding: '0.375rem 0.75rem',
-                      borderRadius: 'var(--d3-input-radius)',
-                      border: selectedSize?.id === size.id
-                        ? '2px solid var(--gold)'
-                        : '1px solid var(--border-warm)',
-                      background: selectedSize?.id === size.id
-                        ? 'rgba(201,169,110,0.1)'
-                        : 'var(--bg-surface-2)',
-                      color: selectedSize?.id === size.id
-                        ? 'var(--gold)'
-                        : 'var(--text-primary)',
-                      fontSize: '0.6875rem',
-                      fontWeight: selectedSize?.id === size.id ? 600 : 500,
-                      cursor: 'pointer',
-                      transition: 'all 200ms',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 1,
-                      minWidth: 68,
-                    }}
-                  >
-                    <span>{size.name}</span>
-                    <span style={{ fontSize: '0.5625rem', fontWeight: 500, fontFamily: 'var(--font-display)' }}>
-                      {formatPrice(size.price, currency)}
-                    </span>
-                  </button>
-                ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {availableSizes.map((size) => {
+                  const isSelected = selectedSize?.id === size.id;
+                  return (
+                    <button
+                      key={size.id}
+                      type="button"
+                      onClick={() => setSelectedSize(size)}
+                      style={{
+                        padding: '0.45rem 0.85rem',
+                        borderRadius: 'var(--d3-input-radius, 8px)',
+                        border: isSelected
+                          ? '2px solid var(--gold)'
+                          : '1px solid var(--border-warm, rgba(255,255,255,0.15))',
+                        background: isSelected
+                          ? 'rgba(184,164,122,0.15)'
+                          : 'var(--bg-surface-2)',
+                        color: isSelected
+                          ? 'var(--gold)'
+                          : 'var(--text-primary)',
+                        fontSize: '0.75rem',
+                        fontWeight: isSelected ? 700 : 500,
+                        cursor: 'pointer',
+                        transition: 'all 180ms ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2,
+                        minWidth: 72,
+                      }}
+                    >
+                      <span>{size.name}</span>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, fontFamily: 'var(--font-display)' }}>
+                        {formatPrice(size.price, currency)}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: '0.5625rem' }}>
+          {/* Details specs: time, calories, rating */}
+          <div className="flex items-center gap-3 flex-wrap" style={{ fontSize: '0.6875rem' }}>
             {item.preparation_time_mins ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)' }}>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" /><path d="M6 3.5V6 L8 7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" /></svg>
-                {item.preparation_time_mins} min
+                {item.preparation_time_mins} min prep
               </span>
             ) : null}
             {item.calories ? (
@@ -334,28 +405,29 @@ function FoodDetailModal({
               </span>
             ) : null}
             {rating > 0 ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--gold)' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--gold)', fontWeight: 600 }}>
                 ★ {rating.toFixed(1)}
                 {orderCount > 0 ? ` (${orderCount} orders)` : ''}
               </span>
             ) : null}
           </div>
 
+          {/* Ingredients list */}
           {ingredients.length > 0 && (
             <div>
-              <p style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>
+              <p style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
                 Ingredients
               </p>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 {ingredients.map((ing, i) => (
                   <span
                     key={i}
                     style={{
-                      padding: '0.15625rem 0.4375rem',
+                      padding: '0.2rem 0.5rem',
                       borderRadius: 100,
-                      fontSize: '0.5625rem',
+                      fontSize: '0.625rem',
                       background: 'var(--bg-surface-2)',
-                      border: '1px solid var(--border-subtle)',
+                      border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
                       color: 'var(--text-secondary)',
                     }}
                   >
@@ -366,82 +438,127 @@ function FoodDetailModal({
             </div>
           )}
 
-          <div className="d3-divider" />
+          {/* Dietary tags */}
+          {Array.isArray(item.dietary_tags) && item.dietary_tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {item.dietary_tags.map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: 4,
+                    fontSize: '0.625rem',
+                    background: 'var(--bg-surface-2)',
+                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
 
+          {/* Special instructions */}
           <div>
-            <label className="d3-label" style={{ fontSize: '0.625rem' }}>Special Instructions</label>
+            <label className="d3-label" style={{ fontSize: '0.6875rem', fontWeight: 600, marginBottom: 4, display: 'block' }}>
+              Special Instructions
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any request for the kitchen"
+              placeholder="Any request for the chef (allergies, spice level, etc.)"
               rows={2}
               style={{
-                width: '100%', resize: 'none',
-                padding: '0.5rem', borderRadius: 'var(--d3-input-radius)',
+                width: '100%',
+                resize: 'none',
+                padding: '0.55rem 0.75rem',
+                borderRadius: 'var(--d3-input-radius, 8px)',
                 background: 'var(--bg-surface-2)',
-                border: '1px solid var(--border-warm)',
+                border: '1px solid var(--border-warm, rgba(255,255,255,0.15))',
                 color: 'var(--text-primary)',
-                fontSize: '0.75rem',
+                fontSize: '0.8125rem',
                 outline: 'none',
               }}
             />
           </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <div
-              className="flex items-center gap-1"
-              style={{
-                background: 'var(--bg-surface-2)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--d3-input-radius)',
-                padding: '0.25rem 0.4375rem',
-              }}
-            >
-              <button
-                onClick={() => setQty(Math.max(1, qty - 1))}
-                style={{
-                  width: 24, height: 24, borderRadius: '50%',
-                  background: qty <= 1 ? 'transparent' : 'var(--bg-surface-3)',
-                  border: 'none', cursor: 'pointer',
-                  color: 'var(--text-primary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.75rem', lineHeight: 1,
-                }}
-              >
-                −
-              </button>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9375rem', color: 'var(--text-primary)', minWidth: 16, textAlign: 'center' }}>
-                {qty}
-              </span>
-              <button
-                onClick={() => setQty(qty + 1)}
-                style={{
-                  width: 24, height: 24, borderRadius: 5,
-                  background: 'var(--bg-surface-3)',
-                  border: '1px solid var(--border-light)',
-                  cursor: 'pointer',
-                  color: 'var(--gold-pale)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.75rem', lineHeight: 1, fontWeight: 500,
-                }}
-              >
-                +
-              </button>
-            </div>
-
+        {/* Sticky bottom actions footer — always visible above bottom navigation */}
+        <div
+          className="shrink-0 px-4 py-3 bg-[var(--bg-surface)] border-t border-[var(--border-subtle,rgba(255,255,255,0.1))] flex items-center gap-3"
+          style={{
+            paddingBottom: 'max(env(safe-area-inset-bottom), 0.85rem)',
+            boxShadow: '0 -4px 16px rgba(0,0,0,0.2)',
+          }}
+        >
+          {/* Quantity stepper */}
+          <div
+            className="flex items-center gap-1"
+            style={{
+              background: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-warm, rgba(255,255,255,0.15))',
+              borderRadius: 'var(--d3-input-radius, 8px)',
+              padding: '0.25rem 0.5rem',
+            }}
+          >
             <button
-              onClick={() => {
-                if (!canAddToCart) return;
-                onAddToCart(item, qty, notes, selectedSize, selectedSize?.price);
-                onClose();
+              type="button"
+              onClick={() => setQty(Math.max(1, qty - 1))}
+              style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: qty <= 1 ? 'transparent' : 'var(--bg-surface-3)',
+                border: 'none', cursor: 'pointer',
+                color: 'var(--text-primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.875rem', lineHeight: 1,
               }}
-              className="d3-btn-primary"
-              style={{ flex: 1, justifyContent: 'center', padding: '0.625rem', fontSize: '0.8125rem', opacity: canAddToCart ? 1 : 0.5 }}
-              disabled={!canAddToCart}
             >
-              Add to Order · {formatPrice(effectivePrice * qty, currency)}
+              −
+            </button>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', minWidth: 22, textAlign: 'center' }}>
+              {qty}
+            </span>
+            <button
+              type="button"
+              onClick={() => setQty(qty + 1)}
+              style={{
+                width: 28, height: 28, borderRadius: 6,
+                background: 'var(--bg-surface-3)',
+                border: '1px solid var(--border-light, rgba(255,255,255,0.2))',
+                cursor: 'pointer',
+                color: 'var(--gold)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.875rem', lineHeight: 1, fontWeight: 700,
+              }}
+            >
+              +
             </button>
           </div>
+
+          {/* Add to order CTA button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (!canAddToCart) return;
+              onAddToCart(item, qty, notes, selectedSize, selectedSize?.price);
+              onClose();
+            }}
+            className="d3-btn-primary"
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              padding: '0.75rem 1rem',
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              borderRadius: 'var(--d3-btn-radius, 8px)',
+              opacity: canAddToCart ? 1 : 0.45,
+              cursor: canAddToCart ? 'pointer' : 'not-allowed',
+            }}
+            disabled={!canAddToCart}
+          >
+            Add to Order · {formatPrice(effectivePrice * qty, currency)}
+          </button>
         </div>
       </div>
     </div>
@@ -474,20 +591,21 @@ function SizeSelectionModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Select size for ${item.name}`}
     >
       <div
-        className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto"
+        className="w-full sm:max-w-md max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl"
         style={{
           background: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--d3-modal-radius)',
-          boxShadow: '0 -32px 80px rgba(0,0,0,0.8)',
+          border: '1px solid var(--border-medium, rgba(184,164,122,0.25))',
         }}
       >
-        <div className="flex items-start gap-3 p-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+        <div className="flex items-start gap-3 p-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
           {image ? (
             <img
               src={image}
@@ -498,16 +616,16 @@ function SizeSelectionModal({
             <NoAssetPanel label="No photo" height={64} />
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.2, margin: 0 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.25, margin: 0 }}>
               {item.name}
             </h2>
             {item.description ? (
-              <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }} className="line-clamp-2">
                 {item.description}
               </p>
             ) : null}
-            <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'var(--text-dimmed)' }}>
-              Choose a size to continue
+            <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 500 }}>
+              Choose a portion size
             </p>
           </div>
           <button
@@ -515,22 +633,22 @@ function SizeSelectionModal({
             onClick={onClose}
             aria-label="Close"
             style={{
-              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
               background: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)',
               color: 'var(--text-muted)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
-        <div className="p-4 flex flex-col gap-4">
+        <div className="p-4 flex-1 overflow-y-auto overscroll-contain flex flex-col gap-4">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label className="d3-label" style={{ fontSize: '0.75rem' }}>
-              Select Size <span style={{ color: '#FCA5A5', marginLeft: 4 }}>*</span>
+            <label className="d3-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+              Available Sizes <span style={{ color: '#FCA5A5', marginLeft: 4 }}>*</span>
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {availableSizes.map((size) => {
@@ -542,18 +660,18 @@ function SizeSelectionModal({
                     onClick={() => setSelectedSizeId(size.id)}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                      width: '100%', padding: '0.6875rem 0.875rem',
-                      borderRadius: 'var(--d3-input-radius)',
+                      width: '100%', padding: '0.75rem 1rem',
+                      borderRadius: 'var(--d3-input-radius, 8px)',
                       border: selected ? '2px solid var(--gold)' : '1px solid var(--border-warm)',
-                      background: selected ? 'rgba(201,169,110,0.1)' : 'var(--bg-surface-2)',
+                      background: selected ? 'rgba(184,164,122,0.14)' : 'var(--bg-surface-2)',
                       color: selected ? 'var(--gold)' : 'var(--text-primary)',
-                      cursor: 'pointer', transition: 'all 200ms', textAlign: 'left',
+                      cursor: 'pointer', transition: 'all 180ms ease', textAlign: 'left',
                     }}
                   >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: selected ? 600 : 500 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: selected ? 700 : 500, fontSize: '0.875rem' }}>
                       <span
                         style={{
-                          width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
                           border: selected ? '2px solid var(--gold)' : '1px solid var(--border-medium)',
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         }}
@@ -562,7 +680,7 @@ function SizeSelectionModal({
                       </span>
                       {size.name}
                     </span>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: selected ? 'var(--gold)' : 'var(--text-primary)' }}>
                       {formatPrice(size.price, currency)}
                     </span>
                   </button>
@@ -571,13 +689,13 @@ function SizeSelectionModal({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Quantity</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: '0.25rem' }}>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Quantity</span>
             <div
               className="flex items-center gap-2"
               style={{
                 background: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--d3-input-radius)', padding: '0.25rem 0.5rem',
+                borderRadius: 'var(--d3-input-radius, 8px)', padding: '0.25rem 0.5rem',
               }}
             >
               <button
@@ -587,48 +705,65 @@ function SizeSelectionModal({
               >
                 −
               </button>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-primary)', minWidth: 20, textAlign: 'center' }}>{qty}</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)', minWidth: 24, textAlign: 'center' }}>{qty}</span>
               <button
                 type="button"
                 onClick={() => setQty((q) => q + 1)}
-                style={{ width: 30, height: 30, borderRadius: 5, background: 'var(--bg-surface-3)', border: '1px solid var(--border-light)', color: 'var(--gold-pale)', cursor: 'pointer', fontSize: '1rem', fontWeight: 500 }}
+                style={{ width: 30, height: 30, borderRadius: 6, background: 'var(--bg-surface-3)', border: '1px solid var(--border-light)', color: 'var(--gold)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700 }}
               >
                 +
               </button>
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="d3-btn-primary"
-              disabled={!canAdd}
-              onClick={() => {
-                if (!selectedSize) return;
-                onConfirm(item, qty, selectedSize, selectedSize.price);
-                onClose();
-              }}
-              style={{ flex: 1, justifyContent: 'center', padding: '0.875rem', fontSize: '0.9375rem', opacity: canAdd ? 1 : 0.5 }}
-            >
-              Add to Order · {formatPrice(unitPrice * qty, currency)}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onViewDetails(item);
-              }}
-              className="d3-btn-subtle"
-              style={{ padding: '0.875rem 0.75rem', whiteSpace: 'nowrap' }}
-            >
-              Details
-            </button>
-          </div>
-          {!canAdd && (
-            <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-dimmed)', textAlign: 'center' }}>
-              Select a size to enable adding this dish.
-            </p>
-          )}
+        {/* Sticky footer */}
+        <div
+          className="shrink-0 px-4 py-3 bg-[var(--bg-surface)] border-t border-[var(--border-subtle)] flex items-center gap-3"
+          style={{
+            paddingBottom: 'max(env(safe-area-inset-bottom), 0.85rem)',
+            boxShadow: '0 -4px 16px rgba(0,0,0,0.15)',
+          }}
+        >
+          <button
+            type="button"
+            className="d3-btn-primary"
+            disabled={!canAdd}
+            onClick={() => {
+              if (!selectedSize) return;
+              onConfirm(item, qty, selectedSize, selectedSize.price);
+              onClose();
+            }}
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              padding: '0.75rem 1rem',
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              borderRadius: 'var(--d3-btn-radius, 8px)',
+              opacity: canAdd ? 1 : 0.45,
+              cursor: canAdd ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Add to Order · {formatPrice(unitPrice * qty, currency)}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onViewDetails(item);
+            }}
+            className="d3-btn-subtle"
+            style={{
+              padding: '0.75rem 1rem',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              borderRadius: 'var(--d3-btn-radius, 8px)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Full Details
+          </button>
         </div>
       </div>
     </div>
@@ -769,7 +904,7 @@ function CartDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-[70] flex justify-end" style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div
         style={{
           width: '100%', maxWidth: 400,
@@ -777,7 +912,7 @@ function CartDrawer({
           borderLeft: '1px solid var(--border-subtle)',
           display: 'flex', flexDirection: 'column',
           height: '100%', overflow: 'hidden',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 120px)',
+          boxShadow: '-8px 0 32px rgba(0,0,0,0.6)',
         }}
       >
         <div
@@ -951,8 +1086,7 @@ function CartDrawer({
         </div>
 
         <div
-          className="px-3 py-3 flex flex-col gap-2.5"
-          style={{ borderTop: '1px solid var(--border-subtle)' }}
+          className="px-4 py-3 flex flex-col gap-2.5 bg-[var(--bg-surface)]" style={{ borderTop: '1px solid var(--border-subtle)', paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)', boxShadow: '0 -4px 16px rgba(0,0,0,0.15)' }}
         >
            <div className="flex items-center justify-between">
             <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>Total</span>

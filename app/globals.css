@@ -1255,7 +1255,8 @@ img {
 .d3-theme-modern-dark,
 .d3-theme-fresh-minimal,
 .d3-theme-indian-heritage,
-.d3-theme-contemporary-premium {
+.d3-theme-contemporary-premium,
+.d3-theme-custom {
   /* Ensure font-display and font-body resolve per theme */
   --font-display: var(--theme-font-display, 'Cormorant Garamond', Georgia, serif);
   --font-body: var(--theme-font-body, 'Inter', system-ui, sans-serif);
@@ -1694,3 +1695,28 @@ img {
   font-weight: var(--d3-price-weight);
 }
 
+
+/* ---- 6. CUSTOM THEME ---- */
+.d3-theme-custom {
+  --theme-font-display: var(--font-display, 'Inter', sans-serif);
+  --theme-font-body: var(--font-body, 'Inter', sans-serif);
+}
+
+.d3-theme-custom .d3-food-card {
+  border-radius: var(--d3-card-radius, 12px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-warm);
+}
+
+.d3-theme-custom .d3-category-pill {
+  border-radius: var(--ct-button-radius, 16px);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.d3-theme-custom .d3-category-pill-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #0B0B0A;
+}

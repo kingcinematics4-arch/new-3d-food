@@ -195,17 +195,17 @@ export default function WaterCategoryModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto flex flex-col"
+        className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto flex flex-col sm:rounded-2xl rounded-t-2xl shadow-2xl"
         style={{
           background: 'var(--bg-surface, #141413)',
           border: '1px solid var(--border-warm, rgba(201,169,110,0.2))',
-          borderRadius: '16px 16px 0 0',
           boxShadow: '0 -20px 60px rgba(0,0,0,0.7)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 1.25rem)',
         }}
       >
         {/* Header */}

@@ -27,7 +27,7 @@ export default function ProfilePage() {
   const menuHref = slug ? `/menu/${encodeURIComponent(slug)}` : '/menu';
 
   return (
-    <div className="min-h-screen flex flex-col pb-20 lg:pl-64" style={{ background: '#0B0B0A', color: '#F3EFE7', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen flex flex-col pb-28 sm:pb-24 lg:pl-64" style={{ background: 'var(--bg-primary, #0B0B0A)', color: 'var(--text-primary, #F3EFE7)', fontFamily: "'Inter', system-ui, sans-serif" }}>
       <header className="border-b border-white/10 bg-black/80 backdrop-blur-md sticky top-0 z-20 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Link href={menuHref} className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">
@@ -54,7 +54,7 @@ export default function ProfilePage() {
             {infoCards.map((card) => (
               <div key={card.label} className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
-                  <card.icon size="14" strokeWidth="1.5" stroke="#B8A47A" />
+                  <card.icon size="14" strokeWidth="1.5" stroke="var(--gold, #B8A47A)" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[0.6rem] font-bold tracking-wider uppercase text-white/40">{card.label}</p>

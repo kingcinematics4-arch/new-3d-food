@@ -145,14 +145,24 @@ export default function FoodModelViewer({
 
   return (
     <div
-      className={`relative overflow-hidden ${className}`}
-      style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-warm)', borderRadius: 12 }}
+      className={`relative overflow-hidden select-none ${className}`}
+      style={{
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-warm)',
+        borderRadius: 12,
+        touchAction: 'none',
+        WebkitUserSelect: 'none',
+      }}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
     >
       {/* 3D Canvas */}
       <Canvas
         shadows
         camera={{ position: [0, 2, 4], fov: 45 }}
         gl={{ preserveDrawingBuffer: true, antialias: true }}
+        style={{ width: '100%', height: '100%', touchAction: 'none' }}
       >
         <ambientLight intensity={0.7} />
         <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow />
@@ -177,13 +187,42 @@ export default function FoodModelViewer({
 
         <OrbitControls
           enableZoom={true}
+          enableRotate={true}
+          enablePan={false}
           autoRotate={isRotating}
           autoRotateSpeed={2.5}
-          maxPolarAngle={Math.PI / 2.1}
-          minDistance={1.8}
+          maxPolarAngle={Math.PI / 2.05}
+          minDistance={1.5}
           maxDistance={8}
         />
       </Canvas>
+
+      {/* Floating gesture hint badge */}
+      <div
+        className="pointer-events-none"
+        style={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '0.25rem 0.5rem',
+          borderRadius: 6,
+          background: 'rgba(11,10,8,0.72)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
+          color: 'var(--text-secondary, #C2BCB0)',
+          fontSize: '0.625rem',
+          fontWeight: 500,
+          letterSpacing: '0.04em',
+        }}
+      >
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 1.5L14 5v6L8 14.5L2 11V5L8 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+        </svg>
+        <span>3D • Drag to rotate</span>
+      </div>
 
       {/* Interactive Controls Overlay */}
       <div
@@ -196,37 +235,48 @@ export default function FoodModelViewer({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 10,
-          padding: '0.4375rem 0.75rem',
+          padding: '0.375rem 0.75rem',
           borderRadius: 8,
-          background: 'rgba(11,10,8,0.7)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid var(--border-warm)',
-          fontSize: '0.625rem',
-          letterSpacing: '0.06em',
-          color: 'var(--text-muted)',
+          background: 'rgba(11,10,8,0.82)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid var(--border-medium, rgba(184,164,122,0.3))',
+          fontSize: '0.6875rem',
+          fontWeight: 500,
+          color: 'var(--text-primary, #F3EFE7)',
         }}
       >
         <button
           type="button"
           onClick={() => setIsRotating(!isRotating)}
           style={{
-            background: 'none',
-            border: 'none',
-            padding: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: isRotating ? 'rgba(184,164,122,0.15)' : 'rgba(255,255,255,0.08)',
+            border: `1px solid ${isRotating ? 'var(--gold, #B8A47A)' : 'var(--border-warm, rgba(255,255,255,0.15))'}`,
+            padding: '0.3rem 0.65rem',
+            borderRadius: 6,
             cursor: 'pointer',
-            fontSize: 'inherit',
-            letterSpacing: 'inherit',
-            color: 'inherit',
-            transition: 'color 200ms',
+            fontSize: '0.6875rem',
+            fontWeight: 600,
+            color: isRotating ? 'var(--gold, #B8A47A)' : 'var(--text-primary, #F3EFE7)',
+            transition: 'all 180ms ease',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--gold)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
         >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              backgroundColor: isRotating ? 'var(--gold, #B8A47A)' : 'var(--text-dimmed, #888)',
+              display: 'inline-block',
+            }}
+          />
           {isRotating ? 'Pause rotation' : 'Rotate 360°'}
         </button>
 
         {hasError && (
-          <span style={{ color: 'var(--text-dimmed)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+          <span style={{ color: 'var(--text-dimmed)', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.625rem' }}>
             Preview unavailable
           </span>
         )}
@@ -240,12 +290,15 @@ export default function FoodModelViewer({
               display: 'inline-flex',
               alignItems: 'center',
               gap: 5,
-              color: 'var(--gold)',
+              padding: '0.3rem 0.65rem',
+              borderRadius: 6,
+              background: 'var(--gold, #B8A47A)',
+              color: '#0B0B0A',
+              fontWeight: 700,
+              fontSize: '0.6875rem',
               textDecoration: 'none',
-              transition: 'color 200ms',
+              transition: 'opacity 180ms ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--gold-bright)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--gold)')}
           >
             View in AR
           </a>

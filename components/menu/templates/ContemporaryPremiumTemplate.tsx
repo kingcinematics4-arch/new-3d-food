@@ -188,7 +188,7 @@ return (
       </header>
 
       {/* ================= ASYMMETRIC EDITORIAL BODY ================= */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 pb-28 sm:pb-24 space-y-8">
 {hotel.welcome_text && (
             <div className="border-l-2 border-[#A67C52] pl-5 py-1.5 max-w-2xl">
             <p className="text-xs sm:text-sm font-light text-[#5A5A50] leading-relaxed">

@@ -203,7 +203,7 @@ export default function ClassicLuxuryTemplate({
       </header>
 
       {/* ================= MAIN EDITORIAL CONTENT ================= */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-5 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-5 pb-28 sm:pb-24 space-y-6">
         {filteredItems.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-lg text-[#7B776E] italic">No culinary selections match your inquiry.</p>

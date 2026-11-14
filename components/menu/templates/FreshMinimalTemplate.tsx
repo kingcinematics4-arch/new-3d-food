@@ -186,7 +186,7 @@ export default function FreshMinimalTemplate({
       </header>
 
       {/* ================= MAIN CAFÉ CONTENT ================= */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-5 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-5 pb-28 sm:pb-24 space-y-6">
 {hotel.welcome_text && (
             <div className="bg-[#E8F5E9]/60 border border-[#C8E6C9] rounded-2xl p-2.5 text-center">
             <p className="text-xs sm:text-sm text-[#2E7D32] font-medium leading-relaxed">

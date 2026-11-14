@@ -190,7 +190,7 @@ export default function IndianHeritageTemplate({
       </header>
 
       {/* ================= MAIN HERITAGE COURSES ================= */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-28 sm:pb-24 space-y-8">
 {hotel.welcome_text && (
             <div className="text-center border-t border-b border-[#C69A6E]/30 py-3 px-5 bg-[#2A2015]/40 max-w-2xl mx-auto">
             <span className="text-xs text-[#C69A6E] block mb-1">✦ ════ ❖ ════ ✦</span>

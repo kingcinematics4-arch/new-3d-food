@@ -214,7 +214,7 @@ export default function ModernDarkTemplate({
       </header>
 
       {/* ================= MAIN CONTENT ================= */}
-      <main className="max-w-5xl mx-auto px-4 py-3 space-y-4">
+      <main className="max-w-5xl mx-auto px-4 py-3 pb-28 sm:pb-24 space-y-4">
         {hotel.welcome_text && (
           <div className="p-2.5 rounded-xl bg-gradient-to-r from-neutral-900 via-neutral-900/60 to-transparent border border-white/10">
             <p className="text-[0.7rem] sm:text-sm text-neutral-300 tracking-wide font-light">

@@ -83,7 +83,7 @@ export function GameShell({
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-5 pb-10">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-5 pb-28 sm:pb-24">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           {stats.map((s) => (
             <div key={s.label} className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
