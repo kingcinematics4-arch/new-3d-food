@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { formatPrice } from '@/lib/menu';
 import { menuThemeClass } from '@/lib/menuThemes';
 import { MenuThemeProviderContext } from '@/components/menu/MenuThemeProvider';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import {
   ClassicLuxuryTemplate,
   ModernDarkTemplate,

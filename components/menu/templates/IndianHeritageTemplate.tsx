@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
@@ -50,7 +50,7 @@ export default function IndianHeritageTemplate({
               />
             ) : (
               <div className="w-10 h-10 rounded border-2 border-[#C69A6E] flex items-center justify-center bg-[#2A2015] text-[#C69A6E] shadow-md">
-                <Dine3DLogo size="xs" href={null} />
+                <DinePixelLogo size="xs" href={null} />
               </div>
             )}
             <div>

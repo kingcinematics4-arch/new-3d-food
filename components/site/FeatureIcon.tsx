@@ -1,6 +1,6 @@
 // components/site/FeatureIcon.tsx
 //
-// Fixed registry of minimal monochrome icons for the Dine3D site.
+// Fixed registry of minimal monochrome icons for the DinePixel site.
 //
 // The admin panel stores an icon NAME from this allowlist rather than markup,
 // so an owner can restyle a feature card but can never inject arbitrary SVG

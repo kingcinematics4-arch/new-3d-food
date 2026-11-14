@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
@@ -58,7 +58,7 @@ export default function ModernDarkTemplate({
               />
             ) : (
               <div className="w-9 h-9 rounded-lg bg-neutral-900 border border-white/15 flex items-center justify-center">
-                <Dine3DLogo size="xs" href={null} />
+                <DinePixelLogo size="xs" href={null} />
               </div>
             )}
             <div>

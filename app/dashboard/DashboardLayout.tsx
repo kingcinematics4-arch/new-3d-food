@@ -8,7 +8,7 @@ import { queryClient } from '@/lib/queryClient';
 import { supabaseClient } from '@/lib/supabaseClient';
 import { useHotel, clearDashboardCache } from '@/lib/useHotel';
 import { useAuth } from '@/lib/authContext';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import { DashboardDialogsProvider } from '@/components/dashboard/DashboardDialogs';
 
 // Nav item icons (SVG inline for quality)
@@ -276,13 +276,13 @@ function DashboardLayoutBody({ children }: { children: React.ReactNode }) {
           flexShrink: 0,
         }}
       >
-        {/* Brand — official Dine3D asset, used as supplied */}
+        {/* Brand — official DinePixel asset, used as supplied */}
         <div>
           <div
             className="flex items-center gap-3 px-5 py-5"
             style={{ borderBottom: '1px solid var(--border-subtle)' }}
           >
-            <Dine3DLogo size="xs" href="/" priority />
+            <DinePixelLogo size="xs" href="/" priority />
             <div className="flex flex-col min-w-0">
               {brandSubtitle}
             </div>

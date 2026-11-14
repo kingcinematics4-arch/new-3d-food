@@ -1,6 +1,6 @@
 // app/admin/login/page.tsx
 //
-// Login screen for the Dine3D owner panel.
+// Login screen for the DinePixel owner panel.
 //
 // This page never receives, renders or validates the password. It only reports
 // WHETHER one has been configured, which is not secret — the password itself is

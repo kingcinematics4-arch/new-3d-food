@@ -1,6 +1,6 @@
 // app/api/admin/branding/logo/route.ts
 //
-// Admin-only upload and removal of the Dine3D logo.
+// Admin-only upload and removal of the DinePixel logo.
 //
 // Authorization is enforced on EVERY method with `requireAdminApi` before any
 // storage call, so an unauthenticated or logged-out caller cannot upload a file,

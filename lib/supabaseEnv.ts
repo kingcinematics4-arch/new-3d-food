@@ -6,7 +6,7 @@
 // referenced environment values into the browser bundle, which would publish
 // the service-role key. Server-only env access lives in ./supabaseEnv.server.
 //
-// Canonical environment variable names used by Dine3D:
+// Canonical environment variable names used by DinePixel:
 //   NEXT_PUBLIC_SUPABASE_URL
 //   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY   (alias: NEXT_PUBLIC_SUPABASE_ANON_KEY)
 //   SUPABASE_SERVICE_ROLE_KEY              (server-only, see ./supabaseEnv.server)

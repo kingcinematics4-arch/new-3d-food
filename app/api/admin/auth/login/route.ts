@@ -1,9 +1,9 @@
 // app/api/admin/auth/login/route.ts
 //
-// Password exchange for the Dine3D owner panel.
+// Password exchange for the DinePixel owner panel.
 //
 // The candidate password arrives here, is compared server-side against
-// `DINE3D_ADMIN_PASSWORD`, and the response body contains nothing but a boolean
+// `DINEPIXEL_ADMIN_PASSWORD`, and the response body contains nothing but a boolean
 // and the session expiry. The password itself is never echoed, never logged and
 // never present in the client bundle, because it lives only in a server-side
 // environment variable that is not `NEXT_PUBLIC_`-prefixed.
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       {
         success: false,
         configured: false,
-        error: 'Admin access is not configured. Set DINE3D_ADMIN_PASSWORD in the server environment.',
+        error: 'Admin access is not configured. Set DINEPIXEL_ADMIN_PASSWORD in the server environment.',
       },
       { status: 503 }
     );

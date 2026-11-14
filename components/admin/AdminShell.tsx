@@ -2,10 +2,10 @@
 
 // components/admin/AdminShell.tsx
 //
-// Chrome for the Dine3D admin panel: fixed sidebar, top bar and the
+// Chrome for the DinePixel admin panel: fixed sidebar, top bar and the
 // save/publish footer.
 //
-// Design follows the Dine3D identity — near-black charcoal planes, warm ivory
+// Design follows the DinePixel identity — near-black charcoal planes, warm ivory
 // type, champagne hairlines, editorial serif headings, generous spacing and
 // square-ish corners. There are no stats, no charts and no decorative numbers:
 // the panel reports real state, never invented metrics.
@@ -13,7 +13,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import { AdminSaveBar } from './SiteContentProvider';
 
 const NAV_ITEMS = [
@@ -61,8 +61,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         }}
       >
         <div className="px-6" style={{ padding: '1.75rem 0 1.5rem' }}>
-          {/* Official Dine3D logo asset, used exactly as supplied */}
-          <Dine3DLogo size="md" href="/" priority />
+          {/* Official DinePixel logo asset, used exactly as supplied */}
+          <DinePixelLogo size="md" href="/" priority />
           <span
             className="d3-eyebrow block"
             style={{ color: 'var(--gold-dim)', marginTop: '0.75rem', fontSize: '0.5625rem' }}

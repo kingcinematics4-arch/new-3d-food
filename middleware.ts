@@ -13,7 +13,7 @@ import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from '@/lib/adminAuth';
  * Guards two completely separate areas:
  *
  *   /dashboard/*  Supabase Auth, for restaurant owners.
- *   /admin/*      Dine3D owner panel, signed cookie session.
+ *   /admin/*      DinePixel owner panel, signed cookie session.
  *
  * The two auth systems share nothing. A restaurant session can never open
  * /admin, and an admin session can never open /dashboard.
@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
 }
 
 /**
- * Dine3D owner panel.
+ * DinePixel owner panel.
  *
  * This is a fast stateless check (signature + expiry) so it can run on the Edge
  * runtime. It deliberately does not consult the database: the revocation marker

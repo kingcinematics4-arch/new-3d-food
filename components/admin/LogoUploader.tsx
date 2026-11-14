@@ -2,7 +2,7 @@
 
 // components/admin/LogoUploader.tsx
 //
-// The Dine3D logo uploader for the admin panel.
+// The DinePixel logo uploader for the admin panel.
 //
 // WHAT IT DOES
 // ------------
@@ -24,7 +24,7 @@
 // rejected instantly instead of after a round trip.
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import { useBrandLogo } from '@/components/branding/BrandLogoProvider';
 import { AdminButton, AdminNote } from '@/components/admin/ui';
 import {
@@ -266,12 +266,12 @@ export default function LogoUploader({ onLogoChanged }: LogoUploaderProps) {
       {/* ------------------------------------------- CURRENT + PREVIEW */}
       <div className="flex flex-wrap gap-6">
         <PreviewTile label="Live on the site" tone="var(--bg-secondary)">
-          <Dine3DLogo size="lg" href={null} />
+          <DinePixelLogo size="lg" href={null} />
         </PreviewTile>
 
         <PreviewTile label="Your preview" tone="var(--bg-secondary)" dashed={!pending}>
           {pending ? (
-            <Dine3DLogo
+            <DinePixelLogo
               size="lg"
               href={null}
               alt={pending.file.name}

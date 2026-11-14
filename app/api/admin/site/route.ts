@@ -1,6 +1,6 @@
 // app/api/admin/site/route.ts
 //
-// Reads and writes the Dine3D website content document.
+// Reads and writes the DinePixel website content document.
 //
 // Authorization is enforced on EVERY method with `requireAdminApi`, so no
 // unauthenticated caller can read the draft or write to the database even if it

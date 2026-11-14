@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
@@ -47,7 +47,7 @@ export default function FreshMinimalTemplate({
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-[#E8F5E9] border border-[#2E7D32]/20 flex items-center justify-center text-[#2E7D32]">
-                <Dine3DLogo size="xs" href={null} />
+                <DinePixelLogo size="xs" href={null} />
               </div>
             )}
             <div>

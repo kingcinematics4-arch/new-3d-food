@@ -1,6 +1,6 @@
 // lib/adminAuth.ts
 //
-// Authentication for the Dine3D owner admin panel.
+// Authentication for the DinePixel owner admin panel.
 //
 // This is COMPLETELY SEPARATE from the Supabase auth system used by restaurant
 // owners. Nothing here reads, writes or depends on a Supabase session, and no
@@ -8,7 +8,7 @@
 //
 // SECURITY MODEL
 // --------------
-// 1. The password lives ONLY in `DINE3D_ADMIN_PASSWORD`, a server-side
+// 1. The password lives ONLY in `DINEPIXEL_ADMIN_PASSWORD`, a server-side
 //    environment variable. It is never prefixed `NEXT_PUBLIC_`, so Next.js can
 //    never inline it into a client bundle, and it is never returned by any API
 //    response. There is no client-side comparison of any kind: the browser
@@ -45,7 +45,7 @@ const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 const TOKEN_VERSION = 'v1';
 
 /** Cookie that carries the signed admin session. */
-export const ADMIN_COOKIE_NAME = 'dine3d_admin_session';
+export const ADMIN_COOKIE_NAME = 'dinepixel_admin_session';
 
 /* ============================================================
    CONFIGURATION
@@ -56,7 +56,7 @@ export const ADMIN_COOKIE_NAME = 'dine3d_admin_session';
  * Returns an empty string when unset, which makes every login attempt fail.
  */
 function getAdminPassword(): string {
-  return process.env.DINE3D_ADMIN_PASSWORD ?? '';
+  return process.env.DINEPIXEL_ADMIN_PASSWORD ?? '';
 }
 
 /**
@@ -70,7 +70,7 @@ export function isAdminConfigured(): boolean {
 /**
  * Key used to sign session tokens.
  *
- * Prefers a dedicated `DINE3D_ADMIN_SESSION_SECRET` so the signing key can be
+ * Prefers a dedicated `DINEPIXEL_ADMIN_SESSION_SECRET` so the signing key can be
  * rotated independently of the password. When that is unset the password itself
  * is hashed to derive the key, which keeps the panel usable out of the box;
  * both are server-only values.
@@ -91,13 +91,13 @@ async function getSigningKey(): Promise<CryptoKey | null> {
       ['sign', 'verify']
     );
 
-  const explicit = process.env.DINE3D_ADMIN_SESSION_SECRET?.trim();
+  const explicit = process.env.DINEPIXEL_ADMIN_SESSION_SECRET?.trim();
   if (explicit && explicit.length > 0) return importKey(explicit);
 
   const password = getAdminPassword();
   if (password.trim().length === 0) return null;
 
-  return importKey(`dine3d-admin::${password}`);
+  return importKey(`dinepixel-admin::${password}`);
 }
 
 /* ============================================================
@@ -149,7 +149,7 @@ async function digest(value: string): Promise<string> {
    ============================================================ */
 
 /**
- * Constant-time check of a candidate password against `DINE3D_ADMIN_PASSWORD`.
+ * Constant-time check of a candidate password against `DINEPIXEL_ADMIN_PASSWORD`.
  * Always performs the digest so a missing password is not distinguishable from
  * a wrong one by response timing.
  */

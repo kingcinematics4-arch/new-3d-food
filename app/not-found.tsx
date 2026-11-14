@@ -1,16 +1,16 @@
 // app/not-found.tsx
 //
-// Branded 404 for the public Dine3D site.
+// Branded 404 for the public DinePixel site.
 //
 // Reached only for URLs that do not exist. The root route `/` is a real route
 // (`app/page.tsx`) and is unaffected by this file.
 //
-// Dine3D visual identity: near-black plane, warm ivory serif display type,
+// DinePixel visual identity: near-black plane, warm ivory serif display type,
 // champagne hairlines. No invented content — this page states only that the
 // address does not exist and offers real navigation.
 
 import Link from 'next/link';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 
 const DESTINATIONS = [
   { href: '/', label: 'Home', description: 'The DinePixel product' },
@@ -27,7 +27,7 @@ export default function NotFound() {
     >
       <div className="d3-container" style={{ padding: '6rem 2rem' }}>
         <div className="flex flex-col items-center text-center gap-8" style={{ maxWidth: 620, margin: '0 auto' }}>
-          <Dine3DLogo size="lg" href="/" priority />
+          <DinePixelLogo size="lg" href="/" priority />
 
           <div className="flex flex-col gap-4">
             <span

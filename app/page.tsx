@@ -1,6 +1,6 @@
 // app/page.tsx
 //
-// PUBLIC DINE3D WEBSITE
+// PUBLIC DINEPIXEL WEBSITE
 //
 // A Server Component that renders the PUBLISHED content document.
 //
@@ -24,7 +24,7 @@ const HOMEPAGE_TITLE = 'DinePixel – Premium QR Ordering System for Restaurants
 const HOMEPAGE_DESCRIPTION =
   'Discover DinePixel, a smart restaurant QR ordering system with digital menus, table ordering, live order tracking and powerful restaurant management features. Built for modern restaurants in Mumbai, Thane, Navi Mumbai and across India.';
 const HOMEPAGE_URL = 'https://dinepixel.com';
-const HOMEPAGE_OG_IMAGE = 'https://dinepixel.com/images/dine3d-og.png';
+const HOMEPAGE_OG_IMAGE = 'https://dinepixel.com/images/dinepixel-og.png';
 
 export const metadata: Metadata = {
   title: HOMEPAGE_TITLE,

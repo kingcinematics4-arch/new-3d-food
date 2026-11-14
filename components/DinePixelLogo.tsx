@@ -1,6 +1,6 @@
 'use client';
 
-// components/Dine3DLogo.tsx
+// components/DinePixelLogo.tsx
 //
 // THE SINGLE SOURCE OF TRUTH FOR THE DINEPIXEL LOGO.
 //
@@ -16,7 +16,7 @@
 // dashboard and guest menu all follow one uploaded file. Nothing here is
 // hardcoded to a path any more.
 //
-// `public/images/dine3d-logo.png` remains the FALLBACK: it is what renders
+// `public/images/dinepixel-logo.png` remains the FALLBACK: it is what renders
 // before anything has been uploaded, and what "Remove Logo" reverts to, so the
 // site is never left without a logo.
 //
@@ -80,10 +80,10 @@ export const LOGO_INTRINSIC = {
   height: FALLBACK_LOGO_REFERENCE.logoHeight,
 };
 
-export type Dine3DLogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+export type DinePixelLogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-interface Dine3DLogoProps {
-  size?: Dine3DLogoSize;
+interface DinePixelLogoProps {
+  size?: DinePixelLogoSize;
   /** Wraps the logo in a link. Pass null to render a bare image. */
   href?: string | null;
   alt?: string;
@@ -102,7 +102,7 @@ interface Dine3DLogoProps {
   previewHeight?: number;
 }
 
-export default function Dine3DLogo({
+export default function DinePixelLogo({
   size = 'md',
   href = '/',
   alt,
@@ -111,7 +111,7 @@ export default function Dine3DLogo({
   previewSrc = null,
   previewWidth,
   previewHeight,
-}: Dine3DLogoProps) {
+}: DinePixelLogoProps) {
   const { logo } = useBrandLogo();
   const sizeClass = `d3-logo--${size}`;
 
@@ -180,10 +180,6 @@ export default function Dine3DLogo({
     </Link>
   );
 }
-
-export const DinePixelLogo = Dine3DLogo;
-export type DinePixelLogoProps = Dine3DLogoProps;
-export type DinePixelLogoSize = Dine3DLogoSize;
 
 /**
  * Positions the whole, untouched file so that the detected content box lands

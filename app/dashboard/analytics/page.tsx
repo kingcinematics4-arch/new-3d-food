@@ -86,7 +86,7 @@ function rangeNote(range: RangeKey) {
   return 'Last 12 months';
 }
 
-/* ─── Shared chart palette (Dine3D black & gold) ─── */
+/* ─── Shared chart palette (DinePixel black & gold) ─── */
 const INK_MUTED = '#9B968C';
 const INK_DIM = '#6B675F';
 const GRID_LINE = 'rgba(243,239,231,0.06)';

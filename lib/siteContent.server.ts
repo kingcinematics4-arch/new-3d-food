@@ -1,6 +1,6 @@
 // lib/siteContent.server.ts
 //
-// SERVER ONLY. Persistence for the public Dine3D website content.
+// SERVER ONLY. Persistence for the public DinePixel website content.
 //
 // NEVER import this from a client component: it reaches for the Supabase
 // service-role key, which bypasses RLS and must never enter a browser bundle.

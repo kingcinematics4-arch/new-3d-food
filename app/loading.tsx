@@ -4,7 +4,7 @@
 //
 // This is the Suspense fallback Next.js renders while a route's server component
 // is still resolving — most visibly on the landing page, whose content is read
-// from the published document on every request. It is the exact Dine3D logo at a
+// from the published document on every request. It is the exact DinePixel logo at a
 // quiet size with a slow opacity pulse, and nothing else: no spinner, no
 // progress bar and no client-side timer, so it never delays what it precedes.
 

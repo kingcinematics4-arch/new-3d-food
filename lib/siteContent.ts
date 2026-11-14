@@ -122,7 +122,7 @@ const brandingSchema = z.object({
    * Supabase Storage and writes the resulting public URL here. Left at the
    * shipped asset path when nothing has been uploaded.
    */
-  logoUrl: z.string().trim().max(300).default('/images/dine3d-logo.png'),
+  logoUrl: z.string().trim().max(300).default('/images/dinepixel-logo.png'),
   logoAlt: optionalText(120),
   /**
    * Intrinsic pixel size of the current logo, measured in the browser when the
@@ -412,7 +412,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
   version: 1,
 
   branding: {
-    logoUrl: '/images/dine3d-logo.png',
+    logoUrl: '/images/dinepixel-logo.png',
     logoAlt: 'DinePixel',
     logoWidth: 930,
     logoHeight: 258,

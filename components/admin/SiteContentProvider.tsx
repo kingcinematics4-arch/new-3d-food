@@ -2,7 +2,7 @@
 
 // components/admin/SiteContentProvider.tsx
 //
-// Client-side editor state for the Dine3D admin panel.
+// Client-side editor state for the DinePixel admin panel.
 //
 // Holds the DRAFT document while the owner edits, and exposes Save Draft and
 // Publish as two distinct, explicit actions. Editing never writes to the

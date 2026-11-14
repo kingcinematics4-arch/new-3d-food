@@ -1,6 +1,6 @@
 // components/admin/ui.tsx
 //
-// Presentational primitives for the Dine3D admin panel.
+// Presentational primitives for the DinePixel admin panel.
 //
 // Deliberately built from the existing `d3-*` design system (near-black
 // surfaces, warm ivory type, champagne hairlines, editorial serif headings) so
@@ -279,7 +279,7 @@ export function AdminOptionRow<T extends string>({
   );
 }
 
-/** Colour control: a native swatch plus a hex field, with Dine3D presets. */
+/** Colour control: a native swatch plus a hex field, with DinePixel presets. */
 export function AdminColorField({
   label,
   value,

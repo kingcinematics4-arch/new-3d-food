@@ -4,7 +4,7 @@ import { getCanonicalSiteUrl } from './siteUrl';
 export const SITE_NAME = 'DinePixel';
 export const SITE_URL = getCanonicalSiteUrl();
 export const SITE_EMAIL = 'hello@dinepixel.com';
-export const OG_IMAGE = `${SITE_URL}/images/dine3d-og.png`;
+export const OG_IMAGE = `${SITE_URL}/images/dinepixel-og.png`;
 export const SITE_DESCRIPTION =
   'Discover DinePixel, a smart restaurant QR ordering system with digital menus, table ordering, live order tracking and powerful restaurant management features. Built for modern restaurants in Mumbai, Thane, Navi Mumbai and across India.';
 
@@ -260,7 +260,7 @@ export function organizationSchema(logoUrl: string) {
   try {
     logo = new URL(logoUrl, SITE_URL).toString();
   } catch {
-    logo = `${SITE_URL}/images/dine3d-logo.png`;
+    logo = `${SITE_URL}/images/dinepixel-logo.png`;
   }
 
   return {

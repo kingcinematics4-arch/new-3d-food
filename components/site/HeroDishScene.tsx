@@ -21,7 +21,7 @@
 // one would make the plate look like a stadium.
 //
 // LIGHT
-// Warm key from the upper left — the direction the Dine3D wordmark is lit from
+// Warm key from the upper left — the direction the DinePixel wordmark is lit from
 // — with a low neutral fill so the shadow side keeps its detail, and a dim warm
 // rim behind to separate the plate from the black background. Nothing else: no
 // bloom, no coloured lights, nothing that would make the food glow.

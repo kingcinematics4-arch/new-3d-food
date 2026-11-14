@@ -1,6 +1,6 @@
 // app/api/admin/auth/logout/route.ts
 //
-// Ends the Dine3D admin session.
+// Ends the DinePixel admin session.
 //
 // Logout is server-side, not just a cookie delete: the revocation marker is
 // written first, which permanently invalidates every session token issued at

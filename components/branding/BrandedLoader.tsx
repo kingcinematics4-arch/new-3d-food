@@ -14,7 +14,7 @@
 // `prefers-reduced-motion`.
 
 import React from 'react';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 
 interface BrandedLoaderProps {
   /**
@@ -35,7 +35,7 @@ export default function BrandedLoader({ label = null, minHeight }: BrandedLoader
       style={minHeight ? { minHeight } : undefined}
     >
       {/* Decorative: the surrounding status text carries the meaning. */}
-      <Dine3DLogo size="sm" href={null} alt="" className="d3-logo--loader" />
+      <DinePixelLogo size="sm" href={null} alt="" className="d3-logo--loader" />
 
       <span className={label ? 'd3-eyebrow' : 'sr-only'} style={{ color: 'var(--text-dimmed)' }}>
         {label ?? 'Loading'}

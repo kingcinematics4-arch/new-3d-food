@@ -1,6 +1,6 @@
 // app/api/branding/route.ts
 //
-// Public, unauthenticated read of the Dine3D logo reference.
+// Public, unauthenticated read of the DinePixel logo reference.
 //
 // The logo must render on the marketing site, on login/signup and inside the
 // dashboard, none of which are behind the admin session. Rather than letting
@@ -28,7 +28,7 @@ export const runtime = 'nodejs';
 const CACHE_CONTROL = 'public, max-age=0, s-maxage=30, stale-while-revalidate=600';
 
 function buildEtag(version: string | null, logoUrl: string): string {
-  return `W/"dine3d-logo-${version ?? logoUrl}"`;
+  return `W/"dinepixel-logo-${version ?? logoUrl}"`;
 }
 
 export async function GET(request: Request) {

@@ -1,6 +1,6 @@
 // lib/branding.ts
 //
-// The Dine3D brand logo: shared, dependency-free constants and types.
+// The DinePixel brand logo: shared, dependency-free constants and types.
 //
 // Deliberately free of Supabase, `next/headers` and `server-only` so it can be
 // imported from route handlers, server components AND client components. The
@@ -12,12 +12,12 @@
    ============================================================ */
 
 /** The asset that ships with the repo, used whenever no logo has been uploaded. */
-export const FALLBACK_LOGO_URL = '/images/dine3d-logo.png';
+export const FALLBACK_LOGO_URL = '/images/dinepixel-logo.png';
 
 /**
  * Bundled paths used by earlier revisions of this file.
  *
- * `dine3d-logo.jpg` was the same artwork on an opaque near-black canvas that
+ * `dinepixel-logo.jpg` was the same artwork on an opaque near-black canvas that
  * carried ~65% empty margin on every side, which made the mark render tiny
  * inside its own black rectangle. The asset is now cropped to the artwork and
  * transparent, so it lives at a new path. Rows written before that change still
@@ -81,7 +81,7 @@ export interface LogoReference {
 }
 
 /**
- * Real dimensions of `public/images/dine3d-logo.png`.
+ * Real dimensions of `public/images/dinepixel-logo.png`.
  *
  * The file is the official mark cropped to its own artwork with a transparent
  * background, at 300 DPI. Declaring the true size is what lets the browser

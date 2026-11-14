@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Dine3DLogo from './Dine3DLogo';
+import DinePixelLogo from './DinePixelLogo';
 
 const navLinks = [
   { label: 'Features', href: '/#features' },
@@ -44,12 +44,12 @@ export default function Navbar() {
         <div className="d3-container">
           <div className="d3-nav__inner">
 
-            {/* Left — Logo. The official Dine3D logo asset, used exactly as
+            {/* Left — Logo. The official DinePixel logo asset, used exactly as
                 supplied: never redrawn, recreated or substituted. Its size comes
                 from the `d3-logo--nav` tokens, so it stays generous on desktop
                 and steps down on a phone without touching the links. */}
             <div className="flex-shrink-0">
-              <Dine3DLogo size="md" href="/" priority className="d3-logo--nav" />
+              <DinePixelLogo size="md" href="/" priority className="d3-logo--nav" />
             </div>
 
             {/* Center — Desktop Nav Links */}

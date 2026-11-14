@@ -6,7 +6,7 @@
 //
 // The asset library for the public website, grouped by purpose.
 //
-// The Dine3D logo is the one asset that is uploaded rather than referenced: it
+// The DinePixel logo is the one asset that is uploaded rather than referenced: it
 // goes to Supabase Storage through the guarded admin route and is shown here as
 // the current source. Everything else in this panel is a REFERENCE — a path to
 // an image that lives in the project's public folder or an existing bucket. The

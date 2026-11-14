@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
 
@@ -47,7 +47,7 @@ export default function ContemporaryPremiumTemplate({
               />
             ) : (
               <div className="w-10 h-10 rounded-none border border-[#1A1A1A] flex items-center justify-center bg-white">
-                <Dine3DLogo size="xs" href={null} />
+                <DinePixelLogo size="xs" href={null} />
               </div>
             )}
             <div>

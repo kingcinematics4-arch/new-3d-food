@@ -47,7 +47,7 @@ function GltfModel({ url }: { url: string }) {
 }
 
 // Neutral placeholder shown when a real model cannot be loaded.
-// It deliberately depicts nothing: Dine3D never fabricates a dish.
+// It deliberately depicts nothing: DinePixel never fabricates a dish.
 function ModelUnavailable() {
   return (
     <group position={[0, -0.1, 0]}>

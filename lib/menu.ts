@@ -106,7 +106,7 @@ export interface PublicHotel {
 // ============================================================
 // CURRENCY FORMATTING
 //
-// Dine3D is built for the Indian F&B market, so the default currency
+// DinePixel is built for the Indian F&B market, so the default currency
 // for every restaurant is INR (₹) with en-IN locale. A restaurant can
 // still override its currency in the dashboard, but until it does,
 // every price renders in INR.
@@ -200,7 +200,7 @@ export function resolveCurrency(code?: string | null): { symbol: string; decimal
 /**
  * Normalise a stored currency value to INR for display.
  *
- * Dine3D is built for the Indian F&B market, so every restaurant is
+ * DinePixel is built for the Indian F&B market, so every restaurant is
  * rendered in INR regardless of what the `currency` column holds.
  * This is a DISPLAY-ONLY normalisation: it never touches numeric
  * prices, tax, service charge, payment amounts or historical order

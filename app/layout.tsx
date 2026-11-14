@@ -15,7 +15,7 @@ import {
 export const runtime = 'nodejs';
 
 /** Social preview card. Absolute so it resolves correctly on every deployment. */
-const OG_IMAGE = 'https://dinepixel.com/images/dine3d-og.png';
+const OG_IMAGE = 'https://dinepixel.com/images/dinepixel-og.png';
 
 /** MIME type of an owner-supplied logo, so the tab icon is declared correctly. */
 function logoMimeType(url: string): string {
@@ -89,7 +89,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const globalStructuredData = {
     '@context': 'https://schema.org',
     '@graph': [
-      organizationSchema(initialLogo.logoUrl || '/images/dine3d-logo.png'),
+      organizationSchema(initialLogo.logoUrl || '/images/dinepixel-logo.png'),
       websiteSchema(),
     ],
   };

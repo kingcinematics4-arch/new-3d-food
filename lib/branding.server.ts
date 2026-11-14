@@ -1,6 +1,6 @@
 // lib/branding.server.ts
 //
-// SERVER ONLY. Everything that touches the Dine3D logo file.
+// SERVER ONLY. Everything that touches the DinePixel logo file.
 //
 // NEVER import this from a client component: it reaches for the Supabase
 // service-role key, which bypasses RLS and must never enter a browser bundle.
@@ -369,7 +369,7 @@ export class MissingBrandingBucketError extends Error {
         `Apply ${'supabase/migrations/005_branding_storage.sql'} in the Supabase SQL Editor ` +
         `(Dashboard -> SQL Editor -> paste the file -> Run), then confirm with ` +
         `supabase/verify_branding_storage.sql. The migration is safe to re-run. ` +
-        `Until then the site keeps using the bundled logo at public/images/dine3d-logo.png.`
+        `Until then the site keeps using the bundled logo at public/images/dinepixel-logo.png.`
     );
     this.name = 'MissingBrandingBucketError';
   }

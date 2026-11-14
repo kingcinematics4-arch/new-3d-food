@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import { menuThemeClass } from '@/lib/menuThemes';
 import { formatPrice } from '@/lib/menu';
 import { supabaseClient, isSupabaseConfigured } from '@/lib/supabaseBrowser';
@@ -612,7 +612,7 @@ function OrderTrackingInner({ orderId, hotelSlug }: { orderId: string; hotelSlug
                 </svg>
               </Link>
             ) : null}
-            <Dine3DLogo size="xs" href="/" priority />
+            <DinePixelLogo size="xs" href="/" priority />
             <div className="min-w-0">
               <h1
                 style={{

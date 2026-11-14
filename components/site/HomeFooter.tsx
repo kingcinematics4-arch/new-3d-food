@@ -3,13 +3,13 @@
 // Closing call to action and site footer, rendered from published content.
 // Server Component.
 //
-// The brand mark is rendered by the shared Dine3DLogo component, which follows
+// The brand mark is rendered by the shared DinePixelLogo component, which follows
 // the logo uploaded in the admin panel — it is never redrawn as inline SVG.
 
 import React from 'react';
 import Link from 'next/link';
 import type { Footer, Branding } from '@/lib/siteContent';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 
 export default function HomeFooter({ footer, branding }: { footer: Footer; branding: Branding }) {
   if (!footer.enabled) return null;
@@ -106,7 +106,7 @@ export default function HomeFooter({ footer, branding }: { footer: Footer; brand
               {/* Official logo. Rendered through the shared component, which reads
                   the uploaded file from the branding provider and falls back to the
                   bundled asset. No second image path is maintained here. */}
-              <Dine3DLogo size="md" href={null} alt={branding.logoAlt || 'DinePixel'} />
+              <DinePixelLogo size="md" href={null} alt={branding.logoAlt || 'DinePixel'} />
 
               {footer.tagline ? (
                 <p

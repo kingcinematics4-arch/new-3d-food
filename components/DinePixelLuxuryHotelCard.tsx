@@ -104,7 +104,7 @@ export default function DinePixelLuxuryHotelCard({
             />
           ) : (
             <img
-              src="/images/dine3d-logo.png"
+              src="/images/dinepixel-logo.png"
               alt="DinePixel"
               className="dpx-logo"
               style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}

@@ -16,7 +16,7 @@
 import React from 'react';
 import { useSiteContent } from '@/components/admin/SiteContentProvider';
 import LogoUploader from '@/components/admin/LogoUploader';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import {
   AdminPageHeader,
   AdminPanel,
@@ -92,7 +92,7 @@ export default function AdminBrandingPage() {
                   borderRadius: 8,
                 }}
               >
-                <Dine3DLogo size="lg" href={null} />
+                <DinePixelLogo size="lg" href={null} />
               </div>
 
               <div
@@ -105,7 +105,7 @@ export default function AdminBrandingPage() {
                   borderRadius: 8,
                 }}
               >
-                <Dine3DLogo size="lg" href={null} />
+                <DinePixelLogo size="lg" href={null} />
               </div>
             </div>
 

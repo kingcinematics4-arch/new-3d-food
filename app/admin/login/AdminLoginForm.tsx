@@ -10,7 +10,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 
 export default function AdminLoginForm({ configured }: { configured: boolean }) {
   const router = useRouter();
@@ -62,8 +62,8 @@ export default function AdminLoginForm({ configured }: { configured: boolean }) 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-center gap-4 text-center">
-        {/* Official Dine3D logo asset, used exactly as supplied */}
-        <Dine3DLogo size="md" href="/" priority />
+        {/* Official DinePixel logo asset, used exactly as supplied */}
+        <DinePixelLogo size="md" href="/" priority />
 
         <div className="flex flex-col gap-2">
           <span className="d3-eyebrow" style={{ color: 'var(--gold-dim)' }}>
@@ -88,7 +88,7 @@ export default function AdminLoginForm({ configured }: { configured: boolean }) 
             <path d="M7 4.2V7.6M7 9.6H7.01" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
           </svg>
           <span>
-            Admin access is not configured. Set <code>DINE3D_ADMIN_PASSWORD</code> in the server
+            Admin access is not configured. Set <code>DINEPIXEL_ADMIN_PASSWORD</code> in the server
             environment and restart the app.
           </span>
         </div>

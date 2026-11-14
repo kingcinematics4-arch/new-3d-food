@@ -2,7 +2,7 @@
 
 // components/branding/BrandLogoProvider.tsx
 //
-// Holds the current Dine3D logo for every logo surface in the app.
+// Holds the current DinePixel logo for every logo surface in the app.
 //
 // WHY A PROVIDER
 // --------------

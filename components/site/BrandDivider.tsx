@@ -14,7 +14,7 @@
 // the element is already visible.
 
 import React, { useEffect, useRef, useState } from 'react';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 
 export default function BrandDivider() {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -64,7 +64,7 @@ export default function BrandDivider() {
       aria-hidden="true"
     >
       <span className="d3-brand-divider__rule" />
-      <Dine3DLogo size="xs" href={null} alt="" className="d3-logo--divider" />
+      <DinePixelLogo size="xs" href={null} alt="" className="d3-logo--divider" />
       <span className="d3-brand-divider__rule" />
     </div>
   );

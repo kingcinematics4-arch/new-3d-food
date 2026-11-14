@@ -6,7 +6,7 @@
 @tailwind utilities;
 
 /* ============================================
-   DINE3D GLOBAL DESIGN SYSTEM
+   DINEPIXEL GLOBAL DESIGN SYSTEM
    Premium Luxury Technology + Fine Dining
    ============================================ */
 
@@ -550,7 +550,7 @@ body {
    BRANDING VARIANTS
    Applied to the public site root by the
    accent/background/button choices saved in
-   the Dine3D admin panel. The rules only
+   the DinePixel admin panel. The rules only
    recolour the existing treatments — the
    champagne/ivory identity is preserved.
    ============================================ */
@@ -794,7 +794,7 @@ body {
 
 /* ============================================
    BRAND MARK
-   The official Dine3D artwork, used as supplied.
+   The official DinePixel artwork, used as supplied.
 
    Sizing is driven entirely by two custom properties so a single image rule
    serves every surface: `--d3-logo-h` fixes the HEIGHT and `width: auto` lets
@@ -1231,7 +1231,7 @@ img {
     font-size: clamp(2.5rem, 10vw, 3.5rem);
   }
 
-  /* Still clearly the Dine3D mark, just proportioned so the links and the
+  /* Still clearly the DinePixel mark, just proportioned so the links and the
      menu button keep their room on a phone. */
   .d3-logo--nav {
     --d3-logo-h: 34px;

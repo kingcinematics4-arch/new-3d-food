@@ -1,7 +1,7 @@
 // lib/siteBranding.ts
 //
 // Translates the branding settings chosen in the admin panel into the CSS
-// custom properties the Dine3D design system already reads (`--gold`,
+// custom properties the DinePixel design system already reads (`--gold`,
 // `--bg-primary`, the font stacks, and the button treatment).
 //
 // Because the existing `d3-*` classes resolve their colours from variables,

@@ -1,6 +1,6 @@
 // lib/foodModel.ts
 //
-// The Dine3D hero food model: shared, dependency-free constants and types.
+// The DinePixel hero food model: shared, dependency-free constants and types.
 //
 // Deliberately free of Supabase, `next/headers` and `server-only` so it can be
 // imported from route handlers, server components AND client components. The

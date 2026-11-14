@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { formatPrice } from '@/lib/menu';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import { cloneCustomThemeConfig, fontCssFamily, type CustomThemeConfig } from '@/lib/customTheme';
 import type { MenuTemplateProps, CartItem, PublicMenuItemSize } from './types';
 import type { PublicMenuItem } from '@/app/menu/[slug]/MenuContent';
@@ -96,7 +96,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
         <div className="flex w-full max-w-full items-center gap-2" style={{ boxSizing: 'border-box', minWidth: 0 }}>
           <div className="flex min-w-0 flex-1 items-center gap-2" style={{ boxSizing: 'border-box', overflow: 'hidden' }}>
             <div className="flex flex-shrink-0 items-center" title="DinePixel" style={{ minWidth: 0 }}>
-              <Dine3DLogo size="xs" href={null} />
+              <DinePixelLogo size="xs" href={null} />
             </div>
             {hotel.logo_url?.trim() ? (
               <img

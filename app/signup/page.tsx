@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabaseClient';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -128,9 +128,9 @@ export default function SignupPage() {
           }}
         />
 
-        {/* Logo — official Dine3D asset, used as supplied */}
+        {/* Logo — official DinePixel asset, used as supplied */}
         <div className="relative z-10">
-          <Dine3DLogo size="md" href="/" priority />
+          <DinePixelLogo size="md" href="/" priority />
         </div>
 
         {/* Headline */}
@@ -183,9 +183,9 @@ export default function SignupPage() {
       {/* Right — Sign Up Form */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-16 overflow-y-auto">
 
-        {/* Mobile logo — official Dine3D asset, used as supplied */}
+        {/* Mobile logo — official DinePixel asset, used as supplied */}
         <div className="lg:hidden mb-10">
-          <Dine3DLogo size="sm" href="/" priority />
+          <DinePixelLogo size="sm" href="/" priority />
         </div>
 
         <div style={{ width: '100%', maxWidth: 440 }}>

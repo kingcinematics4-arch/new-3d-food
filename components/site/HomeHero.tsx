@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Hero } from '@/lib/siteContent';
-import Dine3DLogo from '@/components/Dine3DLogo';
+import DinePixelLogo from '@/components/DinePixelLogo';
 import HeroViewer from './HeroViewer';
 
 export default function HomeHero({ hero }: { hero: Hero }) {
@@ -82,10 +82,10 @@ export default function HomeHero({ hero }: { hero: Hero }) {
           {/* -------------------------------------------- LEFT: TEXT */}
           <div className="flex flex-col gap-8">
             {/* Brand anchor. The exact logo, small and quiet, so the left column
-                carries the Dine3D identity without the headline losing the
+                carries the DinePixel identity without the headline losing the
                 page. */}
             <div className={mounted ? 'animate-fade-up' : 'opacity-0'}>
-              <Dine3DLogo size="sm" href={null} className="d3-logo--anchor" />
+              <DinePixelLogo size="sm" href={null} className="d3-logo--anchor" />
             </div>
 
             {hero.heading ? (

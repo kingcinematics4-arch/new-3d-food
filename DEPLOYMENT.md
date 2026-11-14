@@ -15,8 +15,8 @@ This full-stack **3D Digital Food Menu & Restaurant Ordering SaaS** is built wit
 3. Go to the **SQL Editor** in your Supabase project dashboard:
    - Open and run the contents of [`supabase/migrations/001_initial.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/001_initial.sql) to create all database tables (safe to re-run).
    - Open and run the contents of [`supabase/migrations/002_auth_identity_and_menu_fields.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/002_auth_identity_and_menu_fields.sql) to add the auth-identity, menu and review fields (safe to re-run).
-   - Open and run the contents of [`supabase/migrations/004_admin_site_content.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/004_admin_site_content.sql) to add the Dine3D admin website content store and the admin session revocation marker (safe to re-run). **Required for the `/admin` panel to save or publish.** Until it is applied, `/admin` still loads and the public website still works; only saving and publishing report that the migration is missing.
-   - Open and run the contents of [`supabase/migrations/005_branding_storage.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/005_branding_storage.sql) to create the public read-only `dine3d-branding` storage bucket (safe to re-run). **Required for the logo upload in `/admin/branding` and `/admin/media`.** Until it is applied the site keeps showing the bundled `public/images/dine3d-logo.png`, and uploading reports `Storage bucket "dine3d-branding" does not exist`. Depends on 004, so run it after 004.
+- Open and run the contents of [`supabase/migrations/004_admin_site_content.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/004_admin_site_content.sql) to add the DinePixel admin website content store and the admin session revocation marker (safe to re-run). **Required for the `/admin` panel to save or publish.** Until it is applied, `/admin` still loads and the public website still works; only saving and publishing report that the migration is missing.
+- Open and run the contents of [`supabase/migrations/005_branding_storage.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/005_branding_storage.sql) to create the public read-only `dine3d-branding` storage bucket (safe to re-run). **Required for the logo upload in `/admin/branding` and `/admin/media`.** Until it is applied the site keeps showing the bundled `public/images/dinepixel-logo.png`, and uploading reports `Storage bucket "dine3d-branding" does not exist`. Depends on 004, so run it after 004.
    - Open and run [`supabase/verify_branding_storage.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/verify_branding_storage.sql) to confirm the bucket exists, is public, and has no write policies (read-only; safe to run any time).
    - Open and run the contents of [`supabase/policies.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/policies.sql) to enable multi-tenant Row Level Security (RLS).
    - Apply later migrations in numeric order as needed by deployed features. For **service requests / split payments / water settings** (and to fix `Could not find the table 'public.service_requests' in the schema cache` / PGRST205): run [`supabase/migrations/025_service_requests_and_split_payments_and_water.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/025_service_requests_and_split_payments_and_water.sql) (or the safe repair [`026_service_requests_schema_cache_repair.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/migrations/026_service_requests_schema_cache_repair.sql)). Both are idempotent and end with `NOTIFY pgrst, 'reload schema'`. Verify with [`supabase/verify_service_requests.sql`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/supabase/verify_service_requests.sql) (read-only). If the API still reports schema cache after applying, run `NOTIFY pgrst, 'reload schema';` in SQL Editor or use **Supabase Dashboard → Settings → API → Reload schema cache**.
@@ -93,7 +93,7 @@ and **not** a leaked-password "Have I Been Pwned" toast.
 | URL | Behaviour |
 |---|---|
 | `https://new-3d-food-<hash>-?.vercel.app` | HTTP **302** ? `https://vercel.com/sso-api??` with `_vercel_sso_nonce`. Page title can be **Login - Vercel**. |
-| `https://new-3d-food.vercel.app` | HTTP **200**, title **Dine3D**, no SSO redirect. Login POSTs to same-origin `/api/auth/login` ? Supabase `signInWithPassword` over HTTPS. |
+| `https://new-3d-food.vercel.app` | HTTP **200**, title **DinePixel**, no SSO redirect. Login POSTs to same-origin `/api/auth/login` ? Supabase `signInWithPassword` over HTTPS. |
 
 **Owner actions (cannot be fixed by redesigning `/login`):**
 
@@ -177,24 +177,24 @@ When you purchase a custom domain later:
 - **Live Order Status Tracking**: [`/order-status/[orderId]`](file:///c:/Users/jay%20subhash%20vare/OneDrive/Desktop/new%203d%20food/app/order-status/%5BorderId%5D/page.tsx)
 ---
 
-## ?? Dine3D Owner Admin Panel (`/admin`)
+## ?? DinePixel Owner Admin Panel (`/admin`)
 
-A separate admin surface for controlling the **public Dine3D website**. It is completely
+A separate admin surface for controlling the **public DinePixel website**. It is completely
 independent of the Supabase authentication used by restaurant owners: no Supabase session can
 open `/admin`, and an admin session cannot open `/dashboard`.
 
-### Environment variables (server-side only � never prefix with `NEXT_PUBLIC_`)
+### Environment variables (server-side only — never prefix with `NEXT_PUBLIC_`)
 
 | Variable | Purpose |
 | --- | --- |
-| `DINE3D_ADMIN_PASSWORD` | Owner password for `/admin`. Compared on the server only; the browser never receives or evaluates it. While unset, `/admin` stays locked and shows a setup notice. |
-| `DINE3D_ADMIN_SESSION_SECRET` | Optional. Signs the session cookie with HMAC-SHA256 so the key can be rotated without changing the password. If omitted, the key is derived from `DINE3D_ADMIN_PASSWORD`. |
+| `DINEPIXEL_ADMIN_PASSWORD` | Owner password for `/admin`. Compared on the server only; the browser never receives or evaluates it. While unset, `/admin` stays locked and shows a setup notice. |
+| `DINEPIXEL_ADMIN_SESSION_SECRET` | Optional. Signs the session cookie with HMAC-SHA256 so the key can be rotated without changing the password. If omitted, the key is derived from `DINEPIXEL_ADMIN_PASSWORD`. |
 
 Changing either value invalidates all existing admin sessions.
 
 ### Adding these to Vercel (required for the deployed app)
 
-`DINE3D_ADMIN_PASSWORD` works locally only because it lives in `.env.local`, which is gitignored.
+`DINEPIXEL_ADMIN_PASSWORD` works locally only because it lives in `.env.local`, which is gitignored.
 **Vercel does not read `.env.local`.** A local admin login tells you nothing about whether the
 deployed app is configured.
 
@@ -203,13 +203,13 @@ missing from the deployed environment. The comparison stays server-side; nothing
 architecture changes.
 
 1. Open the **Vercel Dashboard** ? your project ? **Settings** ? **Environment Variables**.
-2. Add `DINE3D_ADMIN_PASSWORD` with the owner password. Use the **same value you use locally** if
+2. Add `DINEPIXEL_ADMIN_PASSWORD` with the owner password. Use the **same value you use locally** if
    you want one password across both.
 3. **Tick the `Production` environment checkbox.** This is the step that is most often missed: a
    variable added only under `Preview` is absent from the production deployment, which then reports
    itself as unconfigured. Tick `Preview` and `Development` too if you want admin to work on
    preview deployments.
-4. Optionally add `DINE3D_ADMIN_SESSION_SECRET` as a long random string so the signing key can be
+4. Optionally add `DINEPIXEL_ADMIN_SESSION_SECRET` as a long random string so the signing key can be
    rotated without changing the password. Generate one with `openssl rand -base64 32`. If you set it
    locally too, use the same value in both places.
 5. **Redeploy.** Vercel only applies new environment variables to a *new* deployment. Go to the
@@ -218,8 +218,8 @@ architecture changes.
 
 Never prefix these with `NEXT_PUBLIC_`. Next.js inlines any `NEXT_PUBLIC_*` variable into the
 client bundle at build time, which would publish the owner password to every visitor. The app reads
-`DINE3D_ADMIN_PASSWORD` from `process.env` on the server at request time, which is why a redeploy �
-not a cache clear � is what picks up a new value.
+`DINEPIXEL_ADMIN_PASSWORD` from `process.env` on the server at request time, which is why a redeploy —
+not a cache clear — is what picks up a new value.
 
 To confirm the deployed app is configured without revealing anything, open
 `https://<your-domain>/api/admin/auth/session`: `"configured": true` means the variable reached the
@@ -227,7 +227,7 @@ server. It returns booleans and an expiry only, never any secret.
 
 ### Local vs production behaviour
 
-| | `DINE3D_ADMIN_PASSWORD` source | Cookie `secure` flag |
+| | `DINEPIXEL_ADMIN_PASSWORD` source | Cookie `secure` flag |
 | --- | --- | --- |
 | Local (`npm run dev`) | `.env.local` | `false` (plain HTTP on localhost) |
 | Vercel production | Vercel server environment variable | `true` (HTTPS only) |
@@ -237,7 +237,7 @@ it is additionally `secure`, so it is only ever transmitted over HTTPS.
 
 ### How access is protected
 
-1. `middleware.ts` verifies the HMAC signature and expiry of the `dine3d_admin_session` cookie (Edge-safe Web Crypto).
+1. `middleware.ts` verifies the HMAC signature and expiry of the `dinepixel_admin_session` cookie (Edge-safe Web Crypto).
 2. `app/admin/(panel)/layout.tsx` calls `requireAdminPage()` on the server, so an unauthenticated request is redirected before any admin markup is produced.
 3. Every `/api/admin/*` route calls `requireAdminApi()` and returns 401 otherwise.
 4. Logout writes a revocation timestamp, so session tokens issued at or before that moment stay invalid even if a copy of the cookie was captured beforehand.
