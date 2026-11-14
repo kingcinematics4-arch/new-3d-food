@@ -102,22 +102,22 @@ export default function ClassicLuxuryTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-[10px] mt-[8px]">
+          <div className="flex justify-center gap-[7px] mt-[4px]">
             <button
               type="button"
               onClick={onOpenWater}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '0 14px',
-                height: '38px',
-                minHeight: '38px',
-                borderRadius: '20px',
+                gap: '6px',
+                padding: '0 10px',
+                height: '34px',
+                minHeight: '34px',
+                borderRadius: '17px',
                 border: '1px solid rgba(184,164,122,0.3)',
                 background: 'rgba(255,255,255,0.8)',
                 color: '#6E6350',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -129,7 +129,7 @@ export default function ClassicLuxuryTemplate({
               onMouseEnter={(e) => { e.currentTarget.style.background = '#F4F1EA'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; }}
             >
-              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span>
+              <span style={{fontSize: '15px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
@@ -138,15 +138,15 @@ export default function ClassicLuxuryTemplate({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '0 14px',
-                height: '38px',
-                minHeight: '38px',
-                borderRadius: '20px',
+                gap: '6px',
+                padding: '0 10px',
+                height: '34px',
+                minHeight: '34px',
+                borderRadius: '17px',
                 border: '1px solid rgba(184,164,122,0.3)',
                 background: '#B8A47A',
                 color: '#1A1A1A',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -158,14 +158,14 @@ export default function ClassicLuxuryTemplate({
               onMouseEnter={(e) => { e.currentTarget.style.background = '#9A8760'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#B8A47A'; }}
             >
-              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span>
+              <span style={{fontSize: '15px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {/* Elegant Horizontal Serif Navigation Tabs */}
           {pills.length > 1 && (
-            <div className="flex items-center justify-center gap-[8px] overflow-x-auto mt-[6px] px-[6px] no-scrollbar">
+            <div className="flex items-center justify-center gap-[7px] overflow-x-auto mt-[3px] px-[4px] no-scrollbar">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 return (
@@ -175,11 +175,11 @@ export default function ClassicLuxuryTemplate({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      padding: '0 15px',
-                      height: '34px',
-                      minHeight: '34px',
-                      borderRadius: '20px',
-                      fontSize: '14px',
+                      padding: '0 12px',
+                      height: '32px',
+                      minHeight: '32px',
+                      borderRadius: '16px',
+                      fontSize: '13px',
                       fontWeight: 500,
                       lineHeight: 1,
                       whiteSpace: 'nowrap',

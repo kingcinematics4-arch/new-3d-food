@@ -85,22 +85,22 @@ export default function FreshMinimalTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-[10px] mt-[8px]">
+          <div className="flex justify-center gap-[7px] mt-[4px]">
             <button
               type="button"
               onClick={onOpenWater}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '0 14px',
-                height: '38px',
-                minHeight: '38px',
-                borderRadius: '20px',
+                gap: '6px',
+                padding: '0 10px',
+                height: '34px',
+                minHeight: '34px',
+                borderRadius: '17px',
                 border: '1px solid rgba(46,125,50,0.3)',
                 background: 'rgba(46,125,50,0.1)',
                 color: '#2E7D32',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -112,7 +112,7 @@ export default function FreshMinimalTemplate({
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(46,125,50,0.2)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(46,125,50,0.1)'; }}
             >
-              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span>
+              <span style={{fontSize: '15px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
@@ -121,15 +121,15 @@ export default function FreshMinimalTemplate({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '0 14px',
-                height: '38px',
-                minHeight: '38px',
-                borderRadius: '20px',
+                gap: '6px',
+                padding: '0 10px',
+                height: '34px',
+                minHeight: '34px',
+                borderRadius: '17px',
                 border: '1px solid #2E7D32',
                 background: '#2E7D32',
                 color: '#fff',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -141,13 +141,13 @@ export default function FreshMinimalTemplate({
               onMouseEnter={(e) => { e.currentTarget.style.background = '#1B5E20'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#2E7D32'; }}
             >
-              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span>
+              <span style={{fontSize: '15px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-[8px] overflow-x-auto no-scrollbar py-[4px]">
+            <div className="flex items-center gap-[7px] overflow-x-auto no-scrollbar py-[2px]">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
@@ -157,11 +157,11 @@ export default function FreshMinimalTemplate({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      padding: '0 15px',
-                      height: '34px',
-                      minHeight: '34px',
-                      borderRadius: '20px',
-                      fontSize: '14px',
+                      padding: '0 12px',
+                      height: '32px',
+                      minHeight: '32px',
+                      borderRadius: '16px',
+                      fontSize: '13px',
                       fontWeight: 600,
                       lineHeight: 1,
                       whiteSpace: 'nowrap',

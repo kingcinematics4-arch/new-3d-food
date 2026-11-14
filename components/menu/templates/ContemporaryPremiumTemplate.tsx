@@ -84,22 +84,22 @@ export default function ContemporaryPremiumTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-[10px] mt-[8px]">
+          <div className="flex justify-center gap-[7px] mt-[4px]">
             <button
               type="button"
               onClick={onOpenWater}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '0 14px',
-                height: '38px',
-                minHeight: '38px',
+                gap: '6px',
+                padding: '0 10px',
+                height: '34px',
+                minHeight: '34px',
                 borderRadius: '0',
                 border: '1px solid #1A1A1A',
                 background: '#1A1A1A',
                 color: '#fff',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -113,7 +113,7 @@ export default function ContemporaryPremiumTemplate({
               onMouseEnter={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1A1A1A'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#1A1A1A'; e.currentTarget.style.color = '#fff'; }}
             >
-              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span> Water
+              <span style={{fontSize: '15px', lineHeight: 1}}>💧</span> Water
             </button>
             <button
               type="button"
@@ -121,15 +121,15 @@ export default function ContemporaryPremiumTemplate({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '0 14px',
-                height: '38px',
-                minHeight: '38px',
+                gap: '6px',
+                padding: '0 10px',
+                height: '34px',
+                minHeight: '34px',
                 borderRadius: '0',
                 border: '1px solid #A67C52',
                 background: '#A67C52',
                 color: '#fff',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -143,12 +143,12 @@ export default function ContemporaryPremiumTemplate({
               onMouseEnter={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1A1A1A'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#A67C52'; e.currentTarget.style.color = '#fff'; }}
             >
-              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span> Call Waiter
+              <span style={{fontSize: '15px', lineHeight: 1}}>🔔</span> Call Waiter
             </button>
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-[8px] overflow-x-auto no-scrollbar py-[4px]">
+            <div className="flex items-center gap-[7px] overflow-x-auto no-scrollbar py-[2px]">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 const formattedNum = String(idx).padStart(2, '0');
@@ -159,11 +159,11 @@ return (
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      padding: '0 15px',
-                      height: '34px',
-                      minHeight: '34px',
+                      padding: '0 12px',
+                      height: '32px',
+                      minHeight: '32px',
                       borderRadius: '0',
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: 600,
                       lineHeight: 1,
                       whiteSpace: 'nowrap',

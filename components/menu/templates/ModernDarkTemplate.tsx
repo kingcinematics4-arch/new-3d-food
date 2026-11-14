@@ -98,22 +98,22 @@ export default function ModernDarkTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-[10px] mt-[8px]">
+          <div className="flex justify-center gap-[7px] mt-[4px]">
             <button
               type="button"
               onClick={onOpenWater}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '0 14px',
-                height: '38px',
-                minHeight: '38px',
-                borderRadius: '20px',
+                gap: '6px',
+                padding: '0 10px',
+                height: '34px',
+                minHeight: '34px',
+                borderRadius: '17px',
                 border: '1px solid rgba(255,255,255,0.2)',
                 background: 'rgba(255,255,255,0.05)',
                 color: 'rgba(255,255,255,0.8)',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -125,7 +125,7 @@ export default function ModernDarkTemplate({
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
             >
-              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span>
+              <span style={{fontSize: '15px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
@@ -134,15 +134,15 @@ export default function ModernDarkTemplate({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '0 14px',
-                height: '38px',
-                minHeight: '38px',
-                borderRadius: '20px',
+                gap: '6px',
+                padding: '0 10px',
+                height: '34px',
+                minHeight: '34px',
+                borderRadius: '17px',
                 border: '1px solid rgba(225,201,154,0.3)',
                 background: '#E1C99A',
                 color: '#000',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
@@ -154,14 +154,14 @@ export default function ModernDarkTemplate({
               onMouseEnter={(e) => { e.currentTarget.style.background = '#F0DCAF'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#E1C99A'; }}
             >
-              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span>
+              <span style={{fontSize: '15px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {/* Horizontal category track with item count capsules */}
           {pills.length > 1 && (
-            <div className="flex items-center gap-[8px] overflow-x-auto no-scrollbar py-[4px]">
+            <div className="flex items-center gap-[7px] overflow-x-auto no-scrollbar py-[2px]">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 const count = getCatCount(cat);
@@ -172,12 +172,12 @@ export default function ModernDarkTemplate({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      padding: '0 15px',
-                      height: '34px',
-                      minHeight: '34px',
-                      borderRadius: '20px',
-                      fontSize: '14px',
+                      gap: '5px',
+                      padding: '0 12px',
+                      height: '32px',
+                      minHeight: '32px',
+                      borderRadius: '16px',
+                      fontSize: '13px',
                       fontWeight: 600,
                       lineHeight: 1,
                       whiteSpace: 'nowrap',
@@ -195,9 +195,9 @@ export default function ModernDarkTemplate({
                     <span>{cat}</span>
                     <span
                       style={{
-                        fontSize: '11px',
-                        padding: '2px 8px',
-                        borderRadius: '10px',
+                        fontSize: '10px',
+                        padding: '1px 7px',
+                        borderRadius: '9px',
                         fontWeight: 700,
                         background: isActive ? 'rgba(0,0,0,0.2)' : '#181818',
                         color: isActive ? '#000' : '#888',
