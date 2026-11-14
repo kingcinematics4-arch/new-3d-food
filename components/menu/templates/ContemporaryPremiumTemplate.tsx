@@ -84,40 +84,101 @@ export default function ContemporaryPremiumTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-1.5 mt-1.5">
+          <div className="flex justify-center gap-[10px] mt-[8px]">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-none border border-[#1A1A1A] bg-[#1A1A1A] text-white text-[0.75rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '0',
+                border: '1px solid #1A1A1A',
+                background: '#1A1A1A',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1A1A1A'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#1A1A1A'; e.currentTarget.style.color = '#fff'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span> Water
+              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span> Water
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-none border border-[#A67C52] bg-[#A67C52] text-white text-[0.75rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '0',
+                border: '1px solid #A67C52',
+                background: '#A67C52',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1A1A1A'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#A67C52'; e.currentTarget.style.color = '#fff'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span> Call Waiter
+              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span> Call Waiter
             </button>
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex items-center gap-[8px] overflow-x-auto no-scrollbar py-[4px]">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 const formattedNum = String(idx).padStart(2, '0');
-                return (
+return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`whitespace-nowrap pb-1 text-[0.75rem] font-mono tracking-widest uppercase transition-all border-b-2 ${
-                      isActive
-                        ? 'border-[#1A1A1A] text-[#1A1A1A] font-bold'
-                        : 'border-transparent text-[#8C8C7E] hover:text-[#1A1A1A]'
-                    }`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '0 15px',
+                      height: '34px',
+                      minHeight: '34px',
+                      borderRadius: '0',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      border: '1px solid',
+                      borderColor: isActive ? '#A67C52' : 'rgba(0,0,0,0.1)',
+                      background: isActive ? '#A67C52' : 'transparent',
+                      color: isActive ? '#fff' : '#1A1A1A',
+                      boxSizing: 'border-box',
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                    }}
                   >
-                    <span className="text-[#A67C52] mr-1">{formattedNum} /</span>
-                    <span>{cat}</span>
+                    {cat}
                   </button>
                 );
               })}

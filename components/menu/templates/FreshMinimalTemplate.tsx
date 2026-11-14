@@ -85,38 +85,96 @@ export default function FreshMinimalTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-1.5 mt-1.5">
+          <div className="flex justify-center gap-[10px] mt-[8px]">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#2E7D32]/30 bg-[#2E7D32]/10 text-[#2E7D32] text-[0.75rem] font-medium hover:bg-[#2E7D32]/20 transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '20px',
+                border: '1px solid rgba(46,125,50,0.3)',
+                background: 'rgba(46,125,50,0.1)',
+                color: '#2E7D32',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(46,125,50,0.2)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(46,125,50,0.1)'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span>
+              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#2E7D32] bg-[#2E7D32] text-white text-[0.75rem] font-medium hover:bg-[#1B5E20] transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '20px',
+                border: '1px solid #2E7D32',
+                background: '#2E7D32',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#1B5E20'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#2E7D32'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span>
+              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-0.75 overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex items-center gap-[8px] overflow-x-auto no-scrollbar py-[4px]">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-2.5 py-0.625 rounded-full text-[0.75rem] font-semibold whitespace-nowrap transition-all duration-200 ${
-                      isActive
-                        ? 'bg-[#2E7D32] text-white shadow-sm'
-                        : 'bg-white hover:bg-[#E8F5E9] text-[#4A554A] border border-[#DDE3DD]'
-                    }`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '0 15px',
+                      height: '34px',
+                      minHeight: '34px',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: isActive ? '#2E7D32' : '#fff',
+                      color: isActive ? '#fff' : '#4A554A',
+                      border: isActive ? 'none' : '1px solid #DDE3DD',
+                      boxShadow: isActive ? '0 2px 4px rgba(46,125,50,0.2)' : 'none',
+                      boxSizing: 'border-box',
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                    }}
                   >
                     {cat}
                   </button>

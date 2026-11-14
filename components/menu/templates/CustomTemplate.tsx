@@ -144,37 +144,39 @@ export default function CustomTemplate(props: CustomTemplateProps) {
         </div>
 
         {/* Water & Call Waiter action row */}
-        <div className="flex justify-center gap-2 mt-2" style={{ boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+        <div className="flex justify-center gap-[10px] mt-[8px]" style={{ boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0 }}>
           <button
             type="button"
             onClick={onOpenWater}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '0.3125rem 0.625rem', borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius,
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '0 14px', borderRadius: '20px', height: '38px', minHeight: '38px',
               border: `1px solid ${alpha(p, 0.35)}`, backgroundColor: alpha(p, 0.12), color: p,
-              fontSize: Math.max(11, config.typography.bodySize - 2), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer',
+              fontSize: '14px', fontWeight: 500, lineHeight: 1, whiteSpace: 'nowrap', cursor: 'pointer',
               transition: 'all 180ms ease', boxSizing: 'border-box',
+              WebkitAppearance: 'none', appearance: 'none',
             }}
           >
-            <span style={{fontSize: '17px', lineHeight: 1}}>💧</span> Water
+            <span style={{fontSize: '16px', lineHeight: 1}}>💧</span> Water
           </button>
           <button
             type="button"
             onClick={onOpenWaiter}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '0.3125rem 0.625rem', borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius,
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '0 14px', borderRadius: '20px', height: '38px', minHeight: '38px',
               border: `1px solid ${p}`, backgroundColor: p, color: contrast(p),
-              fontSize: Math.max(11, config.typography.bodySize - 2), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer',
+              fontSize: '14px', fontWeight: 500, lineHeight: 1, whiteSpace: 'nowrap', cursor: 'pointer',
               transition: 'all 180ms ease', boxSizing: 'border-box',
+              WebkitAppearance: 'none', appearance: 'none',
             }}
           >
-            <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span> Call Waiter
+            <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span> Call Waiter
           </button>
         </div>
-        {pills.length > 1 && (
+{pills.length > 1 && (
           <div
-            className="no-scrollbar flex items-center overflow-y-hidden overflow-x-auto py-0.5"
+            className="no-scrollbar flex items-center overflow-y-hidden overflow-x-auto py-[4px]"
             style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, gap: embeddedViewport ? 4 : 5 }}
           >
             {pills.map((cat) => {
@@ -184,7 +186,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
                   key={cat}
                   type="button"
                   onClick={() => onSelectCategory(cat)}
-                  style={{ flexShrink: 0, borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius, backgroundColor: active ? p : config.cardBg, color: active ? contrast(p) : config.textColor, border: `1px solid ${active ? p : alpha(p, 0.22)}`, padding: embeddedViewport ? '0.28rem 0.5rem' : '0.32rem 0.6rem', fontSize: Math.max(9, config.typography.bodySize - (embeddedViewport ? 4 : 3)), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', boxSizing: 'border-box' }}
+                  style={{ flexShrink: 0, borderRadius: '20px', backgroundColor: active ? p : config.cardBg, color: active ? contrast(p) : config.textColor, border: `1px solid ${active ? p : alpha(p, 0.22)}`, padding: '0 15px', height: '34px', minHeight: '34px', fontSize: '14px', fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
                 >
                   {cat}
                 </button>

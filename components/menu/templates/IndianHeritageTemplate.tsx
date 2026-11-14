@@ -88,39 +88,97 @@ export default function IndianHeritageTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-1.5 mt-1.5">
+          <div className="flex justify-center gap-[10px] mt-[8px]">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#C69A6E]/30 bg-[#C69A6E]/10 text-[#C69A6E] text-[0.75rem] font-sans font-medium hover:bg-[#C69A6E]/20 transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '20px',
+                border: '1px solid rgba(198,154,110,0.3)',
+                background: 'rgba(198,154,110,0.1)',
+                color: '#C69A6E',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(198,154,110,0.2)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(198,154,110,0.1)'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span>
+              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#C69A6E] bg-[#C69A6E] text-[#1D150E] text-[0.75rem] font-sans font-medium hover:bg-[#A67C52] transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '20px',
+                border: '1px solid #C69A6E',
+                background: '#C69A6E',
+                color: '#1D150E',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#A37C4F'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#C69A6E'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span>
+              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
-          {/* Boxed Heritage Tabs with Brass Edges */}
+{/* Boxed Heritage Tabs with Brass Edges */}
           {pills.length > 1 && (
-            <div className="flex items-center gap-0.75 overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex items-center gap-[8px] overflow-x-auto no-scrollbar py-[4px]">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-2 py-0.75 rounded text-[0.75rem] font-sans uppercase tracking-widest whitespace-nowrap transition-all duration-200 border ${
-                      isActive
-                        ? 'bg-[#C69A6E] text-[#1D150E] font-bold border-[#D4AF7C] shadow-[0_0_12px_rgba(198,154,110,0.3)]'
-                        : 'bg-[#2A2015] hover:bg-[#35291C] text-[#C9BAA0] border-[#5A4630]'
-                    }`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '0 15px',
+                      height: '34px',
+                      minHeight: '34px',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: isActive ? '#C69A6E' : '#2A2015',
+                      color: isActive ? '#1D150E' : '#C9BAA0',
+                      border: isActive ? 'none' : '1px solid #5A4630',
+                      boxShadow: isActive ? '0 0 12px rgba(198,154,110,0.3)' : 'none',
+                      boxSizing: 'border-box',
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                    }}
                   >
                     {cat}
                   </button>

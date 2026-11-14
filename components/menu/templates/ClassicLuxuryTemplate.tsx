@@ -102,39 +102,96 @@ export default function ClassicLuxuryTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-1.5 mt-1.5">
+          <div className="flex justify-center gap-[10px] mt-[8px]">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#B8A47A]/30 bg-white/80 text-[#6E6350] text-[0.75rem] font-sans font-medium hover:bg-[#F4F1EA] transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '20px',
+                border: '1px solid rgba(184,164,122,0.3)',
+                background: 'rgba(255,255,255,0.8)',
+                color: '#6E6350',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#F4F1EA'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span>
+              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#B8A47A]/30 bg-[#B8A47A] text-[#1A1A1A] text-[0.75rem] font-sans font-medium hover:bg-[#9A8760] transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '20px',
+                border: '1px solid rgba(184,164,122,0.3)',
+                background: '#B8A47A',
+                color: '#1A1A1A',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#9A8760'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#B8A47A'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span>
+              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {/* Elegant Horizontal Serif Navigation Tabs */}
           {pills.length > 1 && (
-            <div className="flex items-center justify-center gap-0.75 sm:gap-1.5 overflow-x-auto mt-2 px-1 no-scrollbar">
+            <div className="flex items-center justify-center gap-[8px] overflow-x-auto mt-[6px] px-[6px] no-scrollbar">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`whitespace-nowrap px-1.75 py-0.5 text-[0.75rem] tracking-wider uppercase transition-all border-b-2 ${
-                      isActive
-                        ? 'border-[#9A8760] text-[#9A8760] font-medium'
-                        : 'border-transparent text-[#7B776E] hover:text-[#1A1A1A]'
-                    }`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '0 15px',
+                      height: '34px',
+                      minHeight: '34px',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      borderBottom: isActive ? '2px solid #9A8760' : '2px solid transparent',
+                      color: isActive ? '#9A8760' : '#7B776E',
+                      background: 'transparent',
+                      boxSizing: 'border-box',
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                    }}
                   >
                     {idx === 0 ? '✦ ALL' : cat}
                   </button>

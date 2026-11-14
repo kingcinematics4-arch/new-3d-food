@@ -98,28 +98,70 @@ export default function ModernDarkTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-1.5 mt-1.5">
+          <div className="flex justify-center gap-[10px] mt-[8px]">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-white/20 bg-white/5 text-white/80 text-[0.75rem] font-medium hover:bg-white/10 transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '20px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span>
+              <span style={{fontSize: '16px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#E1C99A]/30 bg-[#E1C99A] text-black text-[0.75rem] font-medium hover:bg-[#F0DCAF] transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '38px',
+                minHeight: '38px',
+                borderRadius: '20px',
+                border: '1px solid rgba(225,201,154,0.3)',
+                background: '#E1C99A',
+                color: '#000',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                appearance: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#F0DCAF'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#E1C99A'; }}
             >
-              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span>
+              <span style={{fontSize: '16px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {/* Horizontal category track with item count capsules */}
           {pills.length > 1 && (
-            <div className="flex items-center gap-0.75 overflow-x-auto no-scrollbar py-0.125">
+            <div className="flex items-center gap-[8px] overflow-x-auto no-scrollbar py-[4px]">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 const count = getCatCount(cat);
@@ -127,17 +169,39 @@ export default function ModernDarkTemplate({
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`flex items-center gap-0.5 px-1.25 py-0.5 rounded-full text-[0.75rem] font-semibold whitespace-nowrap transition-all duration-200 ${
-                      isActive
-                        ? 'bg-[#E1C99A] text-black shadow-[0_0_10px_rgba(225,201,154,0.4)]'
-                        : 'bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 border border-white/10'
-                    }`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '0 15px',
+                      height: '34px',
+                      minHeight: '34px',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: isActive ? '#E1C99A' : 'rgba(20,20,20,0.8)',
+                      color: isActive ? '#000' : '#ddd',
+                      border: isActive ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                      boxShadow: isActive ? '0 0 10px rgba(225,201,154,0.4)' : 'none',
+                      boxSizing: 'border-box',
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                    }}
                   >
                     <span>{cat}</span>
                     <span
-                      className={`text-[0.5rem] px-0.75 py-0.1 rounded-full font-bold ${
-                        isActive ? 'bg-black/20 text-black' : 'bg-neutral-800 text-neutral-400'
-                      }`}
+                      style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        background: isActive ? 'rgba(0,0,0,0.2)' : '#181818',
+                        color: isActive ? '#000' : '#888',
+                      }}
                     >
                       {count}
                     </span>
