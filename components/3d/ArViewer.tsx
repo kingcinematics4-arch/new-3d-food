@@ -18,6 +18,9 @@ interface ArViewerProps {
  * - WebXR where supported (GLB)
  * AR is user-initiated only (no auto-activate). Availability is determined per
  * device and per uploaded format; GLB and USDZ are NOT both required.
+ * 
+ * Uses model-viewer's default AR button which provides proper surface detection,
+ * placement UI, and interaction controls (move, rotate, scale) in native AR.
  */
 export default function ArViewer({
   modelUrlGlb,
@@ -32,6 +35,7 @@ export default function ArViewer({
   const [arStatus, setArStatus] = useState<string | null>(null);
   const [canActivateAr, setCanActivateAr] = useState(false);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other');
+  const [showPlacementHint, setShowPlacementHint] = useState(false);
 
   const glb = modelUrlGlb?.trim() || '';
   const usdz = modelUrlUsdz?.trim() || '';
@@ -44,7 +48,6 @@ export default function ArViewer({
     let cancelled = false;
     (async () => {
       try {
-        // @ts-ignore - custom element registration
         await import('@google/model-viewer');
         if (!cancelled) setReady(true);
       } catch {
@@ -57,6 +60,7 @@ export default function ArViewer({
   useEffect(() => {
     setLoadError(null);
     setArStatus(null);
+    setShowPlacementHint(false);
   }, [glb, usdz]);
 
   useEffect(() => {
@@ -72,13 +76,22 @@ export default function ArViewer({
     };
     const onArStatus = (e: any) => {
       const status = e?.detail?.status;
-      if (status === 'failed') setArStatus('AR could not be started on this device. You can continue using 3D preview.');
-      else if (status === 'session-started' || status === 'not-presenting') setArStatus(null);
+      if (status === 'failed') {
+        setArStatus('AR could not be started on this device. You can continue using 3D preview.');
+        setShowPlacementHint(false);
+      } else if (status === 'session-started') {
+        setArStatus(null);
+        setShowPlacementHint(true);
+        setTimeout(() => setShowPlacementHint(false), 8000);
+      } else if (status === 'not-presenting') {
+        setArStatus(null);
+        setShowPlacementHint(false);
+      }
     };
     el.addEventListener('load', onLoad);
     el.addEventListener('error', onError);
     el.addEventListener('ar-status', onArStatus);
-    try { setCanActivateAr(Boolean(el.canActivateAR)); } catch {}
+    try { setCanActivateAr(Boolean(el.canActivateAr)); } catch {}
     return () => {
       el.removeEventListener('load', onLoad);
       el.removeEventListener('error', onError);
@@ -89,7 +102,6 @@ export default function ArViewer({
   const deviceSupports = isArSupportedForDevice(platform, glb, usdz);
   const availabilityMsg = arAvailabilityLabel(platform, glb, usdz);
 
-  // iOS/iPadOS with USDZ only (no GLB): provide native Quick Look link.
   if (platform === 'ios' && usdz && !glb) {
     return (
       <div className={className} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 20, background: 'var(--bg-secondary)' }}>
@@ -115,7 +127,6 @@ export default function ArViewer({
   }
 
   if (!glb) {
-    // No GLB: cannot render model-viewer 3D/AR canvas. Show clear status.
     return (
       <div className={className} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20, background: 'var(--bg-secondary)' }}>
         {posterUrl ? <img src={posterUrl} alt={altText} style={{ maxHeight: 180, maxWidth: '100%', objectFit: 'contain', borderRadius: 8, opacity: 0.9 }} /> : null}
@@ -132,8 +143,6 @@ export default function ArViewer({
   }
 
   const ModelViewerTag = 'model-viewer' as any;
-  // Android uses GLB (src) via Scene Viewer; Apple uses USDZ (ios-src) via Quick Look.
-  // ar-modes includes scene-viewer, quick-look, webxr so correct mode is chosen per platform.
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
       <ModelViewerTag
@@ -142,58 +151,59 @@ export default function ArViewer({
         ios-src={usdz || undefined}
         ar
         ar-modes="scene-viewer quick-look webxr"
+        ar-placement="floor"
+        ar-scale="auto"
+        xr-environment
         camera-controls
         touch-action="pan-y"
-        shadow-intensity="1"
+        shadow-intensity="1.5"
         exposure="1"
         environment-image="neutral"
         alt={altText}
         poster={posterUrl || undefined}
         style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)' }}
       >
-        {deviceSupports ? (
-          <button
-            slot="ar-button"
-            type="button"
-            style={{
-              position: 'absolute', left: '50%', bottom: 14, transform: 'translateX(-50%)',
-              padding: '0.5rem 1rem', borderRadius: 999, border: '1px solid rgba(201,169,110,0.5)',
-              background: 'rgba(11,10,8,0.78)', color: 'var(--gold)', fontSize: '0.6875rem',
-              letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', backdropFilter: 'blur(8px)',
-            }}
-          >
-            {platform === 'ios' ? 'View in AR (Quick Look)' : platform === 'android' ? 'View in AR (Scene Viewer)' : 'View in AR'}
-          </button>
+        {loadError ? (
+          <div style={{ position: 'absolute', left: 10, right: 10, bottom: 10, padding: '0.5rem 0.75rem', borderRadius: 8, background: 'rgba(120,40,40,0.85)', color: '#fff', fontSize: '0.6875rem' }}>
+            {loadError}
+          </div>
+        ) : null}
+        {arStatus ? (
+          <div style={{ position: 'absolute', left: 10, right: 10, top: 10, padding: '0.5rem 0.75rem', borderRadius: 8, background: 'rgba(11,10,8,0.8)', color: 'var(--text-secondary)', fontSize: '0.6875rem', border: '1px solid var(--border-warm)' }}>
+            {arStatus}
+          </div>
+        ) : null}
+
+        <div style={{ position: 'absolute', left: 10, top: 10, right: 10, display: 'flex', gap: 6, flexWrap: 'wrap', pointerEvents: 'none' }}>
+          <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: 'rgba(11,10,8,0.72)', color: 'var(--text-dimmed)', fontSize: '0.5625rem', letterSpacing: '0.08em', textTransform: 'uppercase', border: '1px solid var(--border-warm)' }}>
+            {availabilityMsg}
+          </span>
+        </div>
+
+        {showPlacementHint && deviceSupports && (
+          <div style={{ position: 'absolute', left: '50%', bottom: 60, transform: 'translateX(-50%)', padding: '0.5rem 0.75rem', borderRadius: 8, background: 'rgba(11,10,8,0.85)', color: 'var(--text-secondary)', fontSize: '0.6875rem', border: '1px solid var(--border-warm)', textAlign: 'center', maxWidth: '90%', animation: 'fadeIn 0.3s ease-out' }}>
+            Move your phone slowly to detect surfaces, then tap to place the model.
+          </div>
+        )}
+
+        {!deviceSupports && ready && !loadError ? (
+          <div style={{ position: 'absolute', left: '50%', bottom: 14, transform: 'translateX(-50%)', padding: '0.5rem 0.75rem', borderRadius: 8, background: 'rgba(11,10,8,0.78)', color: 'var(--text-muted)', fontSize: '0.6875rem', border: '1px solid var(--border-warm)', textAlign: 'center', maxWidth: '90%' }}>
+            AR is not available on this device with the uploaded model format. You can continue using 3D preview.
+          </div>
+        ) : null}
+        {deviceSupports && !canActivateAr && ready && !loadError ? (
+          <div style={{ position: 'absolute', right: 10, bottom: 58, padding: '0.25rem 0.5rem', borderRadius: 6, background: 'rgba(11,10,8,0.72)', color: 'var(--text-dimmed)', fontSize: '0.5625rem', letterSpacing: '0.08em', textTransform: 'uppercase', border: '1px solid var(--border-warm)' }}>
+            AR capability depends on device/browser support
+          </div>
         ) : null}
       </ModelViewerTag>
 
-      {loadError ? (
-        <div style={{ position: 'absolute', left: 10, right: 10, bottom: 10, padding: '0.5rem 0.75rem', borderRadius: 8, background: 'rgba(120,40,40,0.85)', color: '#fff', fontSize: '0.6875rem' }}>
-          {loadError}
-        </div>
-      ) : null}
-      {arStatus ? (
-        <div style={{ position: 'absolute', left: 10, right: 10, top: 10, padding: '0.5rem 0.75rem', borderRadius: 8, background: 'rgba(11,10,8,0.8)', color: 'var(--text-secondary)', fontSize: '0.6875rem', border: '1px solid var(--border-warm)' }}>
-          {arStatus}
-        </div>
-      ) : null}
-
-      <div style={{ position: 'absolute', left: 10, top: 10, right: 10, display: 'flex', gap: 6, flexWrap: 'wrap', pointerEvents: 'none' }}>
-        <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: 'rgba(11,10,8,0.72)', color: 'var(--text-dimmed)', fontSize: '0.5625rem', letterSpacing: '0.08em', textTransform: 'uppercase', border: '1px solid var(--border-warm)' }}>
-          {availabilityMsg}
-        </span>
-      </div>
-
-      {!deviceSupports && ready && !loadError ? (
-        <div style={{ position: 'absolute', left: '50%', bottom: 14, transform: 'translateX(-50%)', padding: '0.5rem 0.75rem', borderRadius: 8, background: 'rgba(11,10,8,0.78)', color: 'var(--text-muted)', fontSize: '0.6875rem', border: '1px solid var(--border-warm)', textAlign: 'center', maxWidth: '90%' }}>
-          AR is not available on this device with the uploaded model format. You can continue using 3D preview.
-        </div>
-      ) : null}
-      {deviceSupports && !canActivateAr && ready && !loadError ? (
-        <div style={{ position: 'absolute', right: 10, bottom: 58, padding: '0.25rem 0.5rem', borderRadius: 6, background: 'rgba(11,10,8,0.72)', color: 'var(--text-dimmed)', fontSize: '0.5625rem', letterSpacing: '0.08em', textTransform: 'uppercase', border: '1px solid var(--border-warm)' }}>
-          AR capability depends on device/browser support
-        </div>
-      ) : null}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
