@@ -155,7 +155,7 @@ function FoodDetailModal({
           <div
             className="d3-food-image relative"
             style={{
-              height: 'var(--d3-image-height)',
+              height: 'calc(var(--d3-image-height) * 0.8)',
               background: 'var(--bg-secondary)',
               borderRadius: 'var(--d3-modal-image-radius)',
               overflow: 'hidden',
@@ -217,20 +217,20 @@ function FoodDetailModal({
             <button
               onClick={() => onView3D(item)}
               style={{
-                position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                padding: '0.4375rem 0.875rem',
+                position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '0.375rem 0.75rem',
                 borderRadius: 100,
                 background: 'rgba(0,0,0,0.8)',
                 border: '1px solid rgba(201,169,110,0.3)',
                 color: 'var(--gold)',
-                fontSize: '0.625rem', fontWeight: 600,
+                fontSize: '0.5625rem', fontWeight: 600,
                 letterSpacing: '0.06em', textTransform: 'uppercase',
                 cursor: 'pointer',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
               }}
             >
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                 <path d="M6 1L6 11M1 6L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2" />
               </svg>
@@ -239,24 +239,24 @@ function FoodDetailModal({
           )}
         </div>
 
-        <div className="p-4 flex flex-col gap-3">
+        <div className="p-3 flex flex-col gap-2.5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: '1.375rem',
+                  fontSize: '1.25rem',
                   fontWeight: 500,
                   color: 'var(--text-primary)',
                   letterSpacing: '-0.015em',
                   lineHeight: 1.2,
-                  marginBottom: 3,
+                  marginBottom: 2,
                 }}
               >
                 {item.name}
               </h2>
               {item.description ? (
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                   {item.description}
                 </p>
               ) : null}
@@ -264,7 +264,7 @@ function FoodDetailModal({
             <span className="d3-price"
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: '1.375rem',
+                fontSize: '1.25rem',
                 fontWeight: 500,
                 color: 'var(--gold)',
                 letterSpacing: '-0.02em',
@@ -277,18 +277,18 @@ function FoodDetailModal({
           </div>
 
           {availableSizes.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', paddingTop: '0.375rem' }}>
-              <label className="d3-label" style={{ fontSize: '0.6875rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', paddingTop: '0.25rem' }}>
+              <label className="d3-label" style={{ fontSize: '0.625rem' }}>
                 Select Size {requiresSize && <span style={{ color: '#FCA5A5', marginLeft: 4 }}>*</span>}
               </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                 {availableSizes.map((size) => (
                   <button
                     key={size.id}
                     type="button"
                     onClick={() => setSelectedSize(size)}
                     style={{
-                      padding: '0.4375rem 0.875rem',
+                      padding: '0.375rem 0.75rem',
                       borderRadius: 'var(--d3-input-radius)',
                       border: selectedSize?.id === size.id
                         ? '2px solid var(--gold)'
@@ -299,7 +299,7 @@ function FoodDetailModal({
                       color: selectedSize?.id === size.id
                         ? 'var(--gold)'
                         : 'var(--text-primary)',
-                      fontSize: '0.75rem',
+                      fontSize: '0.6875rem',
                       fontWeight: selectedSize?.id === size.id ? 600 : 500,
                       cursor: 'pointer',
                       transition: 'all 200ms',
@@ -307,11 +307,11 @@ function FoodDetailModal({
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: 1,
-                      minWidth: 72,
+                      minWidth: 68,
                     }}
                   >
                     <span>{size.name}</span>
-                    <span style={{ fontSize: '0.625rem', fontWeight: 500, fontFamily: 'var(--font-display)' }}>
+                    <span style={{ fontSize: '0.5625rem', fontWeight: 500, fontFamily: 'var(--font-display)' }}>
                       {formatPrice(size.price, currency)}
                     </span>
                   </button>
@@ -320,7 +320,7 @@ function FoodDetailModal({
             </div>
           )}
 
-          <div className="flex items-center gap-3 flex-wrap" style={{ fontSize: '0.625rem' }}>
+          <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: '0.5625rem' }}>
             {item.preparation_time_mins ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)' }}>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" /><path d="M6 3.5V6 L8 7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" /></svg>
@@ -343,7 +343,7 @@ function FoodDetailModal({
 
           {ingredients.length > 0 && (
             <div>
-              <p style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
+              <p style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>
                 Ingredients
               </p>
               <div className="flex flex-wrap gap-1">
@@ -351,9 +351,9 @@ function FoodDetailModal({
                   <span
                     key={i}
                     style={{
-                      padding: '0.1875rem 0.5rem',
+                      padding: '0.15625rem 0.4375rem',
                       borderRadius: 100,
-                      fontSize: '0.625rem',
+                      fontSize: '0.5625rem',
                       background: 'var(--bg-surface-2)',
                       border: '1px solid var(--border-subtle)',
                       color: 'var(--text-secondary)',
@@ -369,7 +369,7 @@ function FoodDetailModal({
           <div className="d3-divider" />
 
           <div>
-            <label className="d3-label" style={{ fontSize: '0.6875rem' }}>Special Instructions</label>
+            <label className="d3-label" style={{ fontSize: '0.625rem' }}>Special Instructions</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -377,52 +377,52 @@ function FoodDetailModal({
               rows={2}
               style={{
                 width: '100%', resize: 'none',
-                padding: '0.625rem', borderRadius: 'var(--d3-input-radius)',
+                padding: '0.5rem', borderRadius: 'var(--d3-input-radius)',
                 background: 'var(--bg-surface-2)',
                 border: '1px solid var(--border-warm)',
                 color: 'var(--text-primary)',
-                fontSize: '0.8125rem',
+                fontSize: '0.75rem',
                 outline: 'none',
               }}
             />
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <div
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-1"
               style={{
                 background: 'var(--bg-surface-2)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--d3-input-radius)',
-                padding: '0.3125rem 0.5rem',
+                padding: '0.25rem 0.4375rem',
               }}
             >
               <button
                 onClick={() => setQty(Math.max(1, qty - 1))}
                 style={{
-                  width: 28, height: 28, borderRadius: '50%',
+                  width: 24, height: 24, borderRadius: '50%',
                   background: qty <= 1 ? 'transparent' : 'var(--bg-surface-3)',
                   border: 'none', cursor: 'pointer',
                   color: 'var(--text-primary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.875rem', lineHeight: 1,
+                  fontSize: '0.75rem', lineHeight: 1,
                 }}
               >
                 −
               </button>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-primary)', minWidth: 18, textAlign: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9375rem', color: 'var(--text-primary)', minWidth: 16, textAlign: 'center' }}>
                 {qty}
               </span>
               <button
                 onClick={() => setQty(qty + 1)}
                 style={{
-                  width: 28, height: 28, borderRadius: 5,
+                  width: 24, height: 24, borderRadius: 5,
                   background: 'var(--bg-surface-3)',
                   border: '1px solid var(--border-light)',
                   cursor: 'pointer',
                   color: 'var(--gold-pale)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.875rem', lineHeight: 1, fontWeight: 500,
+                  fontSize: '0.75rem', lineHeight: 1, fontWeight: 500,
                 }}
               >
                 +
@@ -436,7 +436,7 @@ function FoodDetailModal({
                 onClose();
               }}
               className="d3-btn-primary"
-              style={{ flex: 1, justifyContent: 'center', padding: '0.75rem', fontSize: '0.875rem', opacity: canAddToCart ? 1 : 0.5 }}
+              style={{ flex: 1, justifyContent: 'center', padding: '0.625rem', fontSize: '0.8125rem', opacity: canAddToCart ? 1 : 0.5 }}
               disabled={!canAddToCart}
             >
               Add to Order · {formatPrice(effectivePrice * qty, currency)}
