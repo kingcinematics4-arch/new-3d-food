@@ -62,13 +62,13 @@
      so the logo can grow without any surface ending up underneath it. */
   --d3-nav-h: 78px;
 
-  /* ============================================
-     LAYOUT DESIGN TOKENS
-     These control structural properties (radius, spacing,
-     image ratio, container width) so each menu theme can
-     present a genuinely different layout — not just colours.
-     Defaults here match the Classic Luxury theme.
-     ============================================ */
+/* ============================================
+   LAYOUT DESIGN TOKENS
+   These control structural properties (radius, spacing,
+   image ratio, container width) so each menu theme can
+   present a genuinely different layout — not just colours.
+   Defaults here match the Classic Luxury theme.
+   ============================================ */
   --d3-card-radius: 8px;
   --d3-modal-radius: 12px;
   --d3-modal-image-radius: 12px 12px 0 0;
@@ -76,11 +76,11 @@
   --d3-btn-radius: 4px;
   --d3-badge-radius: 3px;
   --d3-chip-radius: 4px;
-  --d3-image-height: 12rem;
+  --d3-image-height: 10.5rem;
   --d3-image-aspect: 4 / 3;
   --d3-container-max: 720px;
-  --d3-content-gutter: 1rem;
-  --d3-section-gap: 2.5rem;
+  --d3-content-gutter: 0.875rem;
+  --d3-section-gap: 2rem;
   --d3-header-bg: rgba(11,10,8,0.95);
   --d3-header-border: var(--border-subtle);
   --d3-nav-bg: rgba(11,10,8,0.92);
@@ -1287,18 +1287,18 @@ img {
   --border-solid: #E3DFDA;
   --theme-font-display: 'Cormorant Garamond', Georgia, serif;
   --theme-font-body: 'Inter', system-ui, sans-serif;
-  --d3-card-radius: 12px;
-  --d3-modal-radius: 16px;
-  --d3-modal-image-radius: 16px 16px 0 0;
-  --d3-input-radius: 6px;
-  --d3-btn-radius: 6px;
+  --d3-card-radius: 10px;
+  --d3-modal-radius: 14px;
+  --d3-modal-image-radius: 14px 14px 0 0;
+  --d3-input-radius: 5px;
+  --d3-btn-radius: 5px;
   --d3-badge-radius: 4px;
   --d3-chip-radius: 5px;
-  --d3-image-height: 12rem;
+  --d3-image-height: 10.5rem;
   --d3-image-aspect: 4 / 3;
   --d3-container-max: 720px;
-  --d3-content-gutter: 1rem;
-  --d3-section-gap: 2.5rem;
+  --d3-content-gutter: 0.875rem;
+  --d3-section-gap: 2rem;
   --d3-header-bg: rgba(11,10,8,0.95);
   --d3-header-border: var(--border-subtle);
   --d3-nav-bg: rgba(255,255,255,0.9);
@@ -1360,11 +1360,11 @@ img {
   --d3-btn-radius: 0;
   --d3-badge-radius: 0;
   --d3-chip-radius: 0;
-  --d3-image-height: 11rem;
+  --d3-image-height: 9.5rem;
   --d3-image-aspect: 16 / 9;
   --d3-container-max: 800px;
-  --d3-content-gutter: 1.25rem;
-  --d3-section-gap: 2rem;
+  --d3-content-gutter: 1rem;
+  --d3-section-gap: 1.75rem;
   --d3-header-bg: rgba(11,10,8,0.98);
   --d3-header-border: var(--border-subtle);
   --d3-nav-bg: rgba(11,10,8,0.95);
@@ -1431,18 +1431,18 @@ img {
   --border-solid: #E3E3E3;
   --theme-font-display: 'Inter', system-ui, sans-serif;
   --theme-font-body: 'Inter', system-ui, sans-serif;
-  --d3-card-radius: 16px;
-  --d3-modal-radius: 16px;
-  --d3-modal-image-radius: 16px 16px 0 0;
-  --d3-input-radius: 12px;
-  --d3-btn-radius: 12px;
+  --d3-card-radius: 14px;
+  --d3-modal-radius: 14px;
+  --d3-modal-image-radius: 14px 14px 0 0;
+  --d3-input-radius: 10px;
+  --d3-btn-radius: 10px;
   --d3-badge-radius: 9999px;
-  --d3-chip-radius: 16px;
-  --d3-image-height: 10rem;
+  --d3-chip-radius: 14px;
+  --d3-image-height: 9rem;
   --d3-image-aspect: 1 / 1;
   --d3-container-max: 760px;
-  --d3-content-gutter: 1rem;
-  --d3-section-gap: 2rem;
+  --d3-content-gutter: 0.875rem;
+  --d3-section-gap: 1.75rem;
   --d3-header-bg: rgba(255,255,255,0.95);
   --d3-header-border: var(--border-subtle);
   --d3-nav-bg: rgba(255,255,255,0.92);
@@ -1504,18 +1504,18 @@ img {
   --border-solid: #5A4630;
   --theme-font-display: 'Cormorant Garamond', Georgia, serif;
   --theme-font-body: 'Inter', system-ui, sans-serif;
-  --d3-card-radius: 8px;
-  --d3-modal-radius: 12px;
-  --d3-modal-image-radius: 12px 12px 0 0;
-  --d3-input-radius: 6px;
-  --d3-btn-radius: 6px;
+  --d3-card-radius: 7px;
+  --d3-modal-radius: 10px;
+  --d3-modal-image-radius: 10px 10px 0 0;
+  --d3-input-radius: 5px;
+  --d3-btn-radius: 5px;
   --d3-badge-radius: 4px;
-  --d3-chip-radius: 6px;
-  --d3-image-height: 12rem;
+  --d3-chip-radius: 5px;
+  --d3-image-height: 10.5rem;
   --d3-image-aspect: 4 / 3;
   --d3-container-max: 720px;
-  --d3-content-gutter: 1rem;
-  --d3-section-gap: 2.5rem;
+  --d3-content-gutter: 0.875rem;
+  --d3-section-gap: 2rem;
   --d3-header-bg: rgba(29,21,14,0.96);
   --d3-header-border: rgba(198,154,110,0.18);
   --d3-nav-bg: rgba(29,21,14,0.94);
@@ -1581,7 +1581,7 @@ img {
   --border-medium: rgba(166,124,82,0.26);
   --border-warm: rgba(0,0,0,0.04);
   --border-solid: #DAD9D1;
-  --theme-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
+--theme-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
   --theme-font-body: 'Inter', system-ui, sans-serif;
   --d3-card-radius: 0;
   --d3-modal-radius: 0;
@@ -1590,11 +1590,11 @@ img {
   --d3-btn-radius: 0;
   --d3-badge-radius: 0;
   --d3-chip-radius: 0;
-  --d3-image-height: 14rem;
+  --d3-image-height: 12rem;
   --d3-image-aspect: 16 / 9;
   --d3-container-max: 960px;
-  --d3-content-gutter: 1.5rem;
-  --d3-section-gap: 3rem;
+  --d3-content-gutter: 1.25rem;
+  --d3-section-gap: 2.5rem;
   --d3-header-bg: rgba(255,255,255,0.92);
   --d3-header-border: var(--border-subtle);
   --d3-nav-bg: rgba(255,255,255,0.9);

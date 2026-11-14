@@ -174,8 +174,8 @@ function FoodDetailModal({
           <button
             onClick={onClose}
             style={{
-              position: 'absolute', top: 12, right: 12,
-              width: 32, height: 32, borderRadius: '50%',
+              position: 'absolute', top: 10, right: 10,
+              width: 28, height: 28, borderRadius: '50%',
               background: 'rgba(0,0,0,0.7)',
               border: '1px solid var(--border-subtle)',
               color: 'var(--text-primary)',
@@ -183,18 +183,18 @@ function FoodDetailModal({
               cursor: 'pointer',
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
               <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
 
-          <div style={{ position: 'absolute', top: 12, left: 12 }}>
+          <div style={{ position: 'absolute', top: 10, left: 10 }}>
             <span
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                padding: '0.1875rem 0.5rem',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '0.15625rem 0.4375rem',
                 borderRadius: 4,
-                fontSize: '0.5625rem',
+                fontSize: '0.5rem',
                 fontWeight: 600,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
@@ -205,7 +205,7 @@ function FoodDetailModal({
             >
               <span
                 style={{
-                  width: 6, height: 6, borderRadius: 1,
+                  width: 5, height: 5, borderRadius: 1,
                   border: `1px solid ${item.is_veg ? 'var(--gold-dim)' : 'var(--text-dimmed)'}`,
                 }}
               />
@@ -217,20 +217,20 @@ function FoodDetailModal({
             <button
               onClick={() => onView3D(item)}
               style={{
-                position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '0.5rem 1rem',
+                position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '0.4375rem 0.875rem',
                 borderRadius: 100,
                 background: 'rgba(0,0,0,0.8)',
                 border: '1px solid rgba(201,169,110,0.3)',
                 color: 'var(--gold)',
-                fontSize: '0.6875rem', fontWeight: 600,
+                fontSize: '0.625rem', fontWeight: 600,
                 letterSpacing: '0.06em', textTransform: 'uppercase',
                 cursor: 'pointer',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
                 <path d="M6 1L6 11M1 6L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2" />
               </svg>
@@ -239,24 +239,24 @@ function FoodDetailModal({
           )}
         </div>
 
-        <div className="p-5 flex flex-col gap-4">
+        <div className="p-4 flex flex-col gap-3">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: '1.5rem',
+                  fontSize: '1.375rem',
                   fontWeight: 500,
                   color: 'var(--text-primary)',
                   letterSpacing: '-0.015em',
                   lineHeight: 1.2,
-                  marginBottom: 4,
+                  marginBottom: 3,
                 }}
               >
                 {item.name}
               </h2>
               {item.description ? (
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                   {item.description}
                 </p>
               ) : null}
@@ -264,7 +264,7 @@ function FoodDetailModal({
             <span className="d3-price"
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: '1.5rem',
+                fontSize: '1.375rem',
                 fontWeight: 500,
                 color: 'var(--gold)',
                 letterSpacing: '-0.02em',
@@ -277,18 +277,18 @@ function FoodDetailModal({
           </div>
 
           {availableSizes.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingTop: '0.5rem' }}>
-              <label className="d3-label" style={{ fontSize: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', paddingTop: '0.375rem' }}>
+              <label className="d3-label" style={{ fontSize: '0.6875rem' }}>
                 Select Size {requiresSize && <span style={{ color: '#FCA5A5', marginLeft: 4 }}>*</span>}
               </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {availableSizes.map((size) => (
                   <button
                     key={size.id}
                     type="button"
                     onClick={() => setSelectedSize(size)}
                     style={{
-                      padding: '0.5rem 1rem',
+                      padding: '0.4375rem 0.875rem',
                       borderRadius: 'var(--d3-input-radius)',
                       border: selectedSize?.id === size.id
                         ? '2px solid var(--gold)'
@@ -299,19 +299,19 @@ function FoodDetailModal({
                       color: selectedSize?.id === size.id
                         ? 'var(--gold)'
                         : 'var(--text-primary)',
-                      fontSize: '0.8125rem',
+                      fontSize: '0.75rem',
                       fontWeight: selectedSize?.id === size.id ? 600 : 500,
                       cursor: 'pointer',
                       transition: 'all 200ms',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: 2,
-                      minWidth: 80,
+                      gap: 1,
+                      minWidth: 72,
                     }}
                   >
                     <span>{size.name}</span>
-                    <span style={{ fontSize: '0.6875rem', fontWeight: 500, fontFamily: 'var(--font-display)' }}>
+                    <span style={{ fontSize: '0.625rem', fontWeight: 500, fontFamily: 'var(--font-display)' }}>
                       {formatPrice(size.price, currency)}
                     </span>
                   </button>
@@ -320,7 +320,7 @@ function FoodDetailModal({
             </div>
           )}
 
-          <div className="flex items-center gap-4 flex-wrap" style={{ fontSize: '0.6875rem' }}>
+          <div className="flex items-center gap-3 flex-wrap" style={{ fontSize: '0.625rem' }}>
             {item.preparation_time_mins ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)' }}>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" /><path d="M6 3.5V6 L8 7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" /></svg>
@@ -343,17 +343,17 @@ function FoodDetailModal({
 
           {ingredients.length > 0 && (
             <div>
-              <p style={{ fontSize: '0.6875rem', color: 'var(--text-dimmed)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+              <p style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
                 Ingredients
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 {ingredients.map((ing, i) => (
                   <span
                     key={i}
                     style={{
-                      padding: '0.2rem 0.625rem',
+                      padding: '0.1875rem 0.5rem',
                       borderRadius: 100,
-                      fontSize: '0.6875rem',
+                      fontSize: '0.625rem',
                       background: 'var(--bg-surface-2)',
                       border: '1px solid var(--border-subtle)',
                       color: 'var(--text-secondary)',
@@ -369,7 +369,7 @@ function FoodDetailModal({
           <div className="d3-divider" />
 
           <div>
-            <label className="d3-label">Special Instructions</label>
+            <label className="d3-label" style={{ fontSize: '0.6875rem' }}>Special Instructions</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -377,52 +377,52 @@ function FoodDetailModal({
               rows={2}
               style={{
                 width: '100%', resize: 'none',
-                padding: '0.75rem', borderRadius: 'var(--d3-input-radius)',
+                padding: '0.625rem', borderRadius: 'var(--d3-input-radius)',
                 background: 'var(--bg-surface-2)',
                 border: '1px solid var(--border-warm)',
                 color: 'var(--text-primary)',
-                fontSize: '0.875rem',
+                fontSize: '0.8125rem',
                 outline: 'none',
               }}
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <div
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5"
               style={{
                 background: 'var(--bg-surface-2)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--d3-input-radius)',
-                padding: '0.375rem 0.625rem',
+                padding: '0.3125rem 0.5rem',
               }}
             >
               <button
                 onClick={() => setQty(Math.max(1, qty - 1))}
                 style={{
-                  width: 32, height: 32, borderRadius: '50%',
+                  width: 28, height: 28, borderRadius: '50%',
                   background: qty <= 1 ? 'transparent' : 'var(--bg-surface-3)',
                   border: 'none', cursor: 'pointer',
                   color: 'var(--text-primary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem', lineHeight: 1,
+                  fontSize: '0.875rem', lineHeight: 1,
                 }}
               >
                 −
               </button>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', color: 'var(--text-primary)', minWidth: 20, textAlign: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-primary)', minWidth: 18, textAlign: 'center' }}>
                 {qty}
               </span>
               <button
                 onClick={() => setQty(qty + 1)}
                 style={{
-                  width: 32, height: 32, borderRadius: 5,
+                  width: 28, height: 28, borderRadius: 5,
                   background: 'var(--bg-surface-3)',
                   border: '1px solid var(--border-light)',
                   cursor: 'pointer',
                   color: 'var(--gold-pale)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem', lineHeight: 1, fontWeight: 500,
+                  fontSize: '0.875rem', lineHeight: 1, fontWeight: 500,
                 }}
               >
                 +
@@ -436,7 +436,7 @@ function FoodDetailModal({
                 onClose();
               }}
               className="d3-btn-primary"
-              style={{ flex: 1, justifyContent: 'center', padding: '0.875rem', fontSize: '0.9375rem', opacity: canAddToCart ? 1 : 0.5 }}
+              style={{ flex: 1, justifyContent: 'center', padding: '0.75rem', fontSize: '0.875rem', opacity: canAddToCart ? 1 : 0.5 }}
               disabled={!canAddToCart}
             >
               Add to Order · {formatPrice(effectivePrice * qty, currency)}
@@ -810,7 +810,7 @@ function CartDrawer({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2.5">
+        <div className="flex-1 overflow-y-auto px-3 py-2.5 flex flex-col gap-2">
           {cart.map(({ menuItem, quantity, size, sizePrice }) => {
             const itemPrice = sizePrice !== undefined ? sizePrice : Number(menuItem.price) || 0;
             const availableSizes = (menuItem.sizes || []).filter((s) => s.is_available !== false);
@@ -818,19 +818,19 @@ function CartDrawer({
             return (
               <div
                 key={`${menuItem.id}-${size?.id || 'default'}`}
-                className="flex items-start justify-between gap-3 p-3 rounded-lg"
+                className="flex items-start justify-between gap-2.5 p-2.5 rounded-lg"
                 style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)' }}
               >
                 <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                  <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
                     {menuItem.name}
                   </p>
                   {size && (
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 500 }}>
+                    <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--gold)', fontWeight: 500 }}>
                       Size: {size.name}
                     </p>
                   )}
-                  <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-dimmed)' }}>
+                  <p style={{ margin: 0, fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>
                     {formatPrice(itemPrice, currency)} each
                   </p>
                   {canChangeSize && (
@@ -853,37 +853,37 @@ function CartDrawer({
                     </select>
                   )}
                 </div>
-                <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+                <div className="flex items-center gap-1.5" style={{ flexShrink: 0 }}>
                   <button
                     onClick={() => onRemove(menuItem.id, size?.id || null)}
                     style={{
-                      width: 26, height: 26, borderRadius: '50%',
+                      width: 22, height: 22, borderRadius: '50%',
                       background: 'var(--bg-surface-3)',
                       border: '1px solid var(--border-subtle)',
                       color: 'var(--text-muted)', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.875rem', lineHeight: 1,
+                      fontSize: '0.75rem', lineHeight: 1,
                     }}
                   >
                     −
                   </button>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-primary)', minWidth: 16, textAlign: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9375rem', color: 'var(--text-primary)', minWidth: 14, textAlign: 'center' }}>
                     {quantity}
                   </span>
                   <button
                     onClick={() => onAdd(menuItem, 1, '', size, sizePrice)}
                     style={{
-                      width: 26, height: 26, borderRadius: 5,
+                      width: 22, height: 22, borderRadius: 5,
                       background: 'var(--bg-surface-3)',
                       border: '1px solid var(--border-light)',
                       color: 'var(--gold-pale)', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.875rem', lineHeight: 1, fontWeight: 500,
+                      fontSize: '0.75rem', lineHeight: 1, fontWeight: 500,
                     }}
                   >
                     +
                   </button>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--gold)', minWidth: 52, textAlign: 'right' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9375rem', color: 'var(--gold)', minWidth: 44, textAlign: 'right' }}>
                     {formatPrice(itemPrice * quantity, currency)}
                   </span>
                 </div>
@@ -891,31 +891,33 @@ function CartDrawer({
             );
           })}
 
-          <div className="mt-3 flex flex-col gap-3">
+          <div className="mt-2.5 flex flex-col gap-2.5">
             <div className="d3-divider" />
             <div>
-              <label className="d3-label">Your Name (optional)</label>
+              <label className="d3-label" style={{ fontSize: '0.6875rem' }}>Your Name (optional)</label>
               <input
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="Name for the order"
                 className="d3-input"
+                style={{ padding: '0.5rem 0.625rem', fontSize: '0.8125rem' }}
               />
             </div>
             <div>
-              <label className="d3-label">Notes for Chef (optional)</label>
+              <label className="d3-label" style={{ fontSize: '0.6875rem' }}>Notes for Chef (optional)</label>
               <input
                 type="text"
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
                 placeholder="Allergies or preferences"
                 className="d3-input"
+                style={{ padding: '0.5rem 0.625rem', fontSize: '0.8125rem' }}
               />
             </div>
             <div>
-              <label className="d3-label">Payment Method</label>
-              <div className="flex gap-2">
+              <label className="d3-label" style={{ fontSize: '0.6875rem' }}>Payment Method</label>
+              <div className="flex gap-1.5">
                 {[
                   { key: 'pay_at_table', label: 'Pay at Table' },
                   { key: 'card', label: 'Card' },
@@ -926,9 +928,9 @@ function CartDrawer({
                     onClick={() => setPayment(opt.key as any)}
                     style={{
                       flex: 1,
-                      padding: '0.5rem 0.5rem',
-                      borderRadius: 8,
-                      fontSize: '0.6875rem', fontWeight: 600,
+                      padding: '0.4375rem 0.5rem',
+                      borderRadius: 6,
+                      fontSize: '0.625rem', fontWeight: 600,
                       cursor: 'pointer',
                       border: payment === opt.key
                         ? '1px solid var(--border-medium)'
@@ -949,12 +951,12 @@ function CartDrawer({
         </div>
 
         <div
-          className="px-4 py-4 flex flex-col gap-3"
+          className="px-3 py-3 flex flex-col gap-2.5"
           style={{ borderTop: '1px solid var(--border-subtle)' }}
         >
            <div className="flex items-center justify-between">
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Total</span>
-            <span className="d3-price" style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 500, color: 'var(--gold)', letterSpacing: '-0.02em' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>Total</span>
+            <span className="d3-price" style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 500, color: 'var(--gold)', letterSpacing: '-0.02em' }}>
               {formatPrice(totalPrice, currency)}
             </span>
           </div>
@@ -962,12 +964,12 @@ function CartDrawer({
             <p
               role="alert"
               style={{
-                fontSize: '0.75rem',
+                fontSize: '0.6875rem',
                 color: 'var(--text-secondary)',
                 background: 'var(--bg-surface-2)',
                 border: '1px solid var(--border-warm)',
-                borderRadius: 8,
-                padding: '0.625rem 0.75rem',
+                borderRadius: 6,
+                padding: '0.5rem 0.625rem',
                 lineHeight: 1.5,
               }}
             >
@@ -1083,7 +1085,7 @@ function FoodCard({
         </div>
       </div>
 
-      <div className="p-3.5 flex flex-col gap-2.5" onClick={() => onClick(item)} style={{ cursor: 'pointer' }}>
+      <div className="p-3 flex flex-col gap-2" onClick={() => onClick(item)} style={{ cursor: 'pointer' }}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
@@ -1096,7 +1098,7 @@ function FoodCard({
                 }}
               />
               <h3 style={{
-                fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 500,
+                fontFamily: 'var(--font-display)', fontSize: '0.9375rem', fontWeight: 500,
                 color: 'var(--text-primary)', letterSpacing: '-0.01em', lineHeight: 1.3,
                 overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
                 WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
@@ -1106,7 +1108,7 @@ function FoodCard({
             </div>
             {item.description ? (
               <p style={{
-                fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5,
+                fontSize: '0.6875rem', color: 'var(--text-muted)', lineHeight: 1.5,
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
               }}>
                 {item.description}
@@ -1114,7 +1116,7 @@ function FoodCard({
             ) : null}
           </div>
           <span className="d3-price" style={{
-             fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 500,
+             fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 500,
              color: 'var(--gold)', flexShrink: 0, letterSpacing: '-0.02em',
            }}>
             {formatPrice(price, currency)}
@@ -1122,7 +1124,7 @@ function FoodCard({
         </div>
 
         {item.calories || item.preparation_time_mins || rating > 0 ? (
-          <div className="flex items-center gap-3" style={{ fontSize: '0.625rem', color: 'var(--text-dimmed)' }}>
+          <div className="flex items-center gap-2.5" style={{ fontSize: '0.5625rem', color: 'var(--text-dimmed)' }}>
             {item.calories ? <span>{item.calories} kcal</span> : null}
             {item.calories && item.preparation_time_mins ? <span>·</span> : null}
             {item.preparation_time_mins ? <span>{item.preparation_time_mins} min</span> : null}
@@ -1142,35 +1144,35 @@ function FoodCard({
               background: 'var(--bg-surface-2)',
               border: '1px solid var(--border-subtle)',
               borderRadius: 'var(--d3-input-radius)',
-              padding: '0.375rem 0.625rem',
+              padding: '0.3125rem 0.5rem',
             }}
           >
             <button
               onClick={() => onRemove(item.id)}
               style={{
-                width: 28, height: 28, borderRadius: '50%',
+                width: 24, height: 24, borderRadius: '50%',
                 background: 'var(--bg-surface-3)',
                 border: 'none', cursor: 'pointer',
                 color: 'var(--text-primary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700, fontSize: '1rem',
+                fontWeight: 700, fontSize: '0.875rem',
               }}
             >
               −
             </button>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-primary)' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
               {inCart.quantity} in order
             </span>
             <button
               onClick={() => onAdd(item)}
               style={{
-                width: 28, height: 28, borderRadius: 5,
+                width: 24, height: 24, borderRadius: 5,
                 background: 'var(--bg-surface-3)',
                 border: '1px solid var(--border-light)',
                 cursor: 'pointer',
                 color: 'var(--gold-pale)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 500, fontSize: '1rem',
+                fontWeight: 500, fontSize: '0.875rem',
               }}
             >
               +
@@ -1180,11 +1182,11 @@ function FoodCard({
             <button
               onClick={() => onAdd(item)}
               style={{
-                width: '100%', padding: '0.5625rem',
+                width: '100%', padding: '0.5rem',
                 borderRadius: 'var(--d3-btn-radius)', border: '1px solid var(--border-medium)',
                 background: 'var(--bg-surface-2)',
                 color: 'var(--gold-pale)',
-                fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.04em',
+                fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.04em',
                 cursor: 'pointer',
                 transition: 'all 200ms',
               }}
@@ -1201,7 +1203,7 @@ function FoodCard({
             </button>
         )}
 
-        {has3D && (
+{has3D && (
             <button
               type="button"
               onClick={(e) => {
@@ -1209,15 +1211,15 @@ function FoodCard({
                 onView3D(item);
               }}
               style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                width: '100%', padding: '0.5rem',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                width: '100%', padding: '0.4375rem',
                 borderRadius: 'var(--d3-btn-radius)',                 border: '1px solid var(--border-light)',
                 background: 'var(--bg-surface-2)',
-              color: 'var(--gold)',
-              fontSize: '0.6875rem', fontWeight: 600,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              cursor: 'pointer',
-              transition: 'all 200ms',
+                color: 'var(--gold)',
+                fontSize: '0.625rem', fontWeight: 600,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 200ms',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'var(--bg-surface-3)';
@@ -1228,7 +1230,7 @@ function FoodCard({
                 e.currentTarget.style.borderColor = 'var(--border-light)';
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
                 <path d="M6 1L6 11M1 6L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2" />
               </svg>

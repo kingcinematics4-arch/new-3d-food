@@ -122,7 +122,7 @@ export default function BottomNav({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-4 space-y-1">
+          <div className="flex-1 overflow-y-auto py-3 space-y-0.5">
             {NAV_ITEMS.map((item) => {
               const isActive = activeTab === item.label;
               const Icon = item.icon;
@@ -130,7 +130,7 @@ export default function BottomNav({
                 <button
                   key={item.label}
                   onClick={(e) => handleTabClick(item, e)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 outline-none text-left w-full"
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-all duration-200 outline-none text-left w-full"
                   style={{
                     background: isActive ? 'rgba(184, 164, 122, 0.15)' : 'transparent',
                     border: isActive ? '1px solid rgba(184, 164, 122, 0.3)' : '1px solid transparent',
@@ -138,7 +138,7 @@ export default function BottomNav({
                   }}
                 >
                   <Icon
-                    size={22}
+                    size={20}
                     strokeWidth={isActive ? 2.5 : 1.5}
                     style={{ transition: 'all 0.2s ease', flexShrink: 0 }}
                   />
@@ -148,13 +148,13 @@ export default function BottomNav({
                   {item.label === 'Cart' && cartCount > 0 && (
                     <span className="ml-auto flex items-center justify-center"
                       style={{
-                        width: 18,
-                        height: 18,
-                        minWidth: 18,
+                        width: 16,
+                        height: 16,
+                        minWidth: 16,
                         background: '#B8A47A',
                         color: '#0B0B0A',
                         borderRadius: '50%',
-                        fontSize: '0.65rem',
+                        fontSize: '0.6rem',
                         fontWeight: 800,
                         lineHeight: 1,
                         boxShadow: '0 0 0 2px rgba(11, 11, 10, 0.9)',
@@ -180,15 +180,15 @@ export default function BottomNav({
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
       style={{
-        paddingBottom: `max(env(safe-area-inset-bottom), 0.625rem)`,
-        paddingTop: '0.3125rem',
+        paddingBottom: `max(env(safe-area-inset-bottom), 0.5rem)`,
+        paddingTop: '0.25rem',
         background: 'rgba(11, 11, 10, 0.94)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         borderTop: '1px solid rgba(184, 164, 122, 0.35)',
       }}
     >
-      <div className="max-w-4xl mx-auto px-3 flex items-center justify-between">
+      <div className="max-w-4xl mx-auto px-2.5 flex items-center justify-between">
         {NAV_ITEMS.map((item) => {
           const isActive = activeTab === item.label;
           const Icon = item.icon;
@@ -207,12 +207,12 @@ export default function BottomNav({
               }}
             >
               <Icon
-                size={22}
+                size={20}
                 strokeWidth={isActive ? 2.5 : 1.5}
                 style={{ transition: 'all 0.2s ease', flexShrink: 0 }}
               />
               <span
-                className="text-[0.55rem] font-medium tracking-tight uppercase truncate w-full text-center leading-none"
+                className="text-[0.5rem] font-medium tracking-tight uppercase truncate w-full text-center leading-none"
                 style={{ transition: 'all 0.2s ease' }}
               >
                 {item.shortLabel}
@@ -222,16 +222,16 @@ export default function BottomNav({
                   className="flex items-center justify-center"
                   style={{
                     position: 'absolute',
-                    top: '-4px',
+                    top: '-3px',
                     right: '50%',
                     transform: 'translateX(50%)',
-                    width: 14,
-                    height: 14,
-                    minWidth: 14,
+                    width: 12,
+                    height: 12,
+                    minWidth: 12,
                     background: '#B8A47A',
                     color: '#0B0B0A',
                     borderRadius: '50%',
-                    fontSize: '0.6rem',
+                    fontSize: '0.55rem',
                     fontWeight: 800,
                     lineHeight: 1,
                     boxShadow: '0 0 0 2px rgba(11, 11, 10, 0.9)',
