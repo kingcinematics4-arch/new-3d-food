@@ -65,11 +65,6 @@ const exploreLinks = [
     description: 'The full scan-to-order and live tracking flow.',
   },
   {
-    href: '/pricing',
-    label: 'Pricing',
-    description: 'Published plans and what each one includes.',
-  },
-  {
     href: '/faq',
     label: 'FAQ',
     description: 'Short, factual answers to common questions.',

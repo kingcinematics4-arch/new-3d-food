@@ -186,11 +186,6 @@ const exploreLinks = [
     description: 'The dashboard, order board and operational controls.',
   },
   {
-    href: '/pricing',
-    label: 'Pricing',
-    description: 'Published plans and what each one includes.',
-  },
-  {
     href: '/faq',
     label: 'FAQ',
     description: 'Short, factual answers to common questions.',

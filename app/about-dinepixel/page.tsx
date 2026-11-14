@@ -85,14 +85,14 @@ const relatedLinks = [
     description: 'How DinePixel supports the service day.',
   },
   {
-    href: '/pricing',
-    label: 'Pricing',
-    description: 'Published plans and what each one includes.',
-  },
-  {
     href: '/faq',
     label: 'FAQ',
     description: 'Short, factual answers to common questions.',
+  },
+  {
+    href: '/contact',
+    label: 'Contact',
+    description: 'Talk to the team about your restaurant.',
   },
 ];
 

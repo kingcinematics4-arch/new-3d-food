@@ -17,16 +17,15 @@ Category: Restaurant QR ordering and digital restaurant technology
 Service area: Mumbai, Thane, Navi Mumbai, Maharashtra and India
 
 ## Product pages
-
-- [What is DinePixel?](https://dinepixel.com/about-dinepixel): A factual overview of the platform, who it serves, how QR ordering works and what it does.
-- [Features](https://dinepixel.com/features): QR menus, table ordering, 3D and AR dish experiences, live order tracking, menu management and the restaurant dashboard.
-- [How it works](https://dinepixel.com/how-it-works): The guest flow and restaurant flow, step by step.
-- [QR ordering system](https://dinepixel.com/qr-ordering-system): The full scan-to-order and live tracking flow.
-- [Restaurant QR menu](https://dinepixel.com/restaurant-qr-menu): Dish pages, photos, categories, sizes and online ordering.
-- [Digital menu for restaurants](https://dinepixel.com/digital-menu-for-restaurants): Keeping menu content, pricing and availability current.
-- [Restaurant management](https://dinepixel.com/restaurant-management): How DinePixel supports the service day, staff workflow and order history.
-- [Restaurant management software](https://dinepixel.com/restaurant-management-software): A deeper look at the dashboard and operational controls.
-- [Pricing](https://dinepixel.com/pricing): Published Starter, Pro and Enterprise plans.
+ 
+ - [What is DinePixel?](https://dinepixel.com/about-dinepixel): A factual overview of the platform, who it serves, how QR ordering works and what it does.
+ - [Features](https://dinepixel.com/features): QR menus, table ordering, 3D and AR dish experiences, live order tracking, menu management and the restaurant dashboard.
+ - [How it works](https://dinepixel.com/how-it-works): The guest flow and restaurant flow, step by step.
+ - [QR ordering system](https://dinepixel.com/qr-ordering-system): The full scan-to-order and live tracking flow.
+ - [Restaurant QR menu](https://dinepixel.com/restaurant-qr-menu): Dish pages, photos, categories, sizes and online ordering.
+ - [Digital menu for restaurants](https://dinepixel.com/digital-menu-for-restaurants): Keeping menu content, pricing and availability current.
+ - [Restaurant management](https://dinepixel.com/restaurant-management): How DinePixel supports the service day, staff workflow and order history.
+ - [Restaurant management software](https://dinepixel.com/restaurant-management-software): A deeper look at the dashboard and operational controls.
 
 ## Local pages
 

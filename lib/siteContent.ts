@@ -507,62 +507,11 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
   analytics: { ...emptyEditorial },
 
   pricing: {
-    enabled: true,
-    heading: 'Simple,',
-    headingAccent: 'transparent pricing.',
+    enabled: false,
+    heading: '',
+    headingAccent: '',
     body: '',
-    plans: [
-      {
-        id: 'plan-1',
-        enabled: true,
-        name: 'Starter',
-        tagline: 'For small restaurants',
-        price: '₹29',
-        period: '/month',
-        features: ['Up to 30 menu items', '5 3D models included', 'QR code generator', 'Basic analytics', 'Standard support'],
-        ctaText: 'Get Started',
-        ctaHref: '/signup',
-        featured: false,
-      },
-      {
-        id: 'plan-2',
-        enabled: true,
-        name: 'Pro',
-        tagline: 'For growing restaurants',
-        price: '₹79',
-        period: '/month',
-        features: [
-          'Unlimited menu items',
-          '50 3D models included',
-          'AR experiences',
-          'Advanced analytics',
-          'Custom branding',
-          'Priority support',
-        ],
-        ctaText: 'Get Started',
-        ctaHref: '/signup',
-        featured: true,
-      },
-      {
-        id: 'plan-3',
-        enabled: true,
-        name: 'Enterprise',
-        tagline: 'For restaurant groups & hotels',
-        price: 'Custom',
-        period: '',
-        features: [
-          'Multiple restaurant locations',
-          'Unlimited 3D models',
-          'White-label platform',
-          'Dedicated account manager',
-          'Custom integrations',
-          'SLA guaranteed',
-        ],
-        ctaText: 'Contact Sales',
-        ctaHref: 'mailto:hello@dinepixel.com',
-        featured: false,
-      },
-    ],
+    plans: [],
   },
 
   howItWorks: {
@@ -580,14 +529,14 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
     ],
   },
 
-  faq: {
+faq: {
     enabled: true,
     heading: 'Frequently',
     headingAccent: 'asked.',
     body: "Everything you need to know about DinePixel. Can't find an answer? Contact us.",
     items: [
       { id: 'faq-1', question: 'What is DinePixel?', answer: 'DinePixel is a premium restaurant technology platform that transforms static menus into interactive 3D and AR dining experiences, accessible through a simple QR code.' },
-      { id: 'faq-2', question: 'How does the QR menu work?', answer: 'Each restaurant gets a unique QR code. Guests scan it with any smartphone camera � no app download required � and instantly access the 3D menu experience.' },
+      { id: 'faq-2', question: 'How does the QR menu work?', answer: 'Each restaurant gets a unique QR code. Guests scan it with any smartphone camera \u2014 no app download required \u2014 and instantly access the 3D menu experience.' },
       { id: 'faq-3', question: 'Does DinePixel support AR?', answer: 'Yes. Where supported by the device (iOS via Safari, Android via Chrome), guests can place dishes in their real environment using native augmented reality.' },
       { id: 'faq-4', question: 'Can restaurants upload their own 3D models?', answer: 'Yes. Restaurants upload their own GLB and USDZ models per dish through the dashboard. A dish only appears in 3D once its model is saved.' },
       { id: 'faq-5', question: 'Can I customize my menu?', answer: 'Absolutely. Each restaurant has full control over branding: logo, colors, typography, cover image, categories and every dish detail.' },
@@ -595,7 +544,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
       { id: 'faq-7', question: 'Can customers add special instructions?', answer: 'Yes. Customers can add special instructions for each item as well as a general note with the order.' },
       { id: 'faq-8', question: 'Can I track analytics?', answer: 'Yes. The analytics dashboard shows QR scans, menu views, dish interactions, AR launches, popular dishes, orders, revenue, and conversion rates.' },
       { id: 'faq-9', question: 'Does it work on mobile?', answer: 'DinePixel is built mobile-first. The customer menu experience is optimized for smartphones since most guests access it via QR code on their phone.' },
-      { id: 'faq-10', question: 'Can multiple restaurants use one DinePixel account?', answer: "Each restaurant gets its own account and isolated dashboard. For multi-location restaurant groups, our Enterprise plan supports multiple locations under one management view." },
     ],
   },
 
@@ -629,24 +577,23 @@ export const DEFAULT_SITE_CONTENT: SiteContent = siteContentSchema.parse({
         links: [
           { id: 'link-1', label: 'Features', href: '/#features' },
           { id: 'link-2', label: 'How It Works', href: '/#how-it-works' },
-          { id: 'link-3', label: 'Pricing', href: '/#pricing' },
-          { id: 'link-4', label: 'FAQ', href: '/#faq' },
+          { id: 'link-3', label: 'FAQ', href: '/#faq' },
         ],
       },
       {
         id: 'col-2',
         title: 'COMPANY',
         links: [
-          { id: 'link-5', label: 'About', href: '/about' },
-          { id: 'link-6', label: 'Contact', href: '/contact' },
+          { id: 'link-4', label: 'About', href: '/about' },
+          { id: 'link-5', label: 'Contact', href: '/contact' },
         ],
       },
       {
         id: 'col-3',
         title: 'LEGAL',
         links: [
-          { id: 'link-7', label: 'Privacy', href: '/privacy' },
-          { id: 'link-8', label: 'Terms', href: '/terms' },
+          { id: 'link-6', label: 'Privacy', href: '/privacy' },
+          { id: 'link-7', label: 'Terms', href: '/terms' },
         ],
       },
     ],

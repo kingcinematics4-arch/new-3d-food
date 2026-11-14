@@ -56,7 +56,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/qr-ordering-system-thane', changeFrequency: 'monthly', priority: 0.7, lastModified: legalLastModified },
     { path: '/qr-ordering-system-navi-mumbai', changeFrequency: 'monthly', priority: 0.7, lastModified: legalLastModified },
     { path: '/qr-ordering-system-mumbai', changeFrequency: 'monthly', priority: 0.7, lastModified: legalLastModified },
-    { path: '/pricing', changeFrequency: 'monthly', priority: 0.7, lastModified: legalLastModified },
     { path: '/faq', changeFrequency: 'monthly', priority: 0.8, lastModified: legalLastModified },
     { path: '/blog', changeFrequency: 'weekly', priority: 0.6, lastModified: legalLastModified },
     ...BLOG_ARTICLES.map((article) => ({

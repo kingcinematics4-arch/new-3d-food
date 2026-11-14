@@ -15,7 +15,6 @@ import Dine3DLogo from '@/components/Dine3DLogo';
 const DESTINATIONS = [
   { href: '/', label: 'Home', description: 'The DinePixel product' },
   { href: '/#features', label: 'Features', description: 'What DinePixel does' },
-  { href: '/#pricing', label: 'Pricing', description: 'Plans and what they include' },
   { href: '/#faq', label: 'Questions', description: 'Commonly asked questions' },
   { href: '/login', label: 'Restaurant sign in', description: 'For restaurant owners' },
 ];

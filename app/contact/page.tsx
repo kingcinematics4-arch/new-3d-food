@@ -79,11 +79,6 @@ const relatedLinks = [
     description: 'Short, factual answers to common questions.',
   },
   {
-    href: '/pricing',
-    label: 'Pricing',
-    description: 'Published plans and what each one includes.',
-  },
-  {
     href: '/qr-ordering-system',
     label: 'QR ordering system',
     description: 'Explore the scan-to-order and live tracking flow.',

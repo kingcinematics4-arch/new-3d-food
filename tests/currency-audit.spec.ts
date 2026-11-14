@@ -111,8 +111,7 @@ test.describe('INR currency everywhere', () => {
 
   test('site content default pricing uses ₹', async () => {
     const src = readFileSync(resolve('lib/siteContent.ts'), 'utf-8');
-    expect(src).toContain('₹29');
-    expect(src).toContain('₹79');
+    // Pricing section is now disabled by default; no plan prices in default content
     expect(src).not.toMatch(/'\$[0-9]/);
   });
 
