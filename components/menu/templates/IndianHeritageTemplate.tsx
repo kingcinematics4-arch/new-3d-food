@@ -88,35 +88,35 @@ export default function IndianHeritageTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-3 mt-2.5">
+          <div className="flex justify-center gap-1.5 mt-1.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#C69A6E]/30 bg-[#C69A6E]/10 text-[#C69A6E] text-xs font-sans font-medium hover:bg-[#C69A6E]/20 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#C69A6E]/30 bg-[#C69A6E]/10 text-[#C69A6E] text-[0.75rem] font-sans font-medium hover:bg-[#C69A6E]/20 transition-colors"
             >
-              <span>💧</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#C69A6E] bg-[#C69A6E] text-[#1D150E] text-xs font-sans font-medium hover:bg-[#A67C52] transition-colors"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#C69A6E] bg-[#C69A6E] text-[#1D150E] text-[0.75rem] font-sans font-medium hover:bg-[#A67C52] transition-colors"
             >
-              <span>🔔</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {/* Boxed Heritage Tabs with Brass Edges */}
           {pills.length > 1 && (
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.75">
+            <div className="flex items-center gap-0.75 overflow-x-auto no-scrollbar py-0.5">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-2.5 py-1 rounded text-[0.6875rem] font-sans uppercase tracking-widest whitespace-nowrap transition-all duration-200 border ${
+                    className={`px-2 py-0.75 rounded text-[0.75rem] font-sans uppercase tracking-widest whitespace-nowrap transition-all duration-200 border ${
                       isActive
                         ? 'bg-[#C69A6E] text-[#1D150E] font-bold border-[#D4AF7C] shadow-[0_0_12px_rgba(198,154,110,0.3)]'
                         : 'bg-[#2A2015] hover:bg-[#35291C] text-[#C9BAA0] border-[#5A4630]'

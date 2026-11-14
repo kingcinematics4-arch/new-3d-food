@@ -102,35 +102,35 @@ export default function ClassicLuxuryTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-3 mt-2.5">
+          <div className="flex justify-center gap-1.5 mt-1.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#B8A47A]/30 bg-white/80 text-[#6E6350] text-xs font-sans font-medium hover:bg-[#F4F1EA] transition-colors"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#B8A47A]/30 bg-white/80 text-[#6E6350] text-[0.75rem] font-sans font-medium hover:bg-[#F4F1EA] transition-colors"
             >
-              <span>💧</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#B8A47A]/30 bg-[#B8A47A] text-[#1A1A1A] text-xs font-sans font-medium hover:bg-[#9A8760] transition-colors"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#B8A47A]/30 bg-[#B8A47A] text-[#1A1A1A] text-[0.75rem] font-sans font-medium hover:bg-[#9A8760] transition-colors"
             >
-              <span>🔔</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {/* Elegant Horizontal Serif Navigation Tabs */}
           {pills.length > 1 && (
-            <div className="flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto mt-2.5 px-1.5 no-scrollbar">
+            <div className="flex items-center justify-center gap-0.75 sm:gap-1.5 overflow-x-auto mt-2 px-1 no-scrollbar">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`whitespace-nowrap px-2 py-0.625 text-[0.8125rem] tracking-wider uppercase transition-all border-b-2 ${
+                    className={`whitespace-nowrap px-1.75 py-0.5 text-[0.75rem] tracking-wider uppercase transition-all border-b-2 ${
                       isActive
                         ? 'border-[#9A8760] text-[#9A8760] font-medium'
                         : 'border-transparent text-[#7B776E] hover:text-[#1A1A1A]'

@@ -84,25 +84,25 @@ export default function ContemporaryPremiumTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-3 mt-2.5">
+          <div className="flex justify-center gap-1.5 mt-1.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-none border border-[#1A1A1A] bg-[#1A1A1A] text-white text-[0.65rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-none border border-[#1A1A1A] bg-[#1A1A1A] text-white text-[0.75rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
             >
-              <span>💧 Water</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span> Water
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-none border border-[#A67C52] bg-[#A67C52] text-white text-[0.65rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-none border border-[#A67C52] bg-[#A67C52] text-white text-[0.75rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
             >
-              <span>🔔 Call Waiter</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span> Call Waiter
             </button>
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-2.5 sm:gap-4 overflow-x-auto no-scrollbar py-0.75">
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar py-0.5">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 const formattedNum = String(idx).padStart(2, '0');
@@ -110,13 +110,13 @@ export default function ContemporaryPremiumTemplate({
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`whitespace-nowrap pb-1.25 text-[0.6875rem] font-mono tracking-widest uppercase transition-all border-b-2 ${
+                    className={`whitespace-nowrap pb-1 text-[0.75rem] font-mono tracking-widest uppercase transition-all border-b-2 ${
                       isActive
                         ? 'border-[#1A1A1A] text-[#1A1A1A] font-bold'
                         : 'border-transparent text-[#8C8C7E] hover:text-[#1A1A1A]'
                     }`}
                   >
-                    <span className="text-[#A67C52] mr-1.5">{formattedNum} /</span>
+                    <span className="text-[#A67C52] mr-1">{formattedNum} /</span>
                     <span>{cat}</span>
                   </button>
                 );

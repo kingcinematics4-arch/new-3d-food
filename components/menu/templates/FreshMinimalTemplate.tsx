@@ -85,34 +85,34 @@ export default function FreshMinimalTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-3 mt-2.5">
+          <div className="flex justify-center gap-1.5 mt-1.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#2E7D32]/30 bg-[#2E7D32]/10 text-[#2E7D32] text-xs font-medium hover:bg-[#2E7D32]/20 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#2E7D32]/30 bg-[#2E7D32]/10 text-[#2E7D32] text-[0.75rem] font-medium hover:bg-[#2E7D32]/20 transition-colors"
             >
-              <span>💧</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#2E7D32] bg-[#2E7D32] text-white text-xs font-medium hover:bg-[#1B5E20] transition-colors"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#2E7D32] bg-[#2E7D32] text-white text-[0.75rem] font-medium hover:bg-[#1B5E20] transition-colors"
             >
-              <span>🔔</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.75">
+            <div className="flex items-center gap-0.75 overflow-x-auto no-scrollbar py-0.5">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-3 py-0.875 rounded-full text-[0.6875rem] font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`px-2.5 py-0.625 rounded-full text-[0.75rem] font-semibold whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'bg-[#2E7D32] text-white shadow-sm'
                         : 'bg-white hover:bg-[#E8F5E9] text-[#4A554A] border border-[#DDE3DD]'

@@ -98,28 +98,28 @@ export default function ModernDarkTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-2.5 mt-2">
+          <div className="flex justify-center gap-1.5 mt-1.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/20 bg-white/5 text-white/80 text-xs font-medium hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-white/20 bg-white/5 text-white/80 text-[0.75rem] font-medium hover:bg-white/10 transition-colors"
             >
-              <span>💧</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>💧</span>
               <span>Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#E1C99A]/30 bg-[#E1C99A] text-black text-xs font-medium hover:bg-[#F0DCAF] transition-colors"
+              className="flex items-center gap-1 px-2.5 py-0.75 rounded-full border border-[#E1C99A]/30 bg-[#E1C99A] text-black text-[0.75rem] font-medium hover:bg-[#F0DCAF] transition-colors"
             >
-              <span>🔔</span>
+              <span style={{fontSize: '17px', lineHeight: 1}}>🔔</span>
               <span>Call Waiter</span>
             </button>
           </div>
 
           {/* Horizontal category track with item count capsules */}
           {pills.length > 1 && (
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.25">
+            <div className="flex items-center gap-0.75 overflow-x-auto no-scrollbar py-0.125">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 const count = getCatCount(cat);
@@ -127,7 +127,7 @@ export default function ModernDarkTemplate({
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`flex items-center gap-0.75 px-1.5 py-0.625 rounded-full text-[0.6875rem] font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`flex items-center gap-0.5 px-1.25 py-0.5 rounded-full text-[0.75rem] font-semibold whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'bg-[#E1C99A] text-black shadow-[0_0_10px_rgba(225,201,154,0.4)]'
                         : 'bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 border border-white/10'
@@ -135,7 +135,7 @@ export default function ModernDarkTemplate({
                   >
                     <span>{cat}</span>
                     <span
-                      className={`text-[0.5rem] px-1 py-0.125 rounded-full font-bold ${
+                      className={`text-[0.5rem] px-0.75 py-0.1 rounded-full font-bold ${
                         isActive ? 'bg-black/20 text-black' : 'bg-neutral-800 text-neutral-400'
                       }`}
                     >
