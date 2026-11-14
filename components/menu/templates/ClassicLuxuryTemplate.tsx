@@ -73,7 +73,7 @@ export default function ClassicLuxuryTemplate({
         </div>
 
         {/* ================= WELCOME / CHEF INTRO BANNER ================= */}
-        <div className="max-w-3xl mx-auto px-4 pt-2 pb-4 text-center">
+        <div className="max-w-3xl mx-auto px-4 pt-2 pb-3 text-center">
           {hotel.welcome_text && (
             <p className="text-xs sm:text-sm italic text-[#4A4A40] max-w-xl mx-auto leading-relaxed border-t border-b border-[#B8A47A]/20 py-2 my-2">
               &ldquo;{hotel.welcome_text}&rdquo;
@@ -102,11 +102,11 @@ export default function ClassicLuxuryTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-4 mt-3">
+          <div className="flex justify-center gap-3 mt-2.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#B8A47A]/30 bg-white/80 text-[#6E6350] text-xs font-sans font-medium hover:bg-[#F4F1EA] transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#B8A47A]/30 bg-white/80 text-[#6E6350] text-xs font-sans font-medium hover:bg-[#F4F1EA] transition-colors"
             >
               <span>💧</span>
               <span>Water</span>
@@ -114,7 +114,7 @@ export default function ClassicLuxuryTemplate({
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#B8A47A]/30 bg-[#B8A47A] text-[#1A1A1A] text-xs font-sans font-medium hover:bg-[#9A8760] transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#B8A47A]/30 bg-[#B8A47A] text-[#1A1A1A] text-xs font-sans font-medium hover:bg-[#9A8760] transition-colors"
             >
               <span>🔔</span>
               <span>Call Waiter</span>
@@ -123,14 +123,14 @@ export default function ClassicLuxuryTemplate({
 
           {/* Elegant Horizontal Serif Navigation Tabs */}
           {pills.length > 1 && (
-            <div className="flex items-center justify-center gap-2 sm:gap-4 overflow-x-auto mt-4 px-2 no-scrollbar">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-3 overflow-x-auto mt-3 px-2 no-scrollbar">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`whitespace-nowrap px-3 py-1 text-sm tracking-wider uppercase transition-all border-b-2 ${
+                    className={`whitespace-nowrap px-2.5 py-0.75 text-sm tracking-wider uppercase transition-all border-b-2 ${
                       isActive
                         ? 'border-[#9A8760] text-[#9A8760] font-medium'
                         : 'border-transparent text-[#7B776E] hover:text-[#1A1A1A]'
@@ -146,27 +146,27 @@ export default function ClassicLuxuryTemplate({
       </header>
 
       {/* ================= MAIN EDITORIAL CONTENT ================= */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-14">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-5 space-y-6">
         {filteredItems.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-xl text-[#7B776E] italic">No culinary selections match your inquiry.</p>
+          <div className="py-12 text-center">
+            <p className="text-lg text-[#7B776E] italic">No culinary selections match your inquiry.</p>
           </div>
         ) : (
           <>
             {/* 1. CHEF'S CURATED FEATURED */}
             {featuredItems.length > 0 && (
               <section>
-                <div className="text-center mb-8">
-                  <span className="text-[0.625rem] font-sans font-bold tracking-[0.25em] text-[#9A8760] uppercase block mb-1">
+                <div className="text-center mb-4">
+                  <span className="text-[0.55rem] font-sans font-bold tracking-[0.25em] text-[#9A8760] uppercase block mb-0.5">
                     Signature Creations
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-normal text-[#1A1A1A] tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-normal text-[#1A1A1A] tracking-tight">
                     ✦ Chef&apos;s Featured Repertoire ✦
                   </h2>
-                  <div className="w-24 h-px bg-[#B8A47A] mx-auto mt-3 opacity-60" />
+                  <div className="w-20 h-px bg-[#B8A47A] mx-auto mt-2 opacity-60" />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
                   {featuredItems.map((item) => (
                     <ClassicLuxuryCard
                       key={item.id}
@@ -188,17 +188,17 @@ export default function ClassicLuxuryTemplate({
             {/* 2. POPULAR SELECTIONS */}
             {popularItems.length > 0 && (
               <section>
-                <div className="text-center mb-8">
-                  <span className="text-[0.625rem] font-sans font-bold tracking-[0.25em] text-[#9A8760] uppercase block mb-1">
+                <div className="text-center mb-4">
+                  <span className="text-[0.55rem] font-sans font-bold tracking-[0.25em] text-[#9A8760] uppercase block mb-0.5">
                     Patron Favorites
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-normal text-[#1A1A1A] tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-normal text-[#1A1A1A] tracking-tight">
                     Grand Reserve & Popular Courses
                   </h2>
-                  <div className="w-24 h-px bg-[#B8A47A] mx-auto mt-3 opacity-60" />
+                  <div className="w-20 h-px bg-[#B8A47A] mx-auto mt-2 opacity-60" />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
                   {popularItems.map((item) => (
                     <ClassicLuxuryCard
                       key={item.id}
@@ -220,18 +220,18 @@ export default function ClassicLuxuryTemplate({
             {regularItems.length > 0 && (
               <section>
                 {(featuredItems.length > 0 || popularItems.length > 0) && (
-                  <div className="text-center mb-8">
-                    <span className="text-[0.625rem] font-sans font-bold tracking-[0.25em] text-[#9A8760] uppercase block mb-1">
+                  <div className="text-center mb-4">
+                    <span className="text-[0.55rem] font-sans font-bold tracking-[0.25em] text-[#9A8760] uppercase block mb-0.5">
                       Full Service
                     </span>
-                    <h2 className="text-2xl sm:text-3xl font-normal text-[#1A1A1A] tracking-tight">
+                    <h2 className="text-xl sm:text-2xl font-normal text-[#1A1A1A] tracking-tight">
                       The Complete Degustation
                     </h2>
-                    <div className="w-24 h-px bg-[#B8A47A] mx-auto mt-3 opacity-60" />
+                    <div className="w-20 h-px bg-[#B8A47A] mx-auto mt-2 opacity-60" />
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
                   {regularItems.map((item) => (
                     <ClassicLuxuryCard
                       key={item.id}
@@ -291,8 +291,8 @@ function ClassicLuxuryCard({
       className="group bg-[#FFFFFF] border border-[#B8A47A]/30 rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(184,164,122,0.18)] hover:border-[#B8A47A] transition-all duration-300 flex flex-col cursor-pointer"
     >
       {/* Large Food Photography with Inset Gold Matting */}
-      <div className="relative overflow-hidden bg-[#EAE7E1] p-3 pb-0">
-        <div className={`relative w-full ${isHero ? 'h-64 sm:h-72' : 'h-52'} rounded-lg overflow-hidden border border-[#B8A47A]/20`}>
+      <div className="relative overflow-hidden bg-[#EAE7E1] p-2 pb-0">
+        <div className={`relative w-full ${isHero ? 'h-52 sm:h-60' : 'h-40'} rounded-lg overflow-hidden border border-[#B8A47A]/20`}>
           {image ? (
             <img
               src={image}
@@ -307,31 +307,31 @@ function ClassicLuxuryCard({
           )}
 
           {/* Badges on Photography */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1">
             <span
-              className={`px-2 py-0.5 rounded text-[0.625rem] font-sans font-semibold tracking-wider uppercase border shadow-sm ${
+              className={`px-1.5 py-0.4 rounded text-[0.55rem] font-sans font-semibold tracking-wider uppercase border shadow-sm ${
                 item.is_veg
                   ? 'bg-emerald-950/80 text-emerald-200 border-emerald-500/30'
                   : 'bg-rose-950/80 text-rose-200 border-rose-500/30'
               }`}
             >
-              {item.is_veg ? 'Vegetarian' : 'Non-Veg'}
+              {item.is_veg ? 'Veg' : 'Non-Veg'}
             </span>
             {item.is_featured && (
-              <span className="px-2 py-0.5 rounded text-[0.625rem] font-sans font-semibold tracking-wider uppercase bg-[#1A1A1A]/85 text-[#CDB98F] border border-[#B8A47A]/40 shadow-sm">
+              <span className="px-1.5 py-0.4 rounded text-[0.55rem] font-sans font-semibold tracking-wider uppercase bg-[#1A1A1A]/85 text-[#CDB98F] border border-[#B8A47A]/40 shadow-sm">
                 ✦ Chef&apos;s Signature
               </span>
             )}
           </div>
 
-          <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+          <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 items-end">
             {hasGlb ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onView3D(item);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#1A1A1A]/90 hover:bg-[#1A1A1A] border border-[#B8A47A] text-[#CDB98F] text-[0.625rem] font-sans font-bold tracking-wider uppercase shadow-md transition-all hover:scale-105"
+                className="flex items-center gap-1 px-2 py-0.75 rounded bg-[#1A1A1A]/90 hover:bg-[#1A1A1A] border border-[#B8A47A] text-[#CDB98F] text-[0.55rem] font-sans font-bold tracking-wider uppercase shadow-md transition-all hover:scale-105"
               >
                 <span>View in 3D</span>
               </button>
@@ -342,7 +342,7 @@ function ClassicLuxuryCard({
                   e.stopPropagation();
                   (onViewAr || onView3D)(item);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#1A1A1A]/90 hover:bg-[#1A1A1A] border border-[#B8A47A] text-[#CDB98F] text-[0.625rem] font-sans font-bold tracking-wider uppercase shadow-md transition-all hover:scale-105"
+                className="flex items-center gap-1 px-2 py-0.75 rounded bg-[#1A1A1A]/90 hover:bg-[#1A1A1A] border border-[#B8A47A] text-[#CDB98F] text-[0.55rem] font-sans font-bold tracking-wider uppercase shadow-md transition-all hover:scale-105"
                 title="View in AR on compatible devices (Android uses GLB, Apple uses USDZ)"
               >
                 <span>View in AR</span>
@@ -353,25 +353,25 @@ function ClassicLuxuryCard({
       </div>
 
       {/* Editorial Content Presentation */}
-      <div className="p-5 flex-1 flex flex-col justify-between">
+      <div className="p-3 flex-1 flex flex-col justify-between">
         <div>
-          <div className="flex items-baseline justify-between gap-4 mb-2">
-            <h3 className="text-xl sm:text-2xl font-normal text-[#1A1A1A] leading-snug group-hover:text-[#9A8760] transition-colors">
+          <div className="flex items-baseline justify-between gap-3 mb-1.5">
+            <h3 className="text-lg sm:text-xl font-normal text-[#1A1A1A] leading-snug group-hover:text-[#9A8760] transition-colors">
               {item.name}
             </h3>
-            <span className="text-lg sm:text-xl font-normal text-[#9A8760] whitespace-nowrap tracking-tight">
+            <span className="text-base sm:text-lg font-normal text-[#9A8760] whitespace-nowrap tracking-tight">
               {formatPrice(Number(item.price) || 0, currency)}
             </span>
           </div>
 
           {item.description && (
-            <p className="text-sm italic text-[#55554D] leading-relaxed mb-4 line-clamp-2">
+            <p className="text-[0.8rem] italic text-[#55554D] leading-relaxed mb-3 line-clamp-2">
               {item.description}
             </p>
           )}
 
           {/* Tasting notes / dietary details */}
-          <div className="flex items-center gap-3 text-xs font-sans text-[#7B776E] mb-4">
+          <div className="flex items-center gap-2.5 text-[0.7rem] font-sans text-[#7B776E] mb-3">
             {item.calories ? <span>{item.calories} Calories</span> : null}
             {item.calories && item.preparation_time_mins ? <span>•</span> : null}
             {item.preparation_time_mins ? <span>Prep: {item.preparation_time_mins} mins</span> : null}
@@ -385,24 +385,24 @@ function ClassicLuxuryCard({
         </div>
 
         {/* Action Button */}
-        <div className="pt-3 border-t border-[#B8A47A]/20 flex items-center justify-between gap-3">
+        <div className="pt-2 border-t border-[#B8A47A]/20 flex items-center justify-between gap-2">
           {inCartQty > 0 ? (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-between w-full bg-[#FAF8F5] border border-[#B8A47A] rounded-lg px-3 py-1.5"
+              className="flex items-center justify-between w-full bg-[#FAF8F5] border border-[#B8A47A] rounded-lg px-2 py-1"
             >
               <button
                 onClick={() => onRemove(item.id, inCartSize)}
-                className="w-7 h-7 rounded-full bg-white border border-[#B8A47A]/50 text-[#1A1A1A] font-sans font-semibold text-sm hover:bg-[#F4F1EA] transition-colors"
+                className="w-4.5 h-4.5 rounded-full bg-white border border-[#B8A47A]/50 text-[#1A1A1A] font-sans font-semibold text-[0.7rem] hover:bg-[#F4F1EA] transition-colors"
               >
                 −
               </button>
-              <span className="text-sm font-sans font-medium text-[#1A1A1A]">
+              <span className="text-[0.75rem] font-sans font-medium text-[#1A1A1A]">
                 {inCartQty} in Degustation
               </span>
               <button
                 onClick={() => onAdd(item)}
-                className="w-7 h-7 rounded-full bg-[#9A8760] text-white font-sans font-semibold text-sm hover:bg-[#7E6E4C] transition-colors shadow-sm"
+                className="w-4.5 h-4.5 rounded-full bg-[#9A8760] text-white font-sans font-semibold text-[0.7rem] hover:bg-[#7E6E4C] transition-colors shadow-sm"
               >
                 +
               </button>
@@ -413,7 +413,7 @@ function ClassicLuxuryCard({
                 e.stopPropagation();
                 onAdd(item);
               }}
-              className="w-full py-2.5 px-4 rounded-lg bg-[#FAF8F5] hover:bg-[#9A8760] text-[#9A8760] hover:text-white border border-[#B8A47A] font-sans text-xs font-semibold tracking-wider uppercase transition-all duration-300 shadow-sm"
+              className="w-full py-1.5 px-3 rounded-lg bg-[#FAF8F5] hover:bg-[#9A8760] text-[#9A8760] hover:text-white border border-[#B8A47A] font-sans text-[0.65rem] font-semibold tracking-wider uppercase transition-all duration-300 shadow-sm"
             >
               Add to Course
             </button>

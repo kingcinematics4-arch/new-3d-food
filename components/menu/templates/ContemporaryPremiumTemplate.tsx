@@ -62,8 +62,8 @@ export default function ContemporaryPremiumTemplate({
       </div>
 
         {/* Numbered Editorial Category Navigation */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 pb-3">
-          <div className="relative mb-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 pb-2.5">
+          <div className="relative mb-2.5">
             <input
               type="text"
               value={search}
@@ -84,25 +84,25 @@ export default function ContemporaryPremiumTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-4 mt-3">
+          <div className="flex justify-center gap-3 mt-2.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-none border border-[#1A1A1A] bg-[#1A1A1A] text-white text-[0.65rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-none border border-[#1A1A1A] bg-[#1A1A1A] text-white text-[0.65rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
             >
               <span>💧 Water</span>
             </button>
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-none border border-[#A67C52] bg-[#A67C52] text-white text-[0.65rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-none border border-[#A67C52] bg-[#A67C52] text-white text-[0.65rem] font-mono tracking-widest uppercase hover:bg-transparent hover:text-[#1A1A1A] transition-all duration-300"
             >
               <span>🔔 Call Waiter</span>
             </button>
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-1">
+            <div className="flex items-center gap-3 sm:gap-5 overflow-x-auto no-scrollbar py-1">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 const formattedNum = String(idx).padStart(2, '0');
@@ -127,17 +127,17 @@ export default function ContemporaryPremiumTemplate({
       </header>
 
       {/* ================= ASYMMETRIC EDITORIAL BODY ================= */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-10 space-y-16">
-        {hotel.welcome_text && (
-          <div className="border-l-2 border-[#A67C52] pl-6 py-2 max-w-2xl">
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 space-y-8">
+{hotel.welcome_text && (
+            <div className="border-l-2 border-[#A67C52] pl-5 py-1.5 max-w-2xl">
             <p className="text-xs sm:text-sm font-light text-[#5A5A50] leading-relaxed">
               {hotel.welcome_text}
             </p>
           </div>
         )}
 
-        {filteredItems.length === 0 ? (
-          <div className="py-24 text-center">
+{filteredItems.length === 0 ? (
+            <div className="py-16 text-center">
             <p className="text-sm font-mono text-[#8C8C7E] uppercase tracking-widest">
               [ 00 ] — NO CATALOG ITEMS FOUND
             </p>
@@ -147,7 +147,7 @@ export default function ContemporaryPremiumTemplate({
             {/* 1. LARGE HERO SHOWCASE FOR FEATURED DISHES */}
             {featuredItems.length > 0 && (
               <section>
-                <div className="flex items-baseline justify-between border-b border-[#1A1A1A] pb-2 mb-8">
+                <div className="flex items-baseline justify-between border-b border-[#1A1A1A] pb-2 mb-4">
                   <h2 className="text-lg sm:text-xl font-light tracking-tight uppercase">
                     [ 01 ] HERO SELECTIONS
                   </h2>
@@ -176,7 +176,7 @@ export default function ContemporaryPremiumTemplate({
             {/* 2. ASYMMETRIC GRID FOR POPULAR DISHES */}
             {popularItems.length > 0 && (
               <section>
-                <div className="flex items-baseline justify-between border-b border-[#1A1A1A] pb-2 mb-8">
+                <div className="flex items-baseline justify-between border-b border-[#1A1A1A] pb-2 mb-4">
                   <h2 className="text-lg sm:text-xl font-light tracking-tight uppercase">
                     [ 02 ] SIGNATURE REPERTOIRE
                   </h2>
@@ -185,7 +185,7 @@ export default function ContemporaryPremiumTemplate({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {popularItems.map((item) => (
                     <ContemporaryEditorialCard
                       key={item.id}
@@ -206,7 +206,7 @@ export default function ContemporaryPremiumTemplate({
             {regularItems.length > 0 && (
               <section>
                 {(featuredItems.length > 0 || popularItems.length > 0) && (
-                  <div className="flex items-baseline justify-between border-b border-[#1A1A1A] pb-2 mb-8">
+                  <div className="flex items-baseline justify-between border-b border-[#1A1A1A] pb-2 mb-4">
                     <h2 className="text-lg sm:text-xl font-light tracking-tight uppercase">
                       [ 03 ] DEGUSTATION INDEX
                     </h2>
@@ -216,7 +216,7 @@ export default function ContemporaryPremiumTemplate({
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {regularItems.map((item) => (
                     <ContemporaryEditorialCard
                       key={item.id}
@@ -267,10 +267,10 @@ function ContemporaryHeroCard({
   return (
     <article
       onClick={() => onItemClick(item)}
-      className="group bg-white border border-[#1A1A1A] rounded-none p-5 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className="group bg-white border border-[#1A1A1A] rounded-none p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-center shadow-sm hover:shadow-md transition-shadow cursor-pointer"
     >
       {/* Cinematic 16:9 Photographic Frame */}
-      <div className="lg:col-span-7 relative h-64 sm:h-80 overflow-hidden bg-[#EDEAE3] border border-[#1A1A1A]/20">
+      <div className="lg:col-span-7 relative h-48 sm:h-64 overflow-hidden bg-[#EDEAE3] border border-[#1A1A1A]/20">
         {image ? (
           <img
             src={image}
@@ -311,7 +311,7 @@ function ContemporaryHeroCard({
       </div>
 
       {/* Editorial Text Block */}
-      <div className="lg:col-span-5 flex flex-col justify-between h-full space-y-6">
+      <div className="lg:col-span-5 flex flex-col justify-between h-full space-y-5">
         <div>
           <span className="text-[0.625rem] font-mono text-[#A67C52] tracking-widest uppercase block mb-1">
             EXHIBITION PLATE
@@ -337,15 +337,15 @@ function ContemporaryHeroCard({
         </div>
 
         {/* Action Row */}
-        <div className="pt-4 border-t border-[#1A1A1A]/10">
+        <div className="pt-3 border-t border-[#1A1A1A]/10">
           {inCartQty > 0 ? (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-between w-full border border-[#1A1A1A] p-2"
+              className="flex items-center justify-between w-full border border-[#1A1A1A] p-1.5"
             >
               <button
                 onClick={() => onRemove(item.id, inCartSize)}
-                className="w-8 h-8 border border-[#1A1A1A] bg-white font-mono text-xs hover:bg-[#1A1A1A] hover:text-white"
+                className="w-6 h-6 border border-[#1A1A1A] bg-white font-mono text-xs hover:bg-[#1A1A1A] hover:text-white"
               >
                 −
               </button>
@@ -354,7 +354,7 @@ function ContemporaryHeroCard({
               </span>
               <button
                 onClick={() => onAdd(item)}
-                className="w-8 h-8 border border-[#1A1A1A] bg-[#1A1A1A] text-white font-mono text-xs"
+                className="w-6 h-6 border border-[#1A1A1A] bg-[#1A1A1A] text-white font-mono text-xs"
               >
                 +
               </button>
@@ -365,7 +365,7 @@ function ContemporaryHeroCard({
                 e.stopPropagation();
                 onAdd(item);
               }}
-              className="w-full py-3 rounded-none bg-[#1A1A1A] hover:bg-transparent text-white hover:text-[#1A1A1A] border border-[#1A1A1A] font-mono text-xs uppercase tracking-widest transition-all duration-200"
+              className="w-full py-2.5 rounded-none bg-[#1A1A1A] hover:bg-transparent text-white hover:text-[#1A1A1A] border border-[#1A1A1A] font-mono text-xs uppercase tracking-widest transition-all duration-200"
             >
               SELECT FOR DEGUSTATION +
             </button>
@@ -404,10 +404,10 @@ function ContemporaryEditorialCard({
   return (
     <article
       onClick={() => onItemClick(item)}
-      className="group bg-white border border-[#1A1A1A] rounded-none p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className="group bg-white border border-[#1A1A1A] rounded-none p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer"
     >
       <div>
-        <div className="relative h-52 overflow-hidden bg-[#EDEAE3] border border-[#1A1A1A]/15 mb-4">
+        <div className="relative h-44 overflow-hidden bg-[#EDEAE3] border border-[#1A1A1A]/15 mb-3">
           {image ? (
             <img
               src={image}
@@ -460,7 +460,7 @@ function ContemporaryEditorialCard({
         )}
       </div>
 
-      <div className="pt-3 border-t border-[#1A1A1A]/10 flex items-center justify-between gap-2">
+      <div className="pt-2.5 border-t border-[#1A1A1A]/10 flex items-center justify-between gap-2">
         {inCartQty > 0 ? (
           <div
             onClick={(e) => e.stopPropagation()}
@@ -468,7 +468,7 @@ function ContemporaryEditorialCard({
           >
             <button
               onClick={() => onRemove(item.id, inCartSize)}
-              className="w-6 h-6 border border-[#1A1A1A] bg-white font-mono text-xs hover:bg-[#1A1A1A] hover:text-white"
+              className="w-5 h-5 border border-[#1A1A1A] bg-white font-mono text-xs hover:bg-[#1A1A1A] hover:text-white"
             >
               −
             </button>
@@ -477,7 +477,7 @@ function ContemporaryEditorialCard({
             </span>
             <button
               onClick={() => onAdd(item)}
-              className="w-6 h-6 border border-[#1A1A1A] bg-[#1A1A1A] text-white font-mono text-xs"
+              className="w-5 h-5 border border-[#1A1A1A] bg-[#1A1A1A] text-white font-mono text-xs"
             >
               +
             </button>
@@ -488,7 +488,7 @@ function ContemporaryEditorialCard({
               e.stopPropagation();
               onAdd(item);
             }}
-            className="w-full py-2 rounded-none bg-white hover:bg-[#1A1A1A] text-[#1A1A1A] hover:text-white border border-[#1A1A1A] font-mono text-xs uppercase tracking-widest transition-all duration-200"
+            className="w-full py-1.5 rounded-none bg-white hover:bg-[#1A1A1A] text-[#1A1A1A] hover:text-white border border-[#1A1A1A] font-mono text-xs uppercase tracking-widest transition-all duration-200"
           >
             SELECT +
           </button>

@@ -39,8 +39,8 @@ export default function CustomTemplate(props: CustomTemplateProps) {
   const p = config.primaryColor;
   const cardShadow = config.shadowStrength === 'none' ? 'none' : config.shadowStrength === 'soft' ? '0 4px 14px rgba(0,0,0,0.10)' : config.shadowStrength === 'strong' ? '0 18px 48px rgba(0,0,0,0.28)' : '0 10px 28px rgba(0,0,0,0.18)';
   const cardBorder = config.borderStyle === 'none' ? '1px solid transparent' : config.borderStyle === 'accent' ? `1px solid ${alpha(p,0.55)}` : config.borderStyle === 'defined' ? `1px solid ${alpha(p,0.28)}` : `1px solid ${alpha(p,0.16)}`;
-  const pad = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 22 : 16;
-  const gap = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 22 : 16;
+  const pad = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 22 : 14;
+  const gap = config.spacing === 'compact' ? 12 : config.spacing === 'spacious' ? 22 : 14;
   const headingFamily = fontCssFamily(config.headingFont);
   const bodyFamily = fontCssFamily(config.bodyFont);
   const priceFamily = fontCssFamily(config.priceFont);
@@ -267,7 +267,7 @@ function CustomDishCard({
 
   const imageHeight = embeddedViewport
     ? (config.menuLayout === 'cards' ? 210 : config.menuLayout === 'editorial' ? 190 : 170)
-    : (config.menuLayout === 'cards' ? 280 : config.menuLayout === 'editorial' ? 240 : 200);
+    : (config.menuLayout === 'cards' ? 260 : config.menuLayout === 'editorial' ? 220 : 180);
   const addPad = embeddedViewport ? '0.52rem 0.75rem' : (config.buttonSize === 'sm' ? '0.45rem 0.7rem' : config.buttonSize === 'lg' ? '0.85rem 1.2rem' : '0.65rem 0.95rem');
   const addFont = embeddedViewport ? 12 : (config.buttonSize === 'sm' ? 12 : config.buttonSize === 'lg' ? 15 : 13);
   return (

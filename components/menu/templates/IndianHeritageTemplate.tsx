@@ -66,8 +66,8 @@ export default function IndianHeritageTemplate({
       </div>
 
         {/* Ornate Search & Heritage Boxed Tabs */}
-        <div className="max-w-4xl mx-auto px-4 pb-3">
-          <div className="relative mb-3">
+        <div className="max-w-4xl mx-auto px-4 pb-2.5">
+          <div className="relative mb-2.5">
             <input
               type="text"
               value={search}
@@ -88,11 +88,11 @@ export default function IndianHeritageTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-4 mt-3">
+          <div className="flex justify-center gap-3 mt-2.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#C69A6E]/30 bg-[#C69A6E]/10 text-[#C69A6E] text-xs font-sans font-medium hover:bg-[#C69A6E]/20 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#C69A6E]/30 bg-[#C69A6E]/10 text-[#C69A6E] text-xs font-sans font-medium hover:bg-[#C69A6E]/20 transition-colors"
             >
               <span>💧</span>
               <span>Water</span>
@@ -100,7 +100,7 @@ export default function IndianHeritageTemplate({
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#C69A6E] bg-[#C69A6E] text-[#1D150E] text-xs font-sans font-medium hover:bg-[#A67C52] transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#C69A6E] bg-[#C69A6E] text-[#1D150E] text-xs font-sans font-medium hover:bg-[#A67C52] transition-colors"
             >
               <span>🔔</span>
               <span>Call Waiter</span>
@@ -109,14 +109,14 @@ export default function IndianHeritageTemplate({
 
           {/* Boxed Heritage Tabs with Brass Edges */}
           {pills.length > 1 && (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded text-xs font-sans uppercase tracking-widest whitespace-nowrap transition-all duration-200 border ${
+                    className={`px-3 py-1.25 rounded text-xs font-sans uppercase tracking-widest whitespace-nowrap transition-all duration-200 border ${
                       isActive
                         ? 'bg-[#C69A6E] text-[#1D150E] font-bold border-[#D4AF7C] shadow-[0_0_12px_rgba(198,154,110,0.3)]'
                         : 'bg-[#2A2015] hover:bg-[#35291C] text-[#C9BAA0] border-[#5A4630]'
@@ -132,9 +132,9 @@ export default function IndianHeritageTemplate({
       </header>
 
       {/* ================= MAIN HERITAGE COURSES ================= */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-14">
-        {hotel.welcome_text && (
-          <div className="text-center border-t border-b border-[#C69A6E]/30 py-4 px-6 bg-[#2A2015]/40 max-w-2xl mx-auto">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+{hotel.welcome_text && (
+            <div className="text-center border-t border-b border-[#C69A6E]/30 py-3 px-5 bg-[#2A2015]/40 max-w-2xl mx-auto">
             <span className="text-xs text-[#C69A6E] block mb-1">✦ ════ ❖ ════ ✦</span>
             <p className="text-sm italic text-[#C9BAA0] leading-relaxed">
               &ldquo;{hotel.welcome_text}&rdquo;
@@ -142,8 +142,8 @@ export default function IndianHeritageTemplate({
           </div>
         )}
 
-        {filteredItems.length === 0 ? (
-          <div className="py-24 text-center">
+{filteredItems.length === 0 ? (
+            <div className="py-16 text-center">
             <p className="text-lg italic text-[#A69470]">No traditional delicacies found matching your request.</p>
           </div>
         ) : (
@@ -151,7 +151,7 @@ export default function IndianHeritageTemplate({
             {/* SHAHI KHAS — CHEF'S FEATURED */}
             {featuredItems.length > 0 && (
               <section>
-                <div className="text-center mb-8">
+                <div className="text-center mb-4">
                   <span className="text-[0.625rem] font-sans font-bold tracking-[0.3em] text-[#C69A6E] uppercase block mb-1">
                     Royal Banquet
                   </span>
@@ -163,7 +163,7 @@ export default function IndianHeritageTemplate({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {featuredItems.map((item) => (
                     <IndianHeritageCard
                       key={item.id}
@@ -183,7 +183,7 @@ export default function IndianHeritageTemplate({
             {/* DASTARKHWAN POPULAR */}
             {popularItems.length > 0 && (
               <section>
-                <div className="text-center mb-8">
+                <div className="text-center mb-4">
                   <span className="text-[0.625rem] font-sans font-bold tracking-[0.3em] text-[#C69A6E] uppercase block mb-1">
                     Tradition & Fame
                   </span>
@@ -195,7 +195,7 @@ export default function IndianHeritageTemplate({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {popularItems.map((item) => (
                     <IndianHeritageCard
                       key={item.id}
@@ -216,7 +216,7 @@ export default function IndianHeritageTemplate({
             {regularItems.length > 0 && (
               <section>
                 {(featuredItems.length > 0 || popularItems.length > 0) && (
-                  <div className="text-center mb-8">
+                  <div className="text-center mb-4">
                     <span className="text-[0.625rem] font-sans font-bold tracking-[0.3em] text-[#C69A6E] uppercase block mb-1">
                       Complete Feast
                     </span>
@@ -229,7 +229,7 @@ export default function IndianHeritageTemplate({
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {regularItems.map((item) => (
                     <IndianHeritageCard
                       key={item.id}
@@ -279,7 +279,7 @@ function IndianHeritageCard({
   return (
     <div
       onClick={() => onItemClick(item)}
-      className="group relative bg-[#2A2015] border-2 border-[#5A4630] hover:border-[#C69A6E] rounded-lg p-3 transition-all duration-300 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.6)] cursor-pointer"
+      className="group relative bg-[#2A2015] border-2 border-[#5A4630] hover:border-[#C69A6E] rounded-lg p-2.5 transition-all duration-300 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.6)] cursor-pointer"
     >
       {/* Decorative Brass Corner Flourishes */}
       <span className="absolute top-1 left-1 text-[0.625rem] text-[#C69A6E]/50 pointer-events-none">❖</span>
@@ -288,7 +288,7 @@ function IndianHeritageCard({
       <span className="absolute bottom-1 right-1 text-[0.625rem] text-[#C69A6E]/50 pointer-events-none">❖</span>
 
       {/* ARCHED / FRAMED FOOD IMAGE */}
-      <div className="relative w-full h-52 overflow-hidden rounded-t-[28px] rounded-b border border-[#C69A6E]/30 bg-[#1D150E]">
+      <div className="relative w-full h-44 overflow-hidden rounded-t-[24px] rounded-b border border-[#C69A6E]/30 bg-[#1D150E]">
         {image ? (
           <img
             src={image}
@@ -336,7 +336,7 @@ function IndianHeritageCard({
       </div>
 
       {/* DISH ATTRIBUTES */}
-      <div className="pt-3 px-1 flex-1 flex flex-col justify-between">
+      <div className="pt-2 px-1 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex items-baseline justify-between gap-3 mb-1.5">
             <h3 className="text-lg sm:text-xl font-normal text-[#E8E1D1] group-hover:text-[#D4AF7C] transition-colors leading-snug">
@@ -363,15 +363,15 @@ function IndianHeritageCard({
         </div>
 
         {/* BRASS THALI ACTION */}
-        <div className="pt-2.5 border-t border-[#5A4630] flex items-center justify-between gap-2">
+        <div className="pt-2 border-t border-[#5A4630] flex items-center justify-between gap-2">
           {inCartQty > 0 ? (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-between w-full bg-[#1D150E] border border-[#C69A6E] rounded px-3 py-1"
+              className="flex items-center justify-between w-full bg-[#1D150E] border border-[#C69A6E] rounded px-2.5 py-0.75"
             >
               <button
                 onClick={() => onRemove(item.id, inCartSize)}
-                className="w-6 h-6 rounded bg-[#2A2015] text-[#E8E1D1] font-sans font-bold text-xs flex items-center justify-center hover:bg-[#35291C]"
+                className="w-4.5 h-4.5 rounded bg-[#2A2015] text-[#E8E1D1] font-sans font-bold text-xs flex items-center justify-center hover:bg-[#35291C]"
               >
                 −
               </button>
@@ -380,7 +380,7 @@ function IndianHeritageCard({
               </span>
               <button
                 onClick={() => onAdd(item)}
-                className="w-6 h-6 rounded bg-[#C69A6E] text-[#1D150E] font-sans font-bold text-xs flex items-center justify-center hover:bg-[#D4AF7C]"
+                className="w-4.5 h-4.5 rounded bg-[#C69A6E] text-[#1D150E] font-sans font-bold text-xs flex items-center justify-center hover:bg-[#D4AF7C]"
               >
                 +
               </button>
@@ -391,7 +391,7 @@ function IndianHeritageCard({
                 e.stopPropagation();
                 onAdd(item);
               }}
-              className="w-full py-2 rounded bg-[#35291C] hover:bg-[#C69A6E] text-[#C69A6E] hover:text-[#1D150E] border border-[#C69A6E]/60 font-sans text-xs font-bold uppercase tracking-widest transition-all duration-300"
+              className="w-full py-1.5 rounded bg-[#35291C] hover:bg-[#C69A6E] text-[#C69A6E] hover:text-[#1D150E] border border-[#C69A6E]/60 font-sans text-[0.65rem] font-bold uppercase tracking-widest transition-all duration-300"
             >
               ✦ Add to Thali
             </button>

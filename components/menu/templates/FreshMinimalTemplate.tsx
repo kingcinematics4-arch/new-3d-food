@@ -63,8 +63,8 @@ export default function FreshMinimalTemplate({
       </div>
 
         {/* Lightweight Search & Pill Track */}
-        <div className="max-w-4xl mx-auto px-4 pb-3">
-          <div className="relative mb-3">
+        <div className="max-w-4xl mx-auto px-4 pb-2.5">
+          <div className="relative mb-2.5">
             <input
               type="text"
               value={search}
@@ -85,11 +85,11 @@ export default function FreshMinimalTemplate({
           </div>
 
           {/* Water & Call Waiter action row */}
-          <div className="flex justify-center gap-4 mt-3">
+          <div className="flex justify-center gap-3 mt-2.5">
             <button
               type="button"
               onClick={onOpenWater}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#2E7D32]/30 bg-[#2E7D32]/10 text-[#2E7D32] text-xs font-medium hover:bg-[#2E7D32]/20 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#2E7D32]/30 bg-[#2E7D32]/10 text-[#2E7D32] text-xs font-medium hover:bg-[#2E7D32]/20 transition-colors"
             >
               <span>💧</span>
               <span>Water</span>
@@ -97,7 +97,7 @@ export default function FreshMinimalTemplate({
             <button
               type="button"
               onClick={onOpenWaiter}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#2E7D32] bg-[#2E7D32] text-white text-xs font-medium hover:bg-[#1B5E20] transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#2E7D32] bg-[#2E7D32] text-white text-xs font-medium hover:bg-[#1B5E20] transition-colors"
             >
               <span>🔔</span>
               <span>Call Waiter</span>
@@ -105,14 +105,14 @@ export default function FreshMinimalTemplate({
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`px-3.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'bg-[#2E7D32] text-white shadow-sm'
                         : 'bg-white hover:bg-[#E8F5E9] text-[#4A554A] border border-[#DDE3DD]'
@@ -128,17 +128,17 @@ export default function FreshMinimalTemplate({
       </header>
 
       {/* ================= MAIN CAFÉ CONTENT ================= */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-10">
-        {hotel.welcome_text && (
-          <div className="bg-[#E8F5E9]/60 border border-[#C8E6C9] rounded-2xl p-4 text-center">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-5 space-y-6">
+{hotel.welcome_text && (
+            <div className="bg-[#E8F5E9]/60 border border-[#C8E6C9] rounded-2xl p-2.5 text-center">
             <p className="text-xs sm:text-sm text-[#2E7D32] font-medium leading-relaxed">
               ✨ {hotel.welcome_text}
             </p>
           </div>
         )}
 
-        {filteredItems.length === 0 ? (
-          <div className="py-20 text-center">
+{filteredItems.length === 0 ? (
+            <div className="py-16 text-center">
             <p className="text-sm text-[#6A786A]">No café items match your search.</p>
           </div>
         ) : (
@@ -146,14 +146,14 @@ export default function FreshMinimalTemplate({
             {/* FEATURED SPECIALS */}
             {featuredItems.length > 0 && (
               <section>
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">🌿</span>
                   <h2 className="text-base sm:text-lg font-bold text-[#1E231F] tracking-tight">
                     Seasonal Specials
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
                   {featuredItems.map((item) => (
                     <FreshMinimalCard
                       key={item.id}
@@ -173,14 +173,14 @@ export default function FreshMinimalTemplate({
             {/* POPULAR DISHES */}
             {popularItems.length > 0 && (
               <section>
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">⭐</span>
                   <h2 className="text-base sm:text-lg font-bold text-[#1E231F] tracking-tight">
                     Café Favorites
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
                   {popularItems.map((item) => (
                     <FreshMinimalCard
                       key={item.id}
@@ -201,7 +201,7 @@ export default function FreshMinimalTemplate({
             {regularItems.length > 0 && (
               <section>
                 {(featuredItems.length > 0 || popularItems.length > 0) && (
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg">🍃</span>
                     <h2 className="text-base sm:text-lg font-bold text-[#1E231F] tracking-tight">
                       All Items
@@ -209,7 +209,7 @@ export default function FreshMinimalTemplate({
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
                   {regularItems.map((item) => (
                     <FreshMinimalCard
                       key={item.id}
@@ -259,11 +259,11 @@ function FreshMinimalCard({
   return (
     <div
       onClick={() => onItemClick(item)}
-      className="group bg-white border border-[#E3E8E3] hover:border-[#2E7D32]/50 rounded-3xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_24px_rgba(46,125,50,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+      className="group bg-white border border-[#E3E8E3] hover:border-[#2E7D32]/50 rounded-2xl p-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_24px_rgba(46,125,50,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
     >
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         {/* ROUNDED SQUIRCLE IMAGE PRESENTATION */}
-        <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0 rounded-2xl overflow-hidden bg-[#F1F4F1] border border-[#E3E8E3]">
+        <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-xl overflow-hidden bg-[#F1F4F1] border border-[#E3E8E3]">
           {image ? (
             <img
               src={image}
@@ -325,19 +325,19 @@ function FreshMinimalCard({
       </div>
 
       {/* FOOTER ROW */}
-      <div className="mt-3 pt-3 border-t border-[#F1F4F1] flex items-center justify-between gap-3">
-        <span className="text-base font-extrabold text-[#2E7D32]">
+      <div className="mt-2.5 pt-2.5 border-t border-[#F1F4F1] flex items-center justify-between gap-2">
+        <span className="text-sm font-extrabold text-[#2E7D32]">
           {formatPrice(Number(item.price) || 0, currency)}
         </span>
 
         {inCartQty > 0 ? (
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-2 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full px-2 py-0.5"
+            className="flex items-center gap-1.5 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full px-1.5 py-0.4"
           >
             <button
               onClick={() => onRemove(item.id, inCartSize)}
-              className="w-6 h-6 rounded-full bg-white text-[#2E7D32] font-bold flex items-center justify-center hover:bg-[#C8E6C9] transition-colors shadow-xs"
+              className="w-4.5 h-4.5 rounded-full bg-white text-[#2E7D32] font-bold flex items-center justify-center hover:bg-[#C8E6C9] transition-colors shadow-xs"
             >
               −
             </button>
@@ -346,7 +346,7 @@ function FreshMinimalCard({
             </span>
             <button
               onClick={() => onAdd(item)}
-              className="w-6 h-6 rounded-full bg-[#2E7D32] text-white font-bold flex items-center justify-center hover:bg-[#1B5E20] transition-colors shadow-xs"
+              className="w-4.5 h-4.5 rounded-full bg-[#2E7D32] text-white font-bold flex items-center justify-center hover:bg-[#1B5E20] transition-colors shadow-xs"
             >
               +
             </button>
@@ -357,7 +357,7 @@ function FreshMinimalCard({
               e.stopPropagation();
               onAdd(item);
             }}
-            className="px-4 py-1.5 rounded-full bg-[#E8F5E9] hover:bg-[#2E7D32] text-[#2E7D32] hover:text-white font-bold text-xs transition-all duration-200"
+            className="px-3 py-1 rounded-full bg-[#E8F5E9] hover:bg-[#2E7D32] text-[#2E7D32] hover:text-white font-bold text-xs transition-all duration-200"
           >
             + Add
           </button>
