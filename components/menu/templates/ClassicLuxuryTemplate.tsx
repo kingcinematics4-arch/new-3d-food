@@ -123,14 +123,14 @@ export default function ClassicLuxuryTemplate({
 
           {/* Elegant Horizontal Serif Navigation Tabs */}
           {pills.length > 1 && (
-            <div className="flex items-center justify-center gap-1.5 sm:gap-3 overflow-x-auto mt-3 px-2 no-scrollbar">
+            <div className="flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto mt-2.5 px-1.5 no-scrollbar">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`whitespace-nowrap px-2.5 py-0.75 text-sm tracking-wider uppercase transition-all border-b-2 ${
+                    className={`whitespace-nowrap px-2 py-0.625 text-[0.8125rem] tracking-wider uppercase transition-all border-b-2 ${
                       isActive
                         ? 'border-[#9A8760] text-[#9A8760] font-medium'
                         : 'border-transparent text-[#7B776E] hover:text-[#1A1A1A]'

@@ -105,14 +105,14 @@ export default function FreshMinimalTemplate({
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.75">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-3.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`px-3 py-0.875 rounded-full text-[0.6875rem] font-semibold whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'bg-[#2E7D32] text-white shadow-sm'
                         : 'bg-white hover:bg-[#E8F5E9] text-[#4A554A] border border-[#DDE3DD]'

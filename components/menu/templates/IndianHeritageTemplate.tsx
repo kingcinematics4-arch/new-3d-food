@@ -109,14 +109,14 @@ export default function IndianHeritageTemplate({
 
           {/* Boxed Heritage Tabs with Brass Edges */}
           {pills.length > 1 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.75">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-3 py-1.25 rounded text-xs font-sans uppercase tracking-widest whitespace-nowrap transition-all duration-200 border ${
+                    className={`px-2.5 py-1 rounded text-[0.6875rem] font-sans uppercase tracking-widest whitespace-nowrap transition-all duration-200 border ${
                       isActive
                         ? 'bg-[#C69A6E] text-[#1D150E] font-bold border-[#D4AF7C] shadow-[0_0_12px_rgba(198,154,110,0.3)]'
                         : 'bg-[#2A2015] hover:bg-[#35291C] text-[#C9BAA0] border-[#5A4630]'

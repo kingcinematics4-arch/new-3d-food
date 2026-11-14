@@ -174,8 +174,8 @@ export default function CustomTemplate(props: CustomTemplateProps) {
         </div>
         {pills.length > 1 && (
           <div
-            className="no-scrollbar flex items-center overflow-y-hidden overflow-x-auto py-1"
-            style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, gap: embeddedViewport ? 6 : 8 }}
+            className="no-scrollbar flex items-center overflow-y-hidden overflow-x-auto py-0.75"
+            style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, gap: embeddedViewport ? 5 : 6 }}
           >
             {pills.map((cat) => {
               const active = selectedCategory === cat;
@@ -184,7 +184,7 @@ export default function CustomTemplate(props: CustomTemplateProps) {
                   key={cat}
                   type="button"
                   onClick={() => onSelectCategory(cat)}
-                  style={{ flexShrink: 0, borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius, backgroundColor: active ? p : config.cardBg, color: active ? contrast(p) : config.textColor, border: `1px solid ${active ? p : alpha(p, 0.22)}`, padding: embeddedViewport ? '0.38rem 0.7rem' : '0.45rem 0.85rem', fontSize: Math.max(11, config.typography.bodySize - (embeddedViewport ? 2 : 1)), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', boxSizing: 'border-box' }}
+                  style={{ flexShrink: 0, borderRadius: config.buttonStyle === 'pill' ? '9999px' : config.buttonRadius, backgroundColor: active ? p : config.cardBg, color: active ? contrast(p) : config.textColor, border: `1px solid ${active ? p : alpha(p, 0.22)}`, padding: embeddedViewport ? '0.34rem 0.6rem' : '0.4rem 0.75rem', fontSize: Math.max(10, config.typography.bodySize - (embeddedViewport ? 3 : 2)), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', boxSizing: 'border-box' }}
                 >
                   {cat}
                 </button>

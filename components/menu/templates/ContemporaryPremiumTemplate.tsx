@@ -102,7 +102,7 @@ export default function ContemporaryPremiumTemplate({
           </div>
 
           {pills.length > 1 && (
-            <div className="flex items-center gap-3 sm:gap-5 overflow-x-auto no-scrollbar py-1">
+            <div className="flex items-center gap-2.5 sm:gap-4 overflow-x-auto no-scrollbar py-0.75">
               {pills.map((cat, idx) => {
                 const isActive = selectedCategory === cat;
                 const formattedNum = String(idx).padStart(2, '0');
@@ -110,7 +110,7 @@ export default function ContemporaryPremiumTemplate({
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`whitespace-nowrap pb-1.5 text-xs font-mono tracking-widest uppercase transition-all border-b-2 ${
+                    className={`whitespace-nowrap pb-1.25 text-[0.6875rem] font-mono tracking-widest uppercase transition-all border-b-2 ${
                       isActive
                         ? 'border-[#1A1A1A] text-[#1A1A1A] font-bold'
                         : 'border-transparent text-[#8C8C7E] hover:text-[#1A1A1A]'

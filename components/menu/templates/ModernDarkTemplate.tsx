@@ -119,7 +119,7 @@ export default function ModernDarkTemplate({
 
           {/* Horizontal category track with item count capsules */}
           {pills.length > 1 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.25">
               {pills.map((cat) => {
                 const isActive = selectedCategory === cat;
                 const count = getCatCount(cat);
@@ -127,7 +127,7 @@ export default function ModernDarkTemplate({
                   <button
                     key={cat}
                     onClick={() => onSelectCategory(cat)}
-                    className={`flex items-center gap-1 px-2 py-0.75 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`flex items-center gap-0.75 px-1.5 py-0.625 rounded-full text-[0.6875rem] font-semibold whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'bg-[#E1C99A] text-black shadow-[0_0_10px_rgba(225,201,154,0.4)]'
                         : 'bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 border border-white/10'
@@ -135,7 +135,7 @@ export default function ModernDarkTemplate({
                   >
                     <span>{cat}</span>
                     <span
-                      className={`text-[0.55rem] px-1 py-0.15 rounded-full font-bold ${
+                      className={`text-[0.5rem] px-1 py-0.125 rounded-full font-bold ${
                         isActive ? 'bg-black/20 text-black' : 'bg-neutral-800 text-neutral-400'
                       }`}
                     >
